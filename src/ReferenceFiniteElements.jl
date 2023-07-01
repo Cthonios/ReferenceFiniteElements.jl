@@ -2,7 +2,6 @@ module ReferenceFiniteElements
 
 using FastGaussQuadrature
 using InteractiveUtils
-using LazyArrays
 using LinearAlgebra
 using Polynomials
 using PrecompileTools
@@ -44,18 +43,18 @@ include("implementations/Tri6.jl")
 # include("implementations/SimplexTri.jl")
 
 # precompilation
-# @setup_workload begin
-#   @compile_workload begin
-#     # methods to precompile for all elements
-#     for abstract_el_type in subtypes(ReferenceFE)
-#       for el_type in subtypes(abstract_el_type)
-#         ElementStencil(el_type(), 1)
-#         Quadrature(el_type(), 1)
-#         ShapeFunctions(el_type(), 1)
-#       end
-#     end
-#   end
-# end
+@setup_workload begin
+  @compile_workload begin
+    # methods to precompile for all elements
+    for abstract_el_type in subtypes(ReferenceFE)
+      for el_type in subtypes(abstract_el_type)
+        ElementStencil(el_type(), 1)
+        Quadrature(el_type(), 1)
+        ShapeFunctions(el_type(), 1)
+      end
+    end
+  end
+end
 
 export ReferenceFE
 
