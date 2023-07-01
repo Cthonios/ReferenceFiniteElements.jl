@@ -1,4 +1,4 @@
-abstract type AbstractTri <: ReferenceFE end
+abstract type AbstractTri <: AbstractReferenceFE end
 
 """
 Eventually move this to FastQuassQuadrature implementation

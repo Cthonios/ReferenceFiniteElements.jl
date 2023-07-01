@@ -18,7 +18,7 @@ function ElementStencil(e::Tet4, degree::I, Itype::Type = Integer, Rtype::Type =
     4 4 3 2
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ElementStencil{Itype, Rtype}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ElementStencil{Itype, Rtype, Tet4}(e, degree, points, vertex_points, face_points, interior_nodes)
 end
 
 function shape_function_values(::Tet4, ξ)

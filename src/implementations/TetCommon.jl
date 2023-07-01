@@ -1,4 +1,4 @@
-abstract type AbstractTet <: ReferenceFE end
+abstract type AbstractTet <: AbstractReferenceFE end
 
 """
 """

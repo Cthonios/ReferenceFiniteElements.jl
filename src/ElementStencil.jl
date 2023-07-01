@@ -1,5 +1,5 @@
-struct ElementStencil{IType <: Integer, RType <: Real}
-  element_type::ReferenceFE
+struct ElementStencil{IType <: Integer, RType <: Real, RefFE <: AbstractReferenceFE}
+  element_type::RefFE
   degree::IType
   coordinates::VecOrMat{RType}
   vertex_nodes::Vector{IType}
