@@ -16,7 +16,7 @@ function ElementStencil(e::Tri3, degree::I, Itype::Type = Integer, Rtype::Type =
     2 3 1
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ElementStencil{Itype, Rtype}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ElementStencil{Itype, Rtype, Tri3}(e, degree, points, vertex_points, face_points, interior_nodes)
 end
 
 function shape_function_values(::Tri3, ξ)

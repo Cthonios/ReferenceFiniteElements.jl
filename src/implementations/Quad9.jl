@@ -17,7 +17,7 @@ function ElementStencil(e::Quad9, degree::I, Itype::Type = Integer, Rtype::Type 
     2 3 4 1
   ]
   interior_nodes = [9]
-  return ElementStencil{Itype, Rtype}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ElementStencil{Itype, Rtype, Quad9}(e, degree, points, vertex_points, face_points, interior_nodes)
 end
 
 function shape_function_values(::Quad9, ξ)

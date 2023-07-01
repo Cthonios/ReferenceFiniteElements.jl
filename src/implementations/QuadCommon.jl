@@ -1,6 +1,6 @@
 """
 """
-abstract type AbstractQuad <: ReferenceFE end
+abstract type AbstractQuad <: AbstractReferenceFE end
 
 """
 """

@@ -21,7 +21,7 @@ function ElementStencil(e::Tet10, degree::I, Itype::Type = Integer, Rtype::Type 
     8 8  7  5
   ]
   interior_nodes = []
-  return ElementStencil{Itype, Rtype}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ElementStencil{Itype, Rtype, Tet10}(e, degree, points, vertex_points, face_points, interior_nodes)
 end
 
 function shape_function_values(::Tet10, ξ)
@@ -41,6 +41,7 @@ function shape_function_values(::Tet10, ξ)
 end
 
 function shape_function_gradients(::Tet10, ξ)
+  λ = 1.0 - ξ[1] - ξ[2] - ξ[3]
   ∇N_ξ = @SMatrix [
     -(2.0 * λ - 1.0) - 2.0 * λ -(2.0 * λ - 1.0) - 2.0 * λ  -(2.0 * λ - 1.0) - 2.0 * λ;
     (2.0 * ξ[1] - 1.0) + 2.0 * ξ[1] 0.0 0.0;
