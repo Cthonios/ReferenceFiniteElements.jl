@@ -2,7 +2,6 @@ using Aqua
 using Distributions
 using LinearAlgebra
 using ReferenceFiniteElements
-using StructArrays
 using Test
 using TestSetExtensions
 

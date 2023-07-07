@@ -35,7 +35,6 @@ using Polynomials
 using PrecompileTools
 using SpecialPolynomials
 using StaticArrays
-using StructArrays
 
 struct ReferenceFEType{N, D}
 end
