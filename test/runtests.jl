@@ -1,6 +1,8 @@
+using Aqua
 using Distributions
 using LinearAlgebra
 using ReferenceFiniteElements
+using StructArrays
 using Test
 using TestSetExtensions
 
@@ -114,3 +116,13 @@ function partition_of_unity_tests(el, q_degree)
 end
 
 @includetests ARGS
+
+# Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
+Aqua.test_ambiguities(ReferenceFiniteElements)
+Aqua.test_unbound_args(ReferenceFiniteElements)
+Aqua.test_undefined_exports(ReferenceFiniteElements)
+Aqua.test_piracy(ReferenceFiniteElements)
+Aqua.test_project_extras(ReferenceFiniteElements)
+Aqua.test_stale_deps(ReferenceFiniteElements)
+Aqua.test_deps_compat(ReferenceFiniteElements)
+Aqua.test_project_toml_formatting(ReferenceFiniteElements)

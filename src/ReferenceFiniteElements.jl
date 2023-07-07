@@ -17,13 +17,6 @@ include("ElementStencil.jl")
 include("Quadrature.jl")
 include("ShapeFunctions.jl")
 
-# function ReferenceFE(e::E, degree::Int) where E <: ReferenceFE
-#   q_rule = Quadrature(e, degree)
-#   stencil = ElementStencil(e, degree)
-#   shape_functions = ShapeFunctions(e, degree)
-#   return q_rule, stencil, shape_functions
-# end
-
 struct ReferenceFE{N, D, Itype <: Integer, Rtype <: Real, RefFE <: AbstractReferenceFE}
   q_rule::Quadrature{Rtype}
   stencil::ElementStencil{Itype, Rtype, RefFE}
@@ -57,18 +50,18 @@ include("implementations/Tri6.jl")
 # include("implementations/SimplexTri.jl")
 
 # precompilation
-# @setup_workload begin
-#   @compile_workload begin
-#     # methods to precompile for all elements
-#     for abstract_el_type in subtypes(AbstractReferenceFE)
-#       for el_type in subtypes(abstract_el_type)
-#         ElementStencil(el_type(), 1)
-#         Quadrature(el_type(), 1)
-#         ShapeFunctions(el_type(), 1)
-#       end
-#     end
-#   end
-# end
+@setup_workload begin
+  @compile_workload begin
+    # methods to precompile for all elements
+    for abstract_el_type in subtypes(AbstractReferenceFE)
+      for el_type in subtypes(abstract_el_type)
+        for degree in [1, 2]
+          ReferenceFE(el_type(), degree)
+        end
+      end
+    end
+  end
+end
 
 export AbstractReferenceFE
 export ReferenceFE
