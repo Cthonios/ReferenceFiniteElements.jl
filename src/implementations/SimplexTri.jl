@@ -1,11 +1,11 @@
 """
 """
-struct SimplexTri <: AbstractTri
+struct SimplexTri <: TriUnion
 end
 
 """
 """
-function ElementStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   n_points = (degree + 1) * (degree + 2) / 2 |> Integer
   
   # to be consistent with optimism
@@ -38,14 +38,14 @@ function ElementStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rtype::
 
   face_points = hcat(ii, jj, kk)
   interior_nodes = findall(x -> x ∉ face_points, 1:n_points)
-  return ElementStencil{Itype, Rtype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Rtype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
 end
 
 """
 """
 function ShapeFunctions(
   ::SimplexTri, 
-  stencil::ElementStencil{Itype, Rtype}, 
+  stencil::ReferenceFEStencil{Itype, Rtype}, 
   q_rule::Quadrature{Rtype}
 ) where {Itype <: Integer, Rtype <: Real}
 

@@ -1,9 +1,9 @@
 # max_degree = 6
 
-# @testset ExtendedTestSet "ElementStencils.jl - SimplexTri implementation" begin
+# @testset ExtendedTestSet "ReferenceFEStencils.jl - SimplexTri implementation" begin
 #   @testset "Test SimplexTri element interpolant points in element" begin
 #     for degree in 1:max_degree
-#       e = ElementStencil(SimplexTri(), degree)
+#       e = ReferenceFEStencil(SimplexTri(), degree)
 
 #       @test e.coordinates[:, e.vertex_nodes[1]] ≈ [1., 0.]
 #       @test e.coordinates[:, e.vertex_nodes[2]] ≈ [0., 1.]
@@ -18,8 +18,8 @@
 
 #   @testset "Test SimplexTri element face nodes match 1D lobatto nodes" begin
 #     for degree in 1:max_degree
-#       e_1d = ElementStencil(Edge(), degree)
-#       e_2d = ElementStencil(SimplexTri(), degree)
+#       e_1d = ReferenceFEStencil(Edge(), degree)
+#       e_2d = ReferenceFEStencil(SimplexTri(), degree)
 #       for face_node_ids in eachcol(e_2d.face_nodes)
 #         X_f = e_2d.coordinates[:, face_node_ids]
 #         X_f_1d = (1. .- e_1d.coordinates) * X_f[:, 1]' + e_1d.coordinates * X_f[:, end]'
@@ -30,20 +30,20 @@
 
 #   @testset "Test SimplexTri element shape function values partition of unity" begin
 #     for degree in 1:max_degree
-#       partition_of_unity_shape_function_values_test(SimplexTri(), degree)
+#       partition_of_unity_shape_function_values_int_test(SimplexTri(), degree)
 #     end
 #   end  
 
 #   @testset "Test SimplexTri element shape function gradients partition of unity" begin
 #     for degree in 1:max_degree
-#       partition_of_unity_shape_function_gradients_test(SimplexTri(), degree)
+#       partition_of_unity_shape_function_gradients_int_test(SimplexTri(), degree)
 #     end
 #   end
 
 #   @testset "Test SimplexTri element shape kronecker delta property" begin
 #     for degree in 1:max_degree
 #       q_rule = Quadrature(SimplexTri(), degree)
-#       e = ElementStencil(SimplexTri(), degree)
+#       e = ReferenceFEStencil(SimplexTri(), degree)
 #       n_nodes = (degree + 1) * (degree + 2) ÷ 2
 
 #       A  = zeros(Float64, n_nodes, size(e.coordinates, 2))
@@ -65,7 +65,7 @@
 #   @testset "Test SimplexTri interpolation" begin
 #     x = generate_random_points_in_triangle(1)
 #     for degree in 1:max_degree
-#       e = ElementStencil(SimplexTri(), degree)
+#       e = ReferenceFEStencil(SimplexTri(), degree)
 #       n_nodes = (degree + 1) * (degree + 2) ÷ 2
 
 #       # poly_coeffs = UpperTriangular(ones(Float64, degree + 1, degree + 1))
@@ -98,7 +98,7 @@
 #   @testset "Test SimplexTri grad interpolation" begin
 #     x = generate_random_points_in_triangle(1)
 #     for degree in 1:max_degree
-#       e = ElementStencil(SimplexTri(), degree)
+#       e = ReferenceFEStencil(SimplexTri(), degree)
 #       n_nodes = (degree + 1) * (degree + 2) ÷ 2
 
 #       # poly_coeffs = UpperTriangular(ones(Float64, degree + 1, degree + 1))

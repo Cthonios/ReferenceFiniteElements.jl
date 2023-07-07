@@ -1,10 +1,16 @@
 """
 """
-abstract type AbstractQuad <: AbstractReferenceFE end
+const Quad4 = ReferenceFEType{4, 2}
+"""
+"""
+const Quad9 = ReferenceFEType{9, 2}
+"""
+"""
+const QuadUnion = Union{Quad4, Quad9}
 
 """
 """
-function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: AbstractQuad}
+function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: QuadUnion}
   ξs, ws = gausslegendre(degree)
   n_q_points = length(ws)^2
   ξ_return = zeros(Rtype, 2, n_q_points)

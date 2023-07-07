@@ -1,5 +1,33 @@
 module ReferenceFiniteElements
 
+# element types
+export Edge
+export Hex8
+export Quad4, Quad9
+export Tet4, Tet10
+export Tri3, Tri6
+
+# types
+export Quadrature
+export ReferenceFE
+export ReferenceFEStencil
+export ShapeFunctions
+
+# methods
+export num_dimensions
+export num_q_points
+export quadrature_points
+export quadrature_weights
+export reference_fe_coordinates
+export reference_fe_face_nodes
+export reference_fe_interior_nodes
+export reference_fe_type
+export reference_fe_vertex_nodes
+export shape_function_gradient
+export shape_function_gradients
+export shape_function_values
+
+# dependencies
 using FastGaussQuadrature
 using InteractiveUtils
 using LinearAlgebra
@@ -9,26 +37,30 @@ using SpecialPolynomials
 using StaticArrays
 using StructArrays
 
-# abstract interface
-abstract type AbstractReferenceFE end
+struct ReferenceFEType{N, D}
+end
+num_nodes(::ReferenceFEType{N, D}) where {N, D} = N
+num_dimensions(::ReferenceFEType{N, D}) where {N, D} = D
 
 # interface
 include("ElementStencil.jl")
 include("Quadrature.jl")
 include("ShapeFunctions.jl")
 
-struct ReferenceFE{N, D, Itype <: Integer, Rtype <: Real, RefFE <: AbstractReferenceFE}
+struct ReferenceFE{N, D, Itype <: Integer, Rtype <: Real, RefFE <: ReferenceFEType}
   q_rule::Quadrature{Rtype}
-  stencil::ElementStencil{Itype, Rtype, RefFE}
-  shape_functions::StructArray{ShapeFunctionPair{N, D, Rtype}}
+  stencil::ReferenceFEStencil{Itype, Rtype, RefFE}
+  shape_functions::ShapeFunctions{N, D, Rtype}
 end
 
-function ReferenceFE(e::E, degree::Integer, Itype = Integer, Rtype = Float64) where E <: AbstractReferenceFE
-  q_rule = Quadrature(e, degree, )
-  stencil = ElementStencil(e, degree)
-  shape_functions = ShapeFunctions(e, degree)
-  num_nodes, num_dim = size(shape_functions.∇N_ξ[1])
-  return ReferenceFE{num_nodes, num_dim, Itype, Rtype, E}(q_rule, stencil, shape_functions)
+function ReferenceFE(
+  e::ReferenceFEType{N, D}, degree::Integer, 
+  Itype = Integer, Rtype = Float64
+) where {N, D}
+  q_rule = Quadrature(e, degree)
+  stencil = ReferenceFEStencil(e, degree)
+  shape_functions = ShapeFunctions(e, q_rule)
+  return ReferenceFE{N, D, Itype, Rtype, ReferenceFEType{N, D}}(q_rule, stencil, shape_functions)
 end
 
 # implementations
@@ -53,17 +85,17 @@ include("implementations/Tri6.jl")
 @setup_workload begin
   @compile_workload begin
     # methods to precompile for all elements
-    for abstract_el_type in subtypes(AbstractReferenceFE)
-      for el_type in subtypes(abstract_el_type)
-        for degree in [1, 2]
-          ReferenceFE(el_type(), degree)
-        end
+    for el_type in subtypes(ReferenceFEType)
+      for degree in [1, 2]
+        ReferenceFE(el_type(), degree)
       end
+      # for el_type in subtypes(abstract_el_type)
+      #   for degree in [1, 2]
+      #     ReferenceFE(el_type(), degree)
+      #   end
+      # end
     end
   end
 end
-
-export AbstractReferenceFE
-export ReferenceFE
 
 end # module ReferenceFEs

@@ -1,11 +1,6 @@
 """
 """
-struct Tri6 <: AbstractTri
-end
-
-"""
-"""
-function ElementStencil(e::Tri6, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(::Tri6, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   points = [
     0.0 1.0 0.0 0.5 0.5 0.0;
     0.0 0.0 1.0 0.0 0.5 0.5
@@ -17,10 +12,10 @@ function ElementStencil(e::Tri6, degree::I, Itype::Type = Integer, Rtype::Type =
     2 3 1
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ElementStencil{Itype, Rtype, Tri6}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Rtype, Tri6}(degree, points, vertex_points, face_points, interior_nodes)
 end
 
-function shape_function_values(::Tri6, ξ)
+function shape_function_values_int(::Tri6, ξ)
   λ = 1. - ξ[1] - ξ[2]
   N = @SVector [
     λ * (2. * λ - 1.),
@@ -32,7 +27,7 @@ function shape_function_values(::Tri6, ξ)
   ]
 end
 
-function shape_function_gradients(::Tri6, ξ)
+function shape_function_gradients_int(::Tri6, ξ)
   λ = 1. - ξ[1] - ξ[2]
   ∇N_ξ = @SMatrix [
     -1. * (2. * λ - 1.) - 2. * λ       -1. * (2. * λ - 1.) - 2. * λ      ;
@@ -43,5 +38,3 @@ function shape_function_gradients(::Tri6, ξ)
     -4. * ξ[2]                          4. * λ - 4. * ξ[2]               ;  
   ]
 end 
-
-export Tri6

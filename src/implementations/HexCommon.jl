@@ -1,10 +1,11 @@
 """
 """
-abstract type AbstractHex <: AbstractReferenceFE end
+const Hex8 = ReferenceFEType{8, 3}
+const HexUnion = Union{Hex8}
 
 """
 """
-function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: AbstractHex}
+function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: HexUnion}
   ξs, ws = gausslegendre(degree)
   n_q_points = length(ws)^3
   ξ_return = zeros(Rtype, 3, n_q_points)

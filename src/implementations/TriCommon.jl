@@ -1,9 +1,17 @@
-abstract type AbstractTri <: AbstractReferenceFE end
+"""
+"""
+const Tri3 = ReferenceFEType{3, 2}
+"""
+"""
+const Tri6 = ReferenceFEType{6, 2}
+"""
+"""
+const TriUnion = Union{Tri3, Tri6}
 
 """
 Eventually move this to FastQuassQuadrature implementation
 """
-function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: AbstractTri}
+function Quadrature(::E, degree::I, Rtype::Type = Float64) where {I <: Integer, E <: TriUnion}
   if degree == 1
     # this is dumb that I have to do this to minimize allocations
     ξ = Matrix{Rtype}(undef, 2, 1)

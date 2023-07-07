@@ -1,11 +1,6 @@
 """
 """
-struct Tet10 <: AbstractTet
-end
-
-"""
-"""
-function ElementStencil(e::Tet10, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(::Tet10, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   points = [
     0.0 1.0 0.0 0.0 0.5 0.5 0.0 0.0 0.5 0.0
     0.0 0.0 1.0 0.0 0.0 0.5 0.5 0.0 0.0 0.5
@@ -21,10 +16,10 @@ function ElementStencil(e::Tet10, degree::I, Itype::Type = Integer, Rtype::Type 
     8 8  7  5
   ]
   interior_nodes = []
-  return ElementStencil{Itype, Rtype, Tet10}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Rtype, Tet10}(degree, points, vertex_points, face_points, interior_nodes)
 end
 
-function shape_function_values(::Tet10, ξ)
+function shape_function_values_int(::Tet10, ξ)
   λ = 1.0 - ξ[1] - ξ[2] - ξ[3]
   N = @SVector [
     λ * (2.0 * λ - 1.0),
@@ -40,7 +35,7 @@ function shape_function_values(::Tet10, ξ)
   ]
 end
 
-function shape_function_gradients(::Tet10, ξ)
+function shape_function_gradients_int(::Tet10, ξ)
   λ = 1.0 - ξ[1] - ξ[2] - ξ[3]
   ∇N_ξ = @SMatrix [
     -(2.0 * λ - 1.0) - 2.0 * λ -(2.0 * λ - 1.0) - 2.0 * λ  -(2.0 * λ - 1.0) - 2.0 * λ;
@@ -55,5 +50,3 @@ function shape_function_gradients(::Tet10, ξ)
     0.0 4.0 * ξ[3] 4.0 * ξ[2]
   ]
 end
-
-export Tet10

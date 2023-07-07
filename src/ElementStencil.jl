@@ -1,12 +1,18 @@
-struct ElementStencil{IType <: Integer, RType <: Real, RefFE <: AbstractReferenceFE}
-  element_type::RefFE
-  degree::IType
+struct ReferenceFEStencil{IType, RType, RefFE <: ReferenceFEType}
+  degree::Integer
   coordinates::VecOrMat{RType}
   vertex_nodes::Vector{IType}
   face_nodes::Matrix{IType}
   interior_nodes::Vector{IType}
 end
-function Base.show(io::IO, e::E) where {E <: ElementStencil}
+reference_fe_coordinates(e::ReferenceFEStencil) = e.coordinates
+reference_fe_degree(e::ReferenceFEStencil) = e.degree
+reference_fe_face_nodes(e::ReferenceFEStencil) = e.face_nodes
+reference_fe_interior_nodes(e::ReferenceFEStencil) = e.interior_nodes
+reference_fe_type(::ReferenceFEStencil{IType, RType, RefFE}) where {IType, RType, RefFE} = RefFE
+reference_fe_vertex_nodes(e::ReferenceFEStencil) = e.vertex_nodes
+
+function Base.show(io::IO, e::E) where {E <: ReferenceFEStencil}
   str = "ParentElement:\n"
   str = str * "  Coordinates: "
   for coord in eachcol(e.coordinates)
@@ -22,10 +28,3 @@ function Base.show(io::IO, e::E) where {E <: ElementStencil}
   str = str * "  Interior nodes: $(e.interior_nodes)\n" 
   print(io, str)
 end
-
-# @recipe function f(e::E) where E <: ElementStencil
-#   # legend --> "off"
-
-# end
-
-export ElementStencil

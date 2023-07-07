@@ -1,11 +1,6 @@
 """
 """
-struct Quad4 <: AbstractQuad
-end
-
-"""
-"""
-function ElementStencil(e::Quad4, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(::Quad4, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   points = [
     -1.0  1.0 1.0 -1.0;
     -1.0 -1.0 1.0  1.0
@@ -16,10 +11,10 @@ function ElementStencil(e::Quad4, degree::I, Itype::Type = Integer, Rtype::Type 
     2 3 4 1
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ElementStencil{Itype, Rtype, Quad4}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Rtype, Quad4}(degree, points, vertex_points, face_points, interior_nodes)
 end
 
-function shape_function_values(::Quad4, ξ)
+function shape_function_values_int(::Quad4, ξ)
   N = @SVector [
     0.25 * (1.0 - ξ[1]) * (1.0 - ξ[2]),
     0.25 * (1.0 + ξ[1]) * (1.0 - ξ[2]),
@@ -28,7 +23,7 @@ function shape_function_values(::Quad4, ξ)
   ]
 end
 
-function shape_function_gradients(::Quad4, ξ)
+function shape_function_gradients_int(::Quad4, ξ)
   ∇N_ξ = @SMatrix [
     -0.25 * (1.0 - ξ[2]) -0.25 * (1.0 - ξ[1]);
      0.25 * (1.0 - ξ[2]) -0.25 * (1.0 + ξ[1]);
@@ -36,5 +31,3 @@ function shape_function_gradients(::Quad4, ξ)
     -0.25 * (1.0 + ξ[2])  0.25 * (1.0 - ξ[1])
   ]
 end
-
-export Quad4

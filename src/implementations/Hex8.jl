@@ -1,11 +1,6 @@
 """
 """
-struct Hex8 <: AbstractHex
-end
-
-"""
-"""
-function ElementStencil(e::Hex8, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(::Hex8, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   points = [
     -1.0  1.0  1.0 -1.0 -1.0  1.0 1.0 -1.0
     -1.0 -1.0  1.0  1.0 -1.0 -1.0 1.0  1.0
@@ -19,10 +14,10 @@ function ElementStencil(e::Hex8, degree::I, Itype::Type = Integer, Rtype::Type =
     5 6 7 4 2 8
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ElementStencil{Itype, Rtype, Hex8}(e, degree, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Rtype, Hex8}(degree, points, vertex_points, face_points, interior_nodes)
 end
 
-function shape_function_values(::Hex8, ξ)
+function shape_function_values_int(::Hex8, ξ)
   N = @SVector [
     0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]) * (1.0 - ξ[3]),
     0.125 * (1.0 + ξ[1]) * (1.0 - ξ[2]) * (1.0 - ξ[3]),
@@ -35,7 +30,7 @@ function shape_function_values(::Hex8, ξ)
   ]
 end
 
-function shape_function_gradients(::Hex8, ξ)
+function shape_function_gradients_int(::Hex8, ξ)
   ∇N_ξ = @SMatrix [
     -0.125 * (1.0 - ξ[2]) * (1.0 - ξ[3]) -0.125 * (1.0 - ξ[1]) * (1.0 - ξ[3]) -0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]);
      0.125 * (1.0 - ξ[2]) * (1.0 - ξ[3]) -0.125 * (1.0 + ξ[1]) * (1.0 - ξ[3]) -0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]);
@@ -47,5 +42,3 @@ function shape_function_gradients(::Hex8, ξ)
     -0.125 * (1.0 + ξ[2]) * (1.0 + ξ[3])  0.125 * (1.0 - ξ[1]) * (1.0 + ξ[3])  0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]);
   ]
 end
-
-export Hex8
