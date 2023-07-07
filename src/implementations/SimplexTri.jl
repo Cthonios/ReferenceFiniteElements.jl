@@ -38,7 +38,7 @@ function ElementStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rtype::
 
   face_points = hcat(ii, jj, kk)
   interior_nodes = findall(x -> x ∉ face_points, 1:n_points)
-  return ElementStencil{Itype, Rtype}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
+  return ElementStencil{Itype, Rtype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
 end
 
 """

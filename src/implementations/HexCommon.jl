@@ -1,6 +1,6 @@
 """
 """
-abstract type AbstractHex <: ReferenceFE end
+abstract type AbstractHex <: AbstractReferenceFE end
 
 """
 """

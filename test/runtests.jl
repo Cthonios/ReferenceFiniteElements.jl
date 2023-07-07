@@ -114,4 +114,3 @@ function partition_of_unity_tests(el, q_degree)
 end
 
 @includetests ARGS
-

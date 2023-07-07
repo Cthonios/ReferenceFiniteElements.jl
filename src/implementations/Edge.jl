@@ -1,4 +1,4 @@
-struct Edge <: ReferenceFE
+struct Edge <: AbstractReferenceFE
 end
 
 function ElementStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
@@ -9,7 +9,7 @@ function ElementStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type =
   vertex_points = [1, degree]
   face_nodes = Matrix{Integer}(undef, 0, 0)
   interior_points = 2:degree - 1
-  return ElementStencil{Itype, Rtype}(
+  return ElementStencil{Itype, Rtype, Edge}(
     e, degree - 1, Xs, vertex_points, face_nodes, interior_points
   )
 end
