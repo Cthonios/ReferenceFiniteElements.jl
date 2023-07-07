@@ -1,8 +1,12 @@
-abstract type AbstractTet <: AbstractReferenceFE end
+"""
+"""
+const Tet4 = ReferenceFEType{4, 3}
+const Tet10 = ReferenceFEType{10, 3}
+const TetUnion = Union{Tet4, Tet10}
 
 """
 """
-function Quadrature(::E, degree::I, Rtype::Type = Float64) where {E <: AbstractTet, I <: Integer}
+function Quadrature(::E, degree::I, Rtype::Type = Float64) where {E <: TetUnion, I <: Integer}
   if degree == 1
     ξ = Matrix{Rtype}(undef, 3, 1)
     ξ[1, 1] = 1. / 4.

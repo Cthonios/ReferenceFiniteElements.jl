@@ -1,27 +1,38 @@
-struct ShapeFunctionPair{N, D, Rtype <: Real}
-  N::SVector{N, Rtype}
-  ∇N_ξ::SMatrix{N, D, Rtype}
+"""
+"""
+struct ShapeFunctions{N, D, T}
+  Ns::Vector{SVector{N, T}}
+  ∇N_ξs::Vector{SMatrix{N, D, T}}
 end
+"""
+"""
+shape_function_values(s::ShapeFunctions) = getfield(s, :Ns)
+"""
+"""
+shape_function_gradient(s::ShapeFunctions, i::Integer) = getfield(s, :∇N_ξs)[i]
+"""
+"""
+shape_function_gradients(s::ShapeFunctions) = getfield(s, :∇N_ξs)
 
-function ShapeFunctions end
-
+"""
+"""
 function ShapeFunctions(
-  e::E, 
+  e::ReferenceFEType{N, D}, 
   q_rule::Quadrature{Rtype}
-) where {E <: AbstractReferenceFE, Rtype <: Real}
-  Ns = shape_function_values.((e,), eachcol(q_rule.ξs))
-  ∇N_ξs = shape_function_gradients.((e,), eachcol(q_rule.ξs))
-  n_nodes, n_dims = size(∇N_ξs[1])
-  return StructArray{ShapeFunctionPair{n_nodes, n_dims, Rtype}}((Ns, ∇N_ξs))
+) where {N, D, Rtype <: Real}
+
+  Ns = Vector{SVector{N, Rtype}}(undef, num_q_points(q_rule))
+  ∇N_ξs = Vector{SMatrix{N, D, Rtype}}(undef, num_q_points(q_rule))
+  for (n, ξ) in enumerate(eachcol(quadrature_points(q_rule)))
+    Ns[n] = shape_function_values_int(e, ξ)
+    ∇N_ξs[n] = shape_function_gradients_int(e, ξ)
+  end
+  return ShapeFunctions{N, D, Rtype}(Ns, ∇N_ξs)
 end
 
-function ShapeFunctions(e::E, degree::Int) where {E <: AbstractReferenceFE}
+function ShapeFunctions(e::E, degree::Int) where {E <: ReferenceFEType}
   return ShapeFunctions(
     e, 
-    # ElementStencil(e, degree),
     Quadrature(e, degree)
   )
 end
-
-export ShapeFunctions # this is really a method defined elsewhere
-export ShapeFunctionPair

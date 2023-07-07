@@ -2,10 +2,10 @@ end_points = [0., 1.]
 max_degree_1d = 25
 max_degree = 6
 
-@testset ExtendedTestSet "ElementStencils.jl - Edge implementation" begin
+@testset ExtendedTestSet "ReferenceFEStencils.jl - Edge implementation" begin
   @testset "Test 1D interpolant points in element" begin
     for degree in 1:max_degree
-      e = ElementStencil(Edge(), degree)
+      e = ReferenceFEStencil(Edge(), degree)
       @test e.degree == degree
       @test all(X -> X >= 0. && X <= 1., e.coordinates)
     end
@@ -13,7 +13,7 @@ max_degree = 6
 
   @testset "Test 1D element topological nodesets" begin
     for degree in 1:max_degree
-      e = ElementStencil(Edge(), degree)
+      e = ReferenceFEStencil(Edge(), degree)
       @test e.coordinates[e.vertex_nodes[1]] ≈ 0.
       @test e.coordinates[e.vertex_nodes[2]] ≈ 1.
 

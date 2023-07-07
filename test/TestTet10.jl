@@ -1,7 +1,7 @@
-@testset ExtendedTestSet "ElementStencils.jl - Tet10 implementation" begin
+@testset ExtendedTestSet "ReferenceFEStencils.jl - Tet10 implementation" begin
   @testset "Test Tet10 element interpolant points in element" begin
     for q_degree in [1, 2]
-      e = ElementStencil(Tet10(), q_degree)
+      e = ReferenceFEStencil(Tet10(), q_degree)
 
       @test e.coordinates[:, e.vertex_nodes[1]] ≈ [0., 0., 0.]
       @test e.coordinates[:, e.vertex_nodes[2]] ≈ [1., 0., 0.]

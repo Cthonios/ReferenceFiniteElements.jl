@@ -2,7 +2,6 @@ using Aqua
 using Distributions
 using LinearAlgebra
 using ReferenceFiniteElements
-using StructArrays
 using Test
 using TestSetExtensions
 
@@ -86,15 +85,15 @@ function dpolyval2d(x::T, y::T, C::Matrix{T}, direction::Int) where T
   val
 end
 
-function partition_of_unity_shape_function_values_test(el, q_degree)
+function partition_of_unity_shape_function_values_int_test(el, q_degree)
   shape_functions = ShapeFunctions(el, q_degree)
-  sums = map(N -> sum(N), shape_functions.N)
+  sums = map(N -> sum(N), shape_functions.Ns)
   @test sums ≈ ones(Float64, size(sums))
 end
 
-function partition_of_unity_shape_function_gradients_test(el, q_degree)
+function partition_of_unity_shape_function_gradients_int_test(el, q_degree)
   shape_functions = ShapeFunctions(el, q_degree)
-  sums = map(∇N -> sum(∇N, dims=1), shape_functions.∇N_ξ)
+  sums = map(∇N -> sum(∇N, dims=1), shape_functions.∇N_ξs)
   for ∇N in sums
     for i in size(∇N, 1)
       # @show ∇N[i]
@@ -104,15 +103,15 @@ function partition_of_unity_shape_function_gradients_test(el, q_degree)
 end
 
 function kronecker_delta_property(el, q_degree)
-  e = ElementStencil(el, q_degree)
-  Ns = ReferenceFiniteElements.shape_function_values.((el,), eachcol(e.coordinates))
+  e = ReferenceFEStencil(el, q_degree)
+  Ns = ReferenceFiniteElements.shape_function_values_int.((el,), eachcol(e.coordinates))
   Ns = mapreduce(permutedims, vcat, Ns)
   @test Ns ≈ I
 end
 
 function partition_of_unity_tests(el, q_degree)
-  partition_of_unity_shape_function_values_test(el, q_degree)
-  partition_of_unity_shape_function_gradients_test(el, q_degree)
+  partition_of_unity_shape_function_values_int_test(el, q_degree)
+  partition_of_unity_shape_function_gradients_int_test(el, q_degree)
 end
 
 @includetests ARGS

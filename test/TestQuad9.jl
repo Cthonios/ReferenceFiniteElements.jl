@@ -1,7 +1,7 @@
-@testset ExtendedTestSet "ElementStencils.jl - Quad9 implementation" begin
+@testset ExtendedTestSet "ReferenceFEStencils.jl - Quad9 implementation" begin
   @testset "Test Quad9 element interpolant points in element" begin
     for q_degree in [1, 2, 3, 4, 5, 6]
-      e = ElementStencil(Quad9(), q_degree)
+      e = ReferenceFEStencil(Quad9(), q_degree)
 
       @test e.coordinates[:, e.vertex_nodes[1]] ≈ [-1.0, -1.0]
       @test e.coordinates[:, e.vertex_nodes[2]] ≈ [1.0, -1.0]

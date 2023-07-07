@@ -1,7 +1,9 @@
-struct Edge <: AbstractReferenceFE
-end
+"""
+TODO fix the 1 below
+"""
+const Edge = ReferenceFEType{1, 1} where N
 
-function ElementStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
   degree = degree + 1
   Xs, _ = gausslobatto(degree)
   # to be consistent with optimism
@@ -9,8 +11,8 @@ function ElementStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type =
   vertex_points = [1, degree]
   face_nodes = Matrix{Integer}(undef, 0, 0)
   interior_points = 2:degree - 1
-  return ElementStencil{Itype, Rtype, Edge}(
-    e, degree - 1, Xs, vertex_points, face_nodes, interior_points
+  return ReferenceFEStencil{Itype, Rtype, Edge}(
+    degree - 1, Xs, vertex_points, face_nodes, interior_points
   )
 end
 
@@ -22,6 +24,3 @@ function Quadrature(::Edge, degree::I, Rtype::Type = Float64) where I <: Integer
   w = 0.5 * w
   return Quadrature{Rtype}(ξ, w)
 end
-
-
-export Edge
