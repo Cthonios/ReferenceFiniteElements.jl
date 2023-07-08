@@ -1,20 +1,19 @@
 """
 """
-function ReferenceFEStencil(::Quad4, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
-  points = [
+function element_stencil(::Quad4, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+  nodal_coordinates = Ftype[
     -1.0  1.0 1.0 -1.0;
     -1.0 -1.0 1.0  1.0
   ]
-  vertex_points = [1, 2, 3, 4]
-  face_points = [
+  face_nodes = Itype[
     1 2 3 4
     2 3 4 1
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ReferenceFEStencil{Itype, Rtype, Quad4}(degree, points, vertex_points, face_points, interior_nodes)
+  return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values_int(::Quad4, ξ)
+function shape_function_values(::Quad4, ξ::T) where T <: AbstractArray
   N = @SVector [
     0.25 * (1.0 - ξ[1]) * (1.0 - ξ[2]),
     0.25 * (1.0 + ξ[1]) * (1.0 - ξ[2]),
@@ -23,11 +22,15 @@ function shape_function_values_int(::Quad4, ξ)
   ]
 end
 
-function shape_function_gradients_int(::Quad4, ξ)
+function shape_function_gradients(::Quad4, ξ::T) where T <: AbstractArray
   ∇N_ξ = @SMatrix [
     -0.25 * (1.0 - ξ[2]) -0.25 * (1.0 - ξ[1]);
      0.25 * (1.0 - ξ[2]) -0.25 * (1.0 + ξ[1]);
      0.25 * (1.0 + ξ[2])  0.25 * (1.0 + ξ[1]);
     -0.25 * (1.0 + ξ[2])  0.25 * (1.0 - ξ[1])
   ]
+  # ∇N_ξ = @SMatrix [
+  #   -0.25 * (1.0 - ξ[2])  0.25 * (1.0 - ξ[2]) 0.25 * (1.0 + ξ[2]) -0.25 * (1.0 + ξ[2]);
+  #   -0.25 * (1.0 - ξ[1]) -0.25 * (1.0 + ξ[1]) 0.25 * (1.0 + ξ[1])  0.25 * (1.0 - ξ[1])
+  # ]
 end

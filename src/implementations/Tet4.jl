@@ -1,22 +1,57 @@
 """
 """
-function ReferenceFEStencil(::Tet4, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
-  points = [
-    0.0 1.0 0.0 0.0
-    0.0 0.0 1.0 0.0
-    0.0 0.0 0.0 1.0
-  ]
-  vertex_points = [1, 2, 3, 4]
-  face_points = [
-    1 2 1 1
-    2 3 4 3
-    4 4 3 2
-  ]
+function element_stencil(::Tet4, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+  # first one stupidly causes an allocation
+  # nodal_coordinates = Ftype[
+  #   0.0 1.0 0.0 0.0
+  #   0.0 0.0 1.0 0.0
+  #   0.0 0.0 0.0 1.0
+  # ]
+  nodal_coordinates = Matrix{Ftype}(undef, 3, 4)
+  nodal_coordinates[1, 1] = 0.0
+  nodal_coordinates[2, 1] = 0.0
+  nodal_coordinates[3, 1] = 0.0
+  #
+  nodal_coordinates[1, 2] = 1.0
+  nodal_coordinates[2, 2] = 0.0
+  nodal_coordinates[3, 2] = 0.0
+  #
+  nodal_coordinates[1, 3] = 0.0
+  nodal_coordinates[2, 3] = 1.0
+  nodal_coordinates[3, 3] = 0.0
+  #
+  nodal_coordinates[1, 4] = 0.0
+  nodal_coordinates[2, 4] = 0.0
+  nodal_coordinates[3, 4] = 1.0
+  #
+  # first one stupidly causes an allocation
+  # face_nodes = Itype[
+  #   1 2 1 1
+  #   2 3 4 3
+  #   4 4 3 2
+  # ]
+  face_nodes = Matrix{Itype}(undef, 3, 4)
+  face_nodes[1, 1] = 1
+  face_nodes[2, 1] = 2
+  face_nodes[3, 1] = 4
+  #
+  face_nodes[1, 2] = 2
+  face_nodes[2, 2] = 3
+  face_nodes[3, 2] = 4
+  #
+  face_nodes[1, 3] = 1
+  face_nodes[2, 3] = 4
+  face_nodes[3, 3] = 3
+  #
+  face_nodes[1, 4] = 1
+  face_nodes[2, 4] = 3
+  face_nodes[3, 4] = 2
+  #
   interior_nodes = Vector{Itype}(undef, 0)
-  return ReferenceFEStencil{Itype, Rtype, Tet4}(degree, points, vertex_points, face_points, interior_nodes)
+  return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values_int(::Tet4, ξ)
+function shape_function_values(::Tet4, ξ::T) where T <: AbstractArray
   N = @SVector [
     1. - ξ[1] - ξ[2] - ξ[3],
     ξ[1],
@@ -25,7 +60,7 @@ function shape_function_values_int(::Tet4, ξ)
   ]
 end
 
-function shape_function_gradients_int(::Tet4, ξ)
+function shape_function_gradients(::Tet4, ξ::T) where T <: AbstractArray
   ∇N_ξ = @SMatrix [
     -1.0 1.0 0.0 0.0
     -1.0 0.0 1.0 0.0

@@ -1,26 +1,23 @@
 """
-TODO fix the 1 below
+TODO fix the 1 below and make multiple edge types maybe?
 """
 const Edge = ReferenceFEType{1, 1} where N
 
-function ReferenceFEStencil(e::Edge, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function element_stencil(::Edge, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
   degree = degree + 1
-  Xs, _ = gausslobatto(degree)
+  nodal_coordinates, _ = gausslobatto(degree)
   # to be consistent with optimism
-  Xs .= (1. .+ Xs) ./ 2.
-  vertex_points = [1, degree]
+  nodal_coordinates .= (1. .+ nodal_coordinates) ./ 2.
   face_nodes = Matrix{Integer}(undef, 0, 0)
-  interior_points = 2:degree - 1
-  return ReferenceFEStencil{Itype, Rtype, Edge}(
-    degree - 1, Xs, vertex_points, face_nodes, interior_points
-  )
+  interior_nodes = 2:degree - 1
+  return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function Quadrature(::Edge, degree::I, Rtype::Type = Float64) where I <: Integer
-  ξ, w = gausslegendre(degree)
+function quadrature_points_and_weights(::Edge, degree::I, ::Type{Ftype} = Float64) where {I <: Integer, Ftype <: AbstractFloat}
+  ξs, ws = gausslegendre(degree)
   
   # to make things consistent with optimism
-  ξ = (ξ .+ 1.) / 2.
-  w = 0.5 * w
-  return Quadrature{Rtype}(ξ, w)
+  ξs .= (ξs .+ 1.) ./ 2.
+  ws .= 0.5 .* ws
+  return ξs, ws
 end

@@ -1,24 +1,20 @@
 @testset ExtendedTestSet "ReferenceFEStencils.jl - Quad9 implementation" begin
-  @testset "Test Quad9 element interpolant points in element" begin
-    for q_degree in [1, 2, 3, 4, 5, 6]
-      e = ReferenceFEStencil(Quad9(), q_degree)
-
-      @test e.coordinates[:, e.vertex_nodes[1]] ≈ [-1.0, -1.0]
-      @test e.coordinates[:, e.vertex_nodes[2]] ≈ [1.0, -1.0]
-      @test e.coordinates[:, e.vertex_nodes[3]] ≈ [1.0, 1.0]
-      @test e.coordinates[:, e.vertex_nodes[4]] ≈ [-1.0, 1.0]
-    end
-  end  
-
-  @testset "Test Quad9 element shape function partition of unity" begin
-    for q_degree in [1, 2, 3, 4, 5, 6]
-      partition_of_unity_tests(Quad9(), q_degree)
-    end 
-  end
-
-  @testset "Test Quad9 element Kronecker delta property" begin
-    for q_degree in [1, 2, 3, 4, 5, 6]
-      kronecker_delta_property(Quad9(), q_degree)
+  for int_type in [Int32, Int64]
+    for float_type in [Float32, Float64]
+      e = ReferenceFE(Quad9(), 1, int_type, float_type) # q_degree doesn't matter for this test
+      v_nodes = vertex_nodes(e)
+      @test e.nodal_coordinates[:, v_nodes[1]] ≈ [-1.0, -1.0]
+      @test e.nodal_coordinates[:, v_nodes[2]] ≈ [1.0, -1.0]
+      @test e.nodal_coordinates[:, v_nodes[3]] ≈ [1.0, 1.0]
+      @test e.nodal_coordinates[:, v_nodes[4]] ≈ [-1.0, 1.0]
+      @test e.nodal_coordinates[:, v_nodes[5]] ≈ [0.0, -1.0]
+      @test e.nodal_coordinates[:, v_nodes[6]] ≈ [1.0, 0.0]
+      @test e.nodal_coordinates[:, v_nodes[7]] ≈ [0.0, 1.0]
+      @test e.nodal_coordinates[:, v_nodes[8]] ≈ [-1.0, 0.0]
+      @test e.nodal_coordinates[:, v_nodes[9]] ≈ [0.0, 0.0]
     end
   end
-end
+end  
+
+common_test_sets(Quad9(), [1, 2, 3, 4, 5, 6], [Int32, Int64], [Float32, Float64])
+
