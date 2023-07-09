@@ -1,32 +1,39 @@
 """
 """
-function ReferenceFEStencil(::Tri3, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
-  points::Matrix{Rtype} = [
+function element_stencil(::Tri3, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+  nodal_coordinates = Ftype[
     0.0 1.0 0.0;
     0.0 0.0 1.0
   ]
-  vertex_points::Vector{Itype} = [1, 2, 3]
-  face_points::Matrix{Itype} = [
+  face_nodes = Itype[
     1 2 3
     2 3 1
   ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return ReferenceFEStencil{Itype, Rtype, Tri3}(degree, points, vertex_points, face_points, interior_nodes)
+  return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values_int(::Tri3, ξ)
-  N = @SVector [
+function shape_function_values(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
+  # N = @SVector [
+  #   1. - ξ[1] - ξ[2],
+  #   ξ[1],
+  #   ξ[2]
+  # ]
+  N = SVector{3, Ftype}(
     1. - ξ[1] - ξ[2],
     ξ[1],
     ξ[2]
-  ]
-  # N = MVector{3, Float64}(1. - ξ[1] - ξ[2], ξ[1], ξ[2])
+  )
 end
 
-function shape_function_gradients_int(::Tri3, ξ)
-  ∇N_ξ = @SMatrix [
-    -1. -1.;
-     1.  0.;
-     0.  1.
-  ]
+function shape_function_gradients(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
+  # ∇N_ξ = @SMatrix [
+  #   -1. -1.;
+  #    1.  0.;
+  #    0.  1.
+  # ]
+  ∇N_ξ = SMatrix{3, 2, Ftype, 6}(
+    -1., 1., 0.,
+    -1., 0., 1.
+  )
 end
