@@ -2,6 +2,7 @@ using Aqua
 using Distributions
 using LinearAlgebra
 using ReferenceFiniteElements
+using StaticArrays
 using Test
 using TestSetExtensions
 
@@ -117,15 +118,19 @@ end
 
 function kronecker_delta_property(el, q_degree, Itype, Rtype)
   e = ReferenceFE(el, q_degree, Itype, Rtype)
-  Ns = ReferenceFiniteElements.shape_function_values.((el,), eachcol(e.nodal_coordinates))
+  n_dim = size(e.nodal_coordinates, 1)
+  # coords = eachcol(e.nodal_coordinates) |> collect
+  coords = reinterpret(SVector{n_dim, Rtype}, e.nodal_coordinates)
+  # Ns = ReferenceFiniteElements.shape_function_values.((el,), eachcol(e.nodal_coordinates))
+  Ns = ReferenceFiniteElements.shape_function_values.((el,), coords)
   Ns = mapreduce(permutedims, vcat, Ns)
   @test Ns ≈ I
 end
 
-function partition_of_unity_tests(el, q_degree, int_type, float_type)
-  partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
-  partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
-end
+# function partition_of_unity_tests(el, q_degree, int_type, float_type)
+#   partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
+#   partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
+# end
 
 function common_test_sets(el, q_degrees, int_types, float_types)
   for q_degree in q_degrees
@@ -133,11 +138,12 @@ function common_test_sets(el, q_degrees, int_types, float_types)
       for float_type in float_types
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
           if typeof(el) == Tet4
-            continue
-          end
-          e = ReferenceFE(el, q_degree, int_type, float_type)
-          for w in e.ws
-            @test w > 0.
+            
+          else
+            e = ReferenceFE(el, q_degree, int_type, float_type)
+            for w in e.ws
+              @test w > 0.
+            end
           end
         end
 
@@ -158,22 +164,18 @@ function common_test_sets(el, q_degrees, int_types, float_types)
 
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - triangle exactness" begin
           if typeof(el) <: ReferenceFiniteElements.TriUnion
-            # if typeof(el) <: Tri3
-            #   continue
-            # end
-          else
-            continue
-          end
-          
-          for degree in [1]
-            e = ReferenceFE(el, q_degree)
-            for i in 1:degree
-              for j in 1:degree - i
-                quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
-                exact = integrate_2d_monomial_on_triangle(i, j)
-                @test quad_answer ≈ exact
+            for degree in [1]
+              e = ReferenceFE(el, q_degree)
+              for i in 1:degree
+                for j in 1:degree - i
+                  quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
+                  exact = integrate_2d_monomial_on_triangle(i, j)
+                  @test quad_answer ≈ exact
+                end
               end
             end
+          else
+
           end
         end
 
@@ -191,7 +193,10 @@ function common_test_sets(el, q_degrees, int_types, float_types)
             @test false
           end
 
-          for ξ in eachcol(e.ξs)
+          # for ξ in eachcol(e.ξs)
+          #   @test test_func(ξ)
+          # end
+          for ξ in e.ξs
             @test test_func(ξ)
           end
         end

@@ -27,26 +27,30 @@ function element_stencil(::Tri6, degree::I, ::Type{Itype}, ::Type{Ftype}) where 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values(::Tri6, ξ::T) where T <: AbstractArray
+function shape_function_values(::Tri6, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
   λ = 1. - ξ[1] - ξ[2]
-  N = @SVector [
+  N = SVector{6, Ftype}(
     λ * (2. * λ - 1.),
     ξ[1] * (2. * ξ[1] - 1.),
     ξ[2] * (2. * ξ[2] - 1.),
     4. * ξ[1] * λ,
     4. * ξ[1] * ξ[2],
     4. * ξ[2] * λ
-  ]
+  )
 end
 
-function shape_function_gradients(::Tri6, ξ::T) where T <: AbstractArray
+function shape_function_gradients(::Tri6, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
   λ = 1. - ξ[1] - ξ[2]
-  ∇N_ξ = @SMatrix [
-    -1. * (2. * λ - 1.) - 2. * λ       -1. * (2. * λ - 1.) - 2. * λ      ;
-     (2. * ξ[1] - 1.) + 2. * ξ[1]       0.0                              ;
-     0.0                                (2. * ξ[2] - 1.) + 2. * ξ[2]     ;
-     4. * λ - 4. * ξ[1]                -4. * ξ[1]                        ;
-     4. * ξ[2]                          4. * ξ[1]                        ;
-    -4. * ξ[2]                          4. * λ - 4. * ξ[2]               ;  
-  ]
+  # ∇N_ξ = @SMatrix [
+  #   -1. * (2. * λ - 1.) - 2. * λ       -1. * (2. * λ - 1.) - 2. * λ      ;
+  #    (2. * ξ[1] - 1.) + 2. * ξ[1]       0.0                              ;
+  #    0.0                                (2. * ξ[2] - 1.) + 2. * ξ[2]     ;
+  #    4. * λ - 4. * ξ[1]                -4. * ξ[1]                        ;
+  #    4. * ξ[2]                          4. * ξ[1]                        ;
+  #   -4. * ξ[2]                          4. * λ - 4. * ξ[2]               ;  
+  # ]
+  ∇N_ξ = SMatrix{6, 2, Ftype, 12}(
+    -1. * (2. * λ - 1.) - 2. * λ, (2. * ξ[1] - 1.) + 2. * ξ[1], 0.0, 4. * λ - 4. * ξ[1], 4. * ξ[2], -4. * ξ[2],
+    -1. * (2. * λ - 1.) - 2. * λ, 0.0, (2. * ξ[2] - 1.) + 2. * ξ[2], -4. * ξ[1], 4. * ξ[1], 4. * λ - 4. * ξ[2]
+  )
 end 

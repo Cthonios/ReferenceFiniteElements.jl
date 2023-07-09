@@ -13,18 +13,27 @@ function element_stencil(::Tri3, degree::I, ::Type{Itype}, ::Type{Ftype}) where 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values(::Tri3, ξ::T) where T <: AbstractArray
-  N = @SVector [
+function shape_function_values(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
+  # N = @SVector [
+  #   1. - ξ[1] - ξ[2],
+  #   ξ[1],
+  #   ξ[2]
+  # ]
+  N = SVector{3, Ftype}(
     1. - ξ[1] - ξ[2],
     ξ[1],
     ξ[2]
-  ]
+  )
 end
 
-function shape_function_gradients(::Tri3, ξ::T) where T <: AbstractArray
-  ∇N_ξ = @SMatrix [
-    -1. -1.;
-     1.  0.;
-     0.  1.
-  ]
+function shape_function_gradients(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
+  # ∇N_ξ = @SMatrix [
+  #   -1. -1.;
+  #    1.  0.;
+  #    0.  1.
+  # ]
+  ∇N_ξ = SMatrix{3, 2, Ftype, 6}(
+    -1., 1., 0.,
+    -1., 0., 1.
+  )
 end

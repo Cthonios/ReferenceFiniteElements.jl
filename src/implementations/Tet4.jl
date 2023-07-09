@@ -51,19 +51,25 @@ function element_stencil(::Tet4, degree::I, ::Type{Itype}, ::Type{Ftype}) where 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-function shape_function_values(::Tet4, ξ::T) where T <: AbstractArray
-  N = @SVector [
+function shape_function_values(::Tet4, ξ::SVector{3, Ftype}) where Ftype <: AbstractFloat
+  N = SVector{4, Ftype}(
     1. - ξ[1] - ξ[2] - ξ[3],
     ξ[1],
     ξ[2],
     ξ[3]
-  ]
+  )
 end
 
-function shape_function_gradients(::Tet4, ξ::T) where T <: AbstractArray
-  ∇N_ξ = @SMatrix [
-    -1.0 1.0 0.0 0.0
-    -1.0 0.0 1.0 0.0
-    -1.0 0.0 0.0 1.0
-  ]
+function shape_function_gradients(::Tet4, ξ::SVector{3, Ftype}) where Ftype <: AbstractFloat
+  # ∇N_ξ = @SMatrix [
+  #   -1.0 1.0 0.0 0.0
+  #   -1.0 0.0 1.0 0.0
+  #   -1.0 0.0 0.0 1.0
+  # ]
+  ∇N_ξ = SMatrix{4, 3, Ftype, 12}(
+    -1.0, -1.0, -1.0,
+     1.0,  0.0,  0.0,
+     0.0,  1.0,  0.0,
+     0.0,  0.0,  1.0
+  )
 end

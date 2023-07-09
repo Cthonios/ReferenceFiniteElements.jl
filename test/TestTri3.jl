@@ -55,6 +55,8 @@ end
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
       x = generate_random_points_in_triangle(1)
+      x = reinterpret(SVector{2, float_type}, vec(x))
+      x = x[1]
       q_degree = 1
       poly_coeffs = UpperTriangular(ones(float_type, q_degree + 1, q_degree + 1))
       poly_coeffs = map(x -> reverse(x), eachrow(poly_coeffs))
@@ -64,7 +66,11 @@ end
       Ns = ReferenceFiniteElements.shape_function_values(Tri3(), x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
       finterpolated = dot(Ns, fn)
-      @test finterpolated ≈ expected
+      if float_type == Float32
+        @test finterpolated ≈ expected atol=1e-7 rtol=1e-7
+      elseif float_type == Float64
+        @test finterpolated ≈ expected
+      end
     end
   end
 end
@@ -82,6 +88,8 @@ end
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
       x = generate_random_points_in_triangle(1)
+      x = reinterpret(SVector{2, float_type}, vec(x))
+      x = x[1]
       q_degree = 1
       poly_coeffs = UpperTriangular(ones(float_type, q_degree + 1, q_degree + 1))
       poly_coeffs = map(x -> reverse(x), eachrow(poly_coeffs))
@@ -96,8 +104,13 @@ end
       temp_x = dot(∇N_ξ[:, 1], fn)
       temp_y = dot(∇N_ξ[:, 2], fn)
 
-      @test temp_x ≈ expected_dx
-      @test temp_y ≈ expected_dy
+      if float_type == Float32
+        @test temp_x ≈ expected_dx atol=1e-7 rtol=1e-7
+        @test temp_y ≈ expected_dy atol=1e-7 rtol=1e-7
+      elseif float_type == Float64
+        @test temp_x ≈ expected_dx
+        @test temp_y ≈ expected_dy
+      end
     end
   end
 end
