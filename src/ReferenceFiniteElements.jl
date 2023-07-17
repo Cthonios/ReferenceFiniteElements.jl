@@ -31,8 +31,11 @@ using StaticArrays
 using StructArrays
 
 # type used to exploit multiple dispatch
-struct ReferenceFEType{N, D}
-end
+# struct ReferenceFEType{N, D}
+#   degree::Int64
+# end
+abstract type ReferenceFEType{N, D} end
+degree(e::ReferenceFEType) = e.degree
 num_nodes(::ReferenceFEType{N, D}) where {N, D} = N
 num_dimensions(::ReferenceFEType{N, D}) where {N, D} = D
 
@@ -45,11 +48,10 @@ struct Interpolants{N, D, Ftype, L}
 end
 
 function Interpolants(
-  e::ReferenceFEType{N, D}, degree::Integer,
-  ::Type{Ftype} = Float64
+  e::ReferenceFEType{N, D}, ::Type{Ftype} = Float64
 ) where {N, D, Ftype}
 
-  ξs_temp, ws = quadrature_points_and_weights(e, degree, Ftype)
+  ξs_temp, ws = quadrature_points_and_weights(e, Ftype)
   ξs = reinterpret(SVector{D, Ftype}, vec(ξs_temp))
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
@@ -73,21 +75,23 @@ struct ReferenceFE{Itype, N, D, Ftype, L}
   interpolants::StructVector{
     Interpolants{N, D, Ftype, L}, 
     NamedTuple{(:ξ, :w, :N, :∇N_ξ), 
-    Tuple{Vector{SVector{D, Ftype}}, 
-    Vector{Ftype}, 
-    Vector{SVector{N, Ftype}}, 
-    Vector{SMatrix{N, D, Ftype, L}}}}, 
+    Tuple{
+      Vector{SVector{D, Ftype}}, 
+      Vector{Ftype}, 
+      Vector{SVector{N, Ftype}}, 
+      Vector{SMatrix{N, D, Ftype, L}}}
+    }, 
     Int64
   }
 end
 
 function ReferenceFE(
-  e::ReferenceFEType{N, D}, degree::Integer,
+  e::ReferenceFEType{N, D},
   ::Type{Itype} = Int64, ::Type{Ftype} = Float64
 ) where {N, D, Itype, Ftype}
 
-  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, degree, Itype, Ftype)
-  interps = Interpolants(e, degree, Ftype)
+  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, Itype, Ftype)
+  interps = Interpolants(e, Ftype)
 
   return ReferenceFE{Itype, N, D, Ftype, N * D}(
     nodal_coordinates, face_nodes, interior_nodes,
@@ -117,7 +121,7 @@ include("implementations/Hex8.jl")
 include("implementations/Quad4.jl")
 include("implementations/Quad9.jl")
 include("implementations/Tet4.jl")
-# include("implementations/Tet10.jl")
+# # include("implementations/Tet10.jl")
 include("implementations/Tri3.jl")
 include("implementations/Tri6.jl")
 
@@ -126,11 +130,14 @@ include("implementations/Tri6.jl")
 # precompilation
 @setup_workload begin
   @compile_workload begin
-    # methods to precompile for all elements
-    for el_type in subtypes(ReferenceFEType)
-      for degree in [1, 2]
-        ReferenceFE(el_type(), degree)
-      end
+    for degree in [1, 2]
+      ReferenceFE(Hex8(degree))
+      ReferenceFE(Quad4(degree))
+      ReferenceFE(Quad9(degree))
+      ReferenceFE(Tet4(degree))
+      # ReferenceFE(Tet10(degree))
+      ReferenceFE(Tri3(degree))
+      ReferenceFE(Tri6(degree))
     end
   end
 end

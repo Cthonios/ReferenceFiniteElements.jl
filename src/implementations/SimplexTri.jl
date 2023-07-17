@@ -1,11 +1,11 @@
 """
 """
-struct SimplexTri <: TriUnion
+struct SimplexTri <: AbstractTri
 end
 
 """
 """
-function ReferenceFEStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rtype::Type = Float64) where I <: Integer
+function ReferenceFEStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Ftype::Type = Float64) where I <: Integer
   n_points = (degree + 1) * (degree + 2) / 2 |> Integer
   
   # to be consistent with optimism
@@ -38,26 +38,26 @@ function ReferenceFEStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Rty
 
   face_points = hcat(ii, jj, kk)
   interior_nodes = findall(x -> x ∉ face_points, 1:n_points)
-  return ReferenceFEStencil{Itype, Rtype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
+  return ReferenceFEStencil{Itype, Ftype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
 end
 
 """
 """
 function ShapeFunctions(
   ::SimplexTri, 
-  stencil::ReferenceFEStencil{Itype, Rtype}, 
-  q_rule::Quadrature{Rtype}
-) where {Itype <: Integer, Rtype <: Real}
+  stencil::ReferenceFEStencil{Itype, Ftype}, 
+  q_rule::Quadrature{Ftype}
+) where {Itype <: Integer, Ftype <: Real}
 
   n_nodes = (stencil.degree + 1) * (stencil.degree + 2) ÷ 2
 
-  A  = zeros(Rtype, n_nodes, size(stencil.coordinates, 2))
-  Ax = zeros(Rtype, n_nodes, size(stencil.coordinates, 2))
-  Ay = zeros(Rtype, n_nodes, size(stencil.coordinates, 2))
+  A  = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
+  Ax = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
+  Ay = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
 
-  nf  = zeros(Rtype, n_nodes, size(q_rule.ξs, 2))
-  nfx = zeros(Rtype, n_nodes, size(q_rule.ξs, 2))
-  nfy = zeros(Rtype, n_nodes, size(q_rule.ξs, 2))
+  nf  = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
+  nfx = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
+  nfy = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
 
   vander2d!(A, Ax, Ay, stencil.coordinates, stencil.degree)
   vander2d!(nf, nfx, nfy, q_rule.ξs, stencil.degree)
@@ -66,15 +66,15 @@ function ShapeFunctions(
   dshapes_x = A \ nfx
   dshapes_y = A \ nfy
 
-  ∇N_ξs = Array{Rtype, 3}(undef, size(Ns, 1), 2, size(Ns, 2))
+  ∇N_ξs = Array{Ftype, 3}(undef, size(Ns, 1), 2, size(Ns, 2))
   ∇N_ξs[:, 1, :] .= dshapes_x
   ∇N_ξs[:, 2, :] .= dshapes_y
 
   # convert to static arrays
-  Ns    = SVector{n_nodes, Rtype}.(eachcol(Ns))
-  ∇N_ξs = SMatrix{n_nodes, 2, Rtype}.(eachslice(∇N_ξs, dims=3))
+  Ns    = SVector{n_nodes, Ftype}.(eachcol(Ns))
+  ∇N_ξs = SMatrix{n_nodes, 2, Ftype}.(eachslice(∇N_ξs, dims=3))
 
-  return StructArray{ShapeFunctionPair{n_nodes, 2, Rtype}}((Ns, ∇N_ξs))
+  return StructArray{ShapeFunctionPair{n_nodes, 2, Ftype}}((Ns, ∇N_ξs))
 end
 
 # internals
@@ -129,9 +129,9 @@ function map_from_tri_to_square(ξs_in::Matrix{T}) where T <: Real
 end
 
 function vander2d!(
-  A::Matrix{Rtype}, Ax::Matrix{Rtype}, Ay::Matrix{Rtype},
-  Xs::Matrix{Rtype}, degree::Itype
-) where {Itype <: Integer, Rtype <: Real}
+  A::Matrix{Ftype}, Ax::Matrix{Ftype}, Ay::Matrix{Ftype},
+  Xs::Matrix{Ftype}, degree::Itype
+) where {Itype <: Integer, Ftype <: Real}
   n_nodes = (degree + 1) * (degree + 2) ÷ 2
 
   pq = pascal_triangle_monomials(degree)
@@ -146,7 +146,7 @@ function vander2d!(
   N1D = Polynomial([0.5, -0.5])
   for i in 1:n_nodes
     p = basis(Legendre, pq[1, i] - 1)
-    temp = zeros(Rtype, pq[2, i])
+    temp = zeros(Ftype, pq[2, i])
     temp[end] = 1
     q = Jacobi{2 * (pq[1, i] - 1) + 1, 0}(temp)
     for _ in 1:pq[1, i] - 1

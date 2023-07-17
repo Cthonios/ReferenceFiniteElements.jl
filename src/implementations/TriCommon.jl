@@ -1,18 +1,24 @@
 """
 """
-const Tri3 = ReferenceFEType{3, 2}
+abstract type AbstractTri{N, D} <: ReferenceFEType{N, D} end
+
 """
 """
-const Tri6 = ReferenceFEType{6, 2}
+struct Tri3 <: AbstractTri{3, 2}
+  degree::Int64
+end
+
 """
 """
-const TriUnion = Union{Tri3, Tri6}
+struct Tri6 <: AbstractTri{6, 2}
+  degree::Int64
+end
 
 """
 Eventually move this to FastQuassQuadrature implementation
 """
-function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype}) where {E <: TriUnion, I <: Integer, Ftype <: AbstractFloat}
-  if degree == 1
+function quadrature_points_and_weights(e::E, ::Type{Ftype}) where {E <: AbstractTri, Ftype <: AbstractFloat}
+  if degree(e) == 1
     # this is dumb that I have to do this to minimize allocations
     # ξs = Matrix{Ftype}(undef, 2, 1)
     # ξs[1, 1] = 1. / 3.
@@ -20,7 +26,7 @@ function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype}) where {E <
     ξs = Vector{SVector{2, Ftype}}(undef, 1)
     ξs[1] = SVector{2, Ftype}(1. / 3., 1. / 3.)
     ws = Ftype[0.5]
-  elseif degree == 2
+  elseif degree(e) == 2
     # ξs = Ftype[
     #   2. / 3. 1. / 6. 1. / 6.;
     #   1. / 6. 2. / 3. 1. / 6
@@ -30,7 +36,7 @@ function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype}) where {E <
     ξs[2] = SVector{2, Ftype}(1. / 6., 2. / 3.)
     ξs[3] = SVector{2, Ftype}(1. / 6., 1. / 6.)
     ws = Ftype[1. / 6., 1. / 6., 1. / 6.]
-  elseif degree <= 4
+  elseif degree(e) <= 4
     # ξs = Ftype[
     #   1.081030181680700E-01 4.459484909159650E-01 4.459484909159650E-01 8.168475729804590E-01 9.157621350977100E-02 9.157621350977100E-02;
     #   4.459484909159650E-01 1.081030181680700E-01 4.459484909159650E-01 9.157621350977100E-02 8.168475729804590E-01 9.157621350977100E-02
@@ -51,7 +57,7 @@ function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype}) where {E <
       5.497587182766100E-02,
       5.497587182766100E-02
     ]
-  elseif degree <= 5
+  elseif degree(e) <= 5
     # ξs = Ftype[
     #   3.33333333333333E-01 5.97158717897700E-02 4.70142064105115E-01 4.70142064105115E-01 7.97426985353087E-01 1.01286507323456E-01 1.01286507323456E-01;
     #   3.33333333333333E-01 4.70142064105115E-01 5.97158717897700E-02 4.70142064105115E-01 1.01286507323456E-01 7.97426985353087E-01 1.01286507323456E-01
@@ -74,7 +80,7 @@ function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype}) where {E <
       6.29695902724135E-02,
       6.29695902724135E-02
     ]
-  elseif degree <= 6
+  elseif degree(e) <= 6
     # ξs = Ftype[
     #   5.01426509658179E-01 2.49286745170910E-01 2.49286745170910E-01 8.73821971016996E-01 6.30890144915020E-02 6.30890144915020E-02 5.31450498448170E-02 6.36502499121399E-01 3.10352451033784E-01 5.31450498448170E-02 6.36502499121399E-01 3.10352451033784E-01;
     #   2.49286745170910E-01 5.01426509658179E-01 2.49286745170910E-01 6.30890144915020E-02 8.73821971016996E-01 6.30890144915020E-02 3.10352451033784E-01 5.31450498448170E-02 6.36502499121399E-01 6.36502499121399E-01 3.10352451033784E-01 5.31450498448170E-02

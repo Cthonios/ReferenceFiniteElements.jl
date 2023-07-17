@@ -1,6 +1,6 @@
 """
 """
-function element_stencil(::Tet4, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: Integer, Ftype <: AbstractFloat}
   # first one stupidly causes an allocation
   # nodal_coordinates = Ftype[
   #   0.0 1.0 0.0 0.0

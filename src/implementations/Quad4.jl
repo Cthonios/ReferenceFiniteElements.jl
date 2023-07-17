@@ -1,6 +1,6 @@
 """
 """
-function element_stencil(::Quad4, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+function element_stencil(::Quad4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: Integer, Ftype <: AbstractFloat}
   nodal_coordinates = Ftype[
     -1.0  1.0 1.0 -1.0;
     -1.0 -1.0 1.0  1.0
