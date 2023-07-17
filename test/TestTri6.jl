@@ -1,7 +1,7 @@
 @testset ExtendedTestSet "Tri6 implementation" begin
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
-      e = ReferenceFE(Tri6(), 1, int_type, float_type)
+      e = ReferenceFE(Tri6(1), int_type, float_type)
       v_nodes = vertex_nodes(e)
       @test e.nodal_coordinates[:, v_nodes[1]] ≈ [0., 0.]
       @test e.nodal_coordinates[:, v_nodes[2]] ≈ [1., 0.]
@@ -38,8 +38,8 @@ end
       poly_coeffs = mapreduce(permutedims, vcat, poly_coeffs)
       expected = polyval2d(x[1], x[2], poly_coeffs)
     
-      e = ReferenceFE(Tri6(), q_degree, int_type, float_type)
-      Ns = ReferenceFiniteElements.shape_function_values(Tri6(), x)
+      e = ReferenceFE(Tri6(q_degree), int_type, float_type)
+      Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
     
       finterpolated = dot(Ns, fn)
@@ -67,8 +67,8 @@ end
       expected_dx = dpolyval2d(x[1], x[2], poly_coeffs, 1)
       expected_dy = dpolyval2d(x[1], x[2], poly_coeffs, 2)
 
-      e = ReferenceFE(Tri6(), q_degree, int_type, float_type)
-      ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(), x)
+      e = ReferenceFE(Tri6(q_degree), int_type, float_type)
+      ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
 
       temp_x = dot(∇N_ξ[:, 1], fn)
@@ -85,4 +85,4 @@ end
   end
 end
 
-common_test_sets(Tri6(), [1, 2, 3, 4, 5, 6], [Int32, Int64], [Float32, Float64])
+common_test_sets(Tri6, [1, 2, 3, 4, 5, 6], [Int32, Int64], [Float32, Float64])

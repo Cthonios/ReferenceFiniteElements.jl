@@ -1,6 +1,6 @@
 """
 """
-function element_stencil(::Tri6, degree::I, ::Type{Itype}, ::Type{Ftype}) where {I <: Integer, Itype <: Integer, Ftype <: AbstractFloat}
+function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: Integer, Ftype <: AbstractFloat}
   nodal_coordinates = Ftype[
     0.0 1.0 0.0 0.5 0.5 0.0;
     0.0 0.0 1.0 0.0 0.5 0.5

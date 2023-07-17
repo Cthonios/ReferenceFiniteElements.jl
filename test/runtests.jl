@@ -93,13 +93,15 @@ function dpolyval2d(x::T, y::T, C::Matrix{<:AbstractFloat}, direction::Int) wher
 end
 
 function partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el, q_degree, int_type, float_type)
+  # re = ReferenceFE(el, q_degree, int_type, float_type)
+  re = ReferenceFE(el(q_degree), int_type, float_type)
   sums = map(sum, shape_function_values(re))
   @test sums ≈ ones(Float64, size(sums))
 end
 
 function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el, q_degree, int_type, float_type)
+  # re = ReferenceFE(el, q_degree, int_type, float_type)
+  re = ReferenceFE(el(q_degree), int_type, float_type)
   sums = map(sum, shape_function_gradients(re))
   for ∇N in sums
     for i in size(∇N, 1)
@@ -112,13 +114,14 @@ function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type
   end
 end
 
-function kronecker_delta_property(el, q_degree, Itype, Rtype)
-  e = ReferenceFE(el, q_degree, Itype, Rtype)
+function kronecker_delta_property(el, q_degree, Itype, Ftype)
+  # e = ReferenceFE(el, q_degree, Itype, Ftype)
+  e = ReferenceFE(el(q_degree), Itype, Ftype)
   n_dim = size(e.nodal_coordinates, 1)
   # coords = eachcol(e.nodal_coordinates) |> collect
-  coords = reinterpret(SVector{n_dim, Rtype}, e.nodal_coordinates)
+  coords = reinterpret(SVector{n_dim, Ftype}, e.nodal_coordinates)
   # Ns = ReferenceFiniteElements.shape_function_values.((el,), eachcol(e.nodal_coordinates))
-  Ns = ReferenceFiniteElements.shape_function_values.((el,), coords)
+  Ns = ReferenceFiniteElements.shape_function_values.((el(q_degree),), coords)
   Ns = mapreduce(permutedims, vcat, Ns)
   @test Ns ≈ I
 end
@@ -133,10 +136,11 @@ function common_test_sets(el, q_degrees, int_types, float_types)
     for int_type in int_types
       for float_type in float_types
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
-          if typeof(el) == Tet4
+          if typeof(el(q_degree)) == Tet4
             
           else
-            e = ReferenceFE(el, q_degree, int_type, float_type)
+            # e = ReferenceFE(el, q_degree, int_type, float_type)
+            e = ReferenceFE(el(q_degree), int_type, float_type)
             for w in quadrature_weights(e)
               @test w > 0.
             end
@@ -144,14 +148,15 @@ function common_test_sets(el, q_degrees, int_types, float_types)
         end
 
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - sum of quadrature points test" begin
-          e = ReferenceFE(el, q_degree, int_type, float_type)
-          if typeof(el) <: ReferenceFiniteElements.HexUnion
+          # e = ReferenceFE(el, q_degree, int_type, float_type)
+          e = ReferenceFE(el(q_degree), int_type, float_type)
+          if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
             @test quadrature_weights(e) |> sum ≈ 8.0
-          elseif typeof(el) <: ReferenceFiniteElements.QuadUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
             @test quadrature_weights(e) |> sum ≈ 4.0
-          elseif typeof(el) <: ReferenceFiniteElements.TetUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
             @test quadrature_weights(e) |> sum ≈ 1. / 6.
-          elseif typeof(el) <: ReferenceFiniteElements.TriUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
             @test quadrature_weights(e) |> sum ≈ 1. / 2.
           else
             @test false
@@ -159,9 +164,9 @@ function common_test_sets(el, q_degrees, int_types, float_types)
         end
 
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - triangle exactness" begin
-          if typeof(el) <: ReferenceFiniteElements.TriUnion
+          if typeof(el) <: ReferenceFiniteElements.AbstractTri
             for degree in [1]
-              e = ReferenceFE(el, q_degree)
+              e = ReferenceFE(el(q_degree))
               for i in 1:degree
                 for j in 1:degree - i
                   quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
@@ -176,14 +181,15 @@ function common_test_sets(el, q_degrees, int_types, float_types)
         end
 
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - quadrature points inside element" begin
-          e = ReferenceFE(el, q_degree, int_type, float_type)
-          if typeof(el) <: ReferenceFiniteElements.HexUnion
+          # e = ReferenceFE(el, q_degree, int_type, float_type)
+          e = ReferenceFE(el(q_degree), int_type, float_type)
+          if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
             test_func = is_inside_hex
-          elseif typeof(el) <: ReferenceFiniteElements.QuadUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
             test_func = is_inside_quad
-          elseif typeof(el) <: ReferenceFiniteElements.TetUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
             test_func = is_inside_tet
-          elseif typeof(el) <: ReferenceFiniteElements.TriUnion
+          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
             test_func = is_inside_triangle
           else
             @test false

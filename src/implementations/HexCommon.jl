@@ -1,12 +1,17 @@
 """
 """
-const Hex8 = ReferenceFEType{8, 3}
-const HexUnion = Union{Hex8}
+abstract type AbstractHex{N, D} <: ReferenceFEType{N, D} end
 
 """
 """
-function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype} = Float64) where {E <: HexUnion, I <: Integer, Ftype <: AbstractFloat}
-  ξs, ws = gausslegendre(degree)
+struct Hex8 <: AbstractHex{8, 3}
+  degree::Int
+end
+
+"""
+"""
+function quadrature_points_and_weights(e::E, ::Type{Ftype} = Float64) where {E <: AbstractHex, Ftype <: AbstractFloat}
+  ξs, ws = gausslegendre(degree(e))
   n_q_points = length(ws)^3
   ξ_return = Vector{SVector{3, Ftype}}(undef, n_q_points)
   w_return = Vector{Ftype}(undef, n_q_points)

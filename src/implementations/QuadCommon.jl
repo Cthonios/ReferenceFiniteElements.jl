@@ -1,17 +1,23 @@
 """
 """
-const Quad4 = ReferenceFEType{4, 2}
-"""
-"""
-const Quad9 = ReferenceFEType{9, 2}
-"""
-"""
-const QuadUnion = Union{Quad4, Quad9}
+abstract type AbstractQuad{N, D} <: ReferenceFEType{N, D} end
 
 """
 """
-function quadrature_points_and_weights(::E, degree::I, ::Type{Ftype} = Float64) where {E <: QuadUnion, I <: Integer, Ftype <: AbstractFloat}
-  ξs, ws = gausslegendre(degree)
+struct Quad4 <: AbstractQuad{4, 2}
+  degree::Int64
+end
+
+"""
+"""
+struct Quad9 <: AbstractQuad{9, 2}
+  degree::Int64
+end
+
+"""
+"""
+function quadrature_points_and_weights(e::E, ::Type{Ftype} = Float64) where {E <: AbstractQuad, Ftype <: AbstractFloat}
+  ξs, ws = gausslegendre(degree(e))
   n_q_points = length(ws)^2
   ξ_return = Vector{SVector{2, Ftype}}(undef, n_q_points)
   w_return = Vector{Ftype}(undef, n_q_points)
