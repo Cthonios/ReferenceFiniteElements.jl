@@ -94,22 +94,18 @@ end
 
 function partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
   re = ReferenceFE(el, q_degree, int_type, float_type)
-  sums = map(N -> sum(N), re.Ns)
+  sums = map(sum, shape_function_values(re))
   @test sums ≈ ones(Float64, size(sums))
 end
 
 function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
   re = ReferenceFE(el, q_degree, int_type, float_type)
-  sums = map(∇N -> sum(∇N), re.∇N_ξs)
+  sums = map(sum, shape_function_gradients(re))
   for ∇N in sums
     for i in size(∇N, 1)
       if float_type == Float32
-        # @show re.∇N_ξs
-        # @show ∇N[i]
         @test ∇N[i] < 2.5e-7
       elseif float_type == Float64
-        # @show re.∇N_ξs
-        # @show ∇N[i]
         @test ∇N[i] < 1e-13
       end
     end
@@ -141,7 +137,7 @@ function common_test_sets(el, q_degrees, int_types, float_types)
             
           else
             e = ReferenceFE(el, q_degree, int_type, float_type)
-            for w in e.ws
+            for w in quadrature_weights(e)
               @test w > 0.
             end
           end
@@ -150,13 +146,13 @@ function common_test_sets(el, q_degrees, int_types, float_types)
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - sum of quadrature points test" begin
           e = ReferenceFE(el, q_degree, int_type, float_type)
           if typeof(el) <: ReferenceFiniteElements.HexUnion
-            @test e.ws |> sum ≈ 8.0
+            @test quadrature_weights(e) |> sum ≈ 8.0
           elseif typeof(el) <: ReferenceFiniteElements.QuadUnion
-            @test e.ws |> sum ≈ 4.0
+            @test quadrature_weights(e) |> sum ≈ 4.0
           elseif typeof(el) <: ReferenceFiniteElements.TetUnion
-            @test e.ws |> sum ≈ 1. / 6.
+            @test quadrature_weights(e) |> sum ≈ 1. / 6.
           elseif typeof(el) <: ReferenceFiniteElements.TriUnion
-            @test e.ws |> sum ≈ 1. / 2.
+            @test quadrature_weights(e) |> sum ≈ 1. / 2.
           else
             @test false
           end
@@ -196,7 +192,8 @@ function common_test_sets(el, q_degrees, int_types, float_types)
           # for ξ in eachcol(e.ξs)
           #   @test test_func(ξ)
           # end
-          for ξ in e.ξs
+          # for ξ in e.ξs
+          for ξ in quadrature_points(e)
             @test test_func(ξ)
           end
         end

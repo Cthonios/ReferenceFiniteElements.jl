@@ -28,56 +28,82 @@ using Polynomials
 using PrecompileTools
 using SpecialPolynomials
 using StaticArrays
+using StructArrays
 
+# type used to exploit multiple dispatch
 struct ReferenceFEType{N, D}
 end
 num_nodes(::ReferenceFEType{N, D}) where {N, D} = N
 num_dimensions(::ReferenceFEType{N, D}) where {N, D} = D
 
-# new type below
-struct ReferenceFE{N, D, L, Itype, Ftype <: AbstractFloat}
-  # element nodal info
-  nodal_coordinates::VecOrMat{Ftype}
-  # nodal_coordinates::Matrix{Ftype}
-  face_nodes::Matrix{Itype}
-  interior_nodes::Vector{Itype}
-  # quadrature
-  ξs::Vector{SVector{D, Ftype}}
-  ws::Vector{Ftype}
-  # shape functions
-  Ns::Vector{SVector{N, Ftype}}
-  ∇N_ξs::Vector{SMatrix{N, D, Ftype, L}}
+# type to aid in making ReferenceFE with StructArrays.jl
+struct Interpolants{N, D, Ftype, L}
+  ξ::SVector{D, Ftype}
+  w::Ftype
+  N::SVector{N, Ftype}
+  ∇N_ξ::SMatrix{N, D, Ftype, L}
 end
-quadrature_point(e::ReferenceFE, q::Integer) = getfield(e, :ξs)[q]
-quadrature_points(e::ReferenceFE) = getfield(e, :ξs)
-quadrature_weight(e::ReferenceFE, q::Integer) = getfield(e, :ws)[q]
-quadrature_weights(e::ReferenceFE) = getfield(e, :ws)
-shape_function_values(e::ReferenceFE) = getfield(e, :Ns)
-shape_function_values(e::ReferenceFE, i::Integer) = getfield(e, :Ns)[i]
-shape_function_gradients(e::ReferenceFE) = getfield(e, :∇N_ξs)
-shape_function_gradients(e::ReferenceFE, i::Integer) = getfield(e, :∇N_ξs)[i]
 
-# shape_function_values(e::ReferenceFE{N, D, Itype, Ftype}, i::Integer) where {N, D, Itype, Ftype} = getindex(getfield(e, :Ns), i)
-vertex_nodes(::ReferenceFE{N, D, L, Itype, Ftype}) where {N, D, L, Itype, Ftype} = 1:N
-
-function ReferenceFE(
+function Interpolants(
   e::ReferenceFEType{N, D}, degree::Integer,
-  ::Type{Itype} = Int64, ::Type{Ftype} = Float64
-) where {N, D, Itype <: Integer, Ftype <: AbstractFloat}
-  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, degree, Itype, Ftype)
-  ξs, ws = quadrature_points_and_weights(e, degree, Ftype)
+  ::Type{Ftype} = Float64
+) where {N, D, Ftype}
+
+  ξs_temp, ws = quadrature_points_and_weights(e, degree, Ftype)
+  ξs = reinterpret(SVector{D, Ftype}, vec(ξs_temp))
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
   for (q, ξ) in enumerate(ξs)
     Ns[q] = shape_function_values(e, ξ)
     ∇N_ξs[q] = shape_function_gradients(e, ξ)
   end
-  return ReferenceFE{N, D, N * D, Itype, Ftype}(
+  s = StructArray{Interpolants{N, D, Ftype, N * D}}((
+    ξ=ξs, w=ws,
+    N=Ns, ∇N_ξ=∇N_ξs
+  ))
+  return s
+end
+
+# main type of the package
+struct ReferenceFE{Itype, N, D, Ftype, L}
+  nodal_coordinates::VecOrMat{Ftype}
+  face_nodes::Matrix{Itype}
+  interior_nodes::Vector{Itype}
+  # figure out a way to fix below, that's dumb
+  interpolants::StructVector{
+    Interpolants{N, D, Ftype, L}, 
+    NamedTuple{(:ξ, :w, :N, :∇N_ξ), 
+    Tuple{Vector{SVector{D, Ftype}}, 
+    Vector{Ftype}, 
+    Vector{SVector{N, Ftype}}, 
+    Vector{SMatrix{N, D, Ftype, L}}}}, 
+    Int64
+  }
+end
+
+function ReferenceFE(
+  e::ReferenceFEType{N, D}, degree::Integer,
+  ::Type{Itype} = Int64, ::Type{Ftype} = Float64
+) where {N, D, Itype, Ftype}
+
+  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, degree, Itype, Ftype)
+  interps = Interpolants(e, degree, Ftype)
+
+  return ReferenceFE{Itype, N, D, Ftype, N * D}(
     nodal_coordinates, face_nodes, interior_nodes,
-    ξs, ws,
-    Ns, ∇N_ξs
+    interps
   )
 end
+
+quadrature_point(e::ReferenceFE, q::Integer) = LazyRow(getfield(e, :interpolants), q).ξ
+quadrature_points(e::ReferenceFE) = getfield(e, :interpolants).ξ
+quadrature_weight(e::ReferenceFE, q::Integer) = LazyRow(getfield(e, :interpolants), q).w
+quadrature_weights(e::ReferenceFE) = getfield(e, :interpolants).w
+shape_function_values(e::ReferenceFE) = getfield(e, :interpolants).N
+shape_function_values(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).N
+shape_function_gradients(e::ReferenceFE) = getfield(e, :interpolants).∇N_ξ
+shape_function_gradients(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).∇N_ξ
+vertex_nodes(::ReferenceFE{Itype, N, D, Ftype, L}) where {Itype, N, D, Ftype, L} = 1:N
 
 # implementations of things common across multiple element types
 include("implementations/HexCommon.jl")
