@@ -66,7 +66,7 @@ function shape_function_gradients(::Tet4, ξ::SVector{3, Ftype}) where Ftype <: 
   #   -1.0 0.0 1.0 0.0
   #   -1.0 0.0 0.0 1.0
   # ]
-  ∇N_ξ = SMatrix{4, 3, Ftype, 12}(
+  ∇N_ξ = SMatrix{3, 4, Ftype, 12}(
     -1.0, -1.0, -1.0,
      1.0,  0.0,  0.0,
      0.0,  1.0,  0.0,

@@ -32,7 +32,7 @@ function shape_function_gradients(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: 
   #    1.  0.;
   #    0.  1.
   # ]
-  ∇N_ξ = SMatrix{3, 2, Ftype, 6}(
+  ∇N_ξ = SMatrix{2, 3, Ftype, 6}(
     -1., 1., 0.,
     -1., 0., 1.
   )
