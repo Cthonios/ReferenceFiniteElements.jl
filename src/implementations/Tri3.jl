@@ -27,13 +27,8 @@ function shape_function_values(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: Abs
 end
 
 function shape_function_gradients(::Tri3, ξ::SVector{2, Ftype}) where Ftype <: AbstractFloat
-  # ∇N_ξ = @SMatrix [
-  #   -1. -1.;
-  #    1.  0.;
-  #    0.  1.
-  # ]
-  ∇N_ξ = SMatrix{2, 3, Ftype, 6}(
-    -1., 1., 0.,
-    -1., 0., 1.
-  )
+  ∇N_ξ = @SMatrix [
+    -1. 1. 0.;
+    -1. 0. 1.
+  ]
 end

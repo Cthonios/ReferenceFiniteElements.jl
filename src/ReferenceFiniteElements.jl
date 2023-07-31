@@ -44,7 +44,8 @@ struct Interpolants{N, D, Ftype, L}
   ξ::SVector{D, Ftype}
   w::Ftype
   N::SVector{N, Ftype}
-  ∇N_ξ::SMatrix{N, D, Ftype, L}
+  # ∇N_ξ::SMatrix{N, D, Ftype, L}
+  ∇N_ξ::SMatrix{D, N, Ftype, L}
 end
 
 function Interpolants(
@@ -54,7 +55,8 @@ function Interpolants(
   ξs_temp, ws = quadrature_points_and_weights(e, Ftype)
   ξs = reinterpret(SVector{D, Ftype}, vec(ξs_temp))
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
-  ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
+  # ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
+  ∇N_ξs = Vector{SMatrix{D, N, Ftype, N * D}}(undef, length(ξs))
   for (q, ξ) in enumerate(ξs)
     Ns[q] = shape_function_values(e, ξ)
     ∇N_ξs[q] = shape_function_gradients(e, ξ)
@@ -74,12 +76,15 @@ struct ReferenceFE{Itype, N, D, Ftype, L}
   # figure out a way to fix below, that's dumb
   interpolants::StructVector{
     Interpolants{N, D, Ftype, L}, 
-    NamedTuple{(:ξ, :w, :N, :∇N_ξ), 
-    Tuple{
-      Vector{SVector{D, Ftype}}, 
-      Vector{Ftype}, 
-      Vector{SVector{N, Ftype}}, 
-      Vector{SMatrix{N, D, Ftype, L}}}
+    NamedTuple{
+      (:ξ, :w, :N, :∇N_ξ), 
+      Tuple{
+        Vector{SVector{D, Ftype}}, 
+        Vector{Ftype}, 
+        Vector{SVector{N, Ftype}}, 
+        # Vector{SMatrix{N, D, Ftype, L}}}
+        Vector{SMatrix{D, N, Ftype, L}}
+      }
     }, 
     Int64
   }
