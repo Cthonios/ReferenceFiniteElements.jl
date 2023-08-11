@@ -71,8 +71,8 @@ end
       ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
 
-      temp_x = dot(∇N_ξ[1, :], fn)
-      temp_y = dot(∇N_ξ[2, :], fn)
+      temp_x = dot(∇N_ξ[:, 1], fn)
+      temp_y = dot(∇N_ξ[:, 2], fn)
 
       if float_type == Float32
         @test_skip temp_x ≈ expected_dx atol=1e-7 rtol=1e-7
