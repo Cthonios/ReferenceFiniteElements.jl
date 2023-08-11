@@ -3,6 +3,7 @@
     for float_type in [Float32, Float64]
       e = ReferenceFE(Quad4(1), int_type, float_type) # q_degree doesn't matter for this test
       v_nodes = vertex_nodes(e)
+      coords = e.nodal_coordinates
       @test e.nodal_coordinates[:, v_nodes[1]] ≈ [-1.0, -1.0]
       @test e.nodal_coordinates[:, v_nodes[2]] ≈ [1.0, -1.0]
       @test e.nodal_coordinates[:, v_nodes[3]] ≈ [1.0, 1.0]
