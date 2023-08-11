@@ -128,10 +128,10 @@ function test_gradients(el, q_degree, Itype, Ftype)
   e  = el(q_degree)
   re = ReferenceFE(e, Itype, Ftype)
 
-  for ξ in quadrature_points(re)
+  for (q, ξ) in enumerate(quadrature_points(re))
+    ∇Ns_an = re.interpolants[q].∇N_ξ
     ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, x), ξ)
-    ∇Ns_an = shape_function_gradients(e, ξ)
-    # (∇Ns_an - ∇Ns_fd) |> display
+    # ∇Ns_an = shape_function_gradients(e, ξ)
     @test ∇Ns_fd ≈ ∇Ns_an
   end
 end
@@ -140,12 +140,10 @@ function test_hessians(el, q_degree, Itype, Ftype)
   e  = el(q_degree)
   re = ReferenceFE(e, Itype, Ftype)
 
-  for ξ in quadrature_points(re)
-    ∇∇Ns_an = shape_function_hessians(e, ξ)
+  for (q, ξ) in enumerate(quadrature_points(re))
+    # ∇∇Ns_an = shape_function_hessians(e, ξ)
+    ∇∇Ns_an = re.interpolants[q].∇∇N_ξ
     ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
-    # ∇∇Ns_fd |> display
-    # ∇∇Ns_an |> display
-    # (∇∇Ns_an - ∇∇Ns_fd) |> display
     @test ∇∇Ns_an ≈ ∇∇Ns_fd
   end
 end
@@ -237,16 +235,14 @@ function common_test_sets(el, q_degrees, int_types, float_types)
   end
 end
 
-# @includetests ARGS
-include("TestQuad4.jl")
-include("TestQuad9.jl")
+@includetests ARGS
 
 # Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
-# Aqua.test_ambiguities(ReferenceFiniteElements)
-# Aqua.test_unbound_args(ReferenceFiniteElements)
-# Aqua.test_undefined_exports(ReferenceFiniteElements)
-# Aqua.test_piracy(ReferenceFiniteElements)
-# Aqua.test_project_extras(ReferenceFiniteElements)
-# Aqua.test_stale_deps(ReferenceFiniteElements)
-# Aqua.test_deps_compat(ReferenceFiniteElements)
-# Aqua.test_project_toml_formatting(ReferenceFiniteElements)
+Aqua.test_ambiguities(ReferenceFiniteElements)
+Aqua.test_unbound_args(ReferenceFiniteElements)
+Aqua.test_undefined_exports(ReferenceFiniteElements)
+Aqua.test_piracy(ReferenceFiniteElements)
+Aqua.test_project_extras(ReferenceFiniteElements)
+Aqua.test_stale_deps(ReferenceFiniteElements)
+Aqua.test_deps_compat(ReferenceFiniteElements)
+Aqua.test_project_toml_formatting(ReferenceFiniteElements)

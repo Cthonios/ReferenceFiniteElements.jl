@@ -12,9 +12,6 @@ export Tri3, Tri6
 export ReferenceFE
 
 # methods
-export face_nodes
-export interior_nodes
-export nodal_coordinates
 export quadrature_point
 export quadrature_points
 export quadrature_weight
@@ -41,12 +38,13 @@ num_nodes(::ReferenceFEType{N, D}) where {N, D} = N
 num_dimensions(::ReferenceFEType{N, D}) where {N, D} = D
 
 # type to aid in making ReferenceFE with StructArrays.jl
-struct Interpolants{N, D, Ftype, L1}
+struct Interpolants{N, D, Ftype, L1, L2}
   ξ::SVector{D, Ftype}
   w::Ftype
   N::SVector{N, Ftype}
   # ∇N_ξ::SMatrix{D, N, Ftype, L1}
   ∇N_ξ::SMatrix{N, D, Ftype, L1}
+  ∇∇N_ξ::SArray{Tuple{N, D, D}, Ftype, 3, L2}
 end
 
 function Interpolants(
@@ -57,34 +55,37 @@ function Interpolants(
   ξs = reinterpret(SVector{D, Ftype}, vec(ξs_temp))
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
+  ∇∇N_ξs = Vector{SArray{Tuple{N, D, D}, Ftype, 3, N * D * D}}(undef, length(ξs))
   # ∇N_ξs = Vector{SMatrix{D, N, Ftype, N * D}}(undef, length(ξs))
   for (q, ξ) in enumerate(ξs)
-    Ns[q] = shape_function_values(e, ξ)
-    ∇N_ξs[q] = shape_function_gradients(e, ξ)
+    Ns[q]     = shape_function_values(e, ξ)
+    ∇N_ξs[q]  = shape_function_gradients(e, ξ)
+    ∇∇N_ξs[q] = shape_function_hessians(e, ξ)
   end
-  s = StructArray{Interpolants{N, D, Ftype, N * D}}((
+  s = StructArray{Interpolants{N, D, Ftype, N * D, N * D * D}}((
     ξ=ξs, w=ws,
-    N=Ns, ∇N_ξ=∇N_ξs
+    N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
   ))
   return s
 end
 
 # main type of the package
-struct ReferenceFE{Itype, N, D, Ftype, L1}
+struct ReferenceFE{Itype, N, D, Ftype, L1, L2}
   nodal_coordinates::VecOrMat{Ftype}
   face_nodes::Matrix{Itype}
   interior_nodes::Vector{Itype}
   # figure out a way to fix below, that's dumb
   interpolants::StructVector{
-    Interpolants{N, D, Ftype, L1}, 
+    Interpolants{N, D, Ftype, L1, L2}, 
     NamedTuple{
-      (:ξ, :w, :N, :∇N_ξ), 
+      (:ξ, :w, :N, :∇N_ξ, :∇∇N_ξ), 
       Tuple{
         Vector{SVector{D, Ftype}}, 
         Vector{Ftype}, 
         Vector{SVector{N, Ftype}}, 
         # Vector{SMatrix{D, N, Ftype, L1}}
-        Vector{SMatrix{N, D, Ftype, L1}}
+        Vector{SMatrix{N, D, Ftype, L1}},
+        Vector{SArray{Tuple{N, D, D}, Ftype, 3, L2}}
       }
     }, 
     Int64
@@ -99,7 +100,7 @@ function ReferenceFE(
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, Itype, Ftype)
   interps = Interpolants(e, Ftype)
 
-  return ReferenceFE{Itype, N, D, Ftype, N * D}(
+  return ReferenceFE{Itype, N, D, Ftype, N * D, N * D *D}(
     nodal_coordinates, face_nodes, interior_nodes,
     interps
   )
@@ -113,7 +114,7 @@ shape_function_values(e::ReferenceFE) = getfield(e, :interpolants).N
 shape_function_values(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).N
 shape_function_gradients(e::ReferenceFE) = getfield(e, :interpolants).∇N_ξ
 shape_function_gradients(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).∇N_ξ
-vertex_nodes(::ReferenceFE{Itype, N, D, Ftype, L1}) where {Itype, N, D, Ftype, L1} = 1:N
+vertex_nodes(::ReferenceFE{Itype, N, D, Ftype, L1, L2}) where {Itype, N, D, Ftype, L1, L2} = 1:N
 
 # implementations of things common across multiple element types
 include("implementations/HexCommon.jl")
@@ -123,13 +124,13 @@ include("implementations/TriCommon.jl")
 
 # implementations of things specific to element types
 # include("implementations/Edge.jl")
-# include("implementations/Hex8.jl")
+include("implementations/Hex8.jl")
 include("implementations/Quad4.jl")
 include("implementations/Quad9.jl")
 include("implementations/Tet4.jl")
 # # include("implementations/Tet10.jl")
-# include("implementations/Tri3.jl")
-# include("implementations/Tri6.jl")
+include("implementations/Tri3.jl")
+include("implementations/Tri6.jl")
 
 # include("implementations/SimplexTri.jl")
 
