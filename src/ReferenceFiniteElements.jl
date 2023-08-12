@@ -106,6 +106,34 @@ function ReferenceFE(
   )
 end
 
+function Base.show(io::IO, e::ReferenceFE)
+  print(io, "Element type             = $(typeof(e))\n\n")
+  print(io, "Nodal coordinates        = \n")
+  display(e.nodal_coordinates)
+  print(io, "\n")
+  print(io, "Face nodes               = \n")
+  display(e.face_nodes)
+  print(io, "\n")
+  print(io, "Interior nodes           = \n")
+  display(e.interior_nodes)
+  print(io, "\n")
+  print(io, "Shape function values    = \n")
+  for n in axes(e.interpolants, 1)
+    display(shape_function_values(e, n))
+  end
+  print(io, "\n")
+  print(io, "Shape function gradients = \n")
+  for n in axes(e.interpolants, 1)
+    display(shape_function_gradients(e, n))
+  end
+  print(io, "\n")
+  print(io, "Shape function hessians  = \n")
+  for n in axes(e.interpolants, 1)
+    display(shape_function_hessians(e, n))
+  end
+  print(io, "\n")
+end
+
 quadrature_point(e::ReferenceFE, q::Integer) = LazyRow(getfield(e, :interpolants), q).ξ
 quadrature_points(e::ReferenceFE) = getfield(e, :interpolants).ξ
 quadrature_weight(e::ReferenceFE, q::Integer) = LazyRow(getfield(e, :interpolants), q).w
@@ -114,6 +142,8 @@ shape_function_values(e::ReferenceFE) = getfield(e, :interpolants).N
 shape_function_values(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).N
 shape_function_gradients(e::ReferenceFE) = getfield(e, :interpolants).∇N_ξ
 shape_function_gradients(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).∇N_ξ
+shape_function_hessians(e::ReferenceFE) = getfield(e, :interpolants).∇∇N_ξ
+shape_function_hessians(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :interpolants), i).∇∇N_ξ
 vertex_nodes(::ReferenceFE{Itype, N, D, Ftype, L1, L2}) where {Itype, N, D, Ftype, L1, L2} = 1:N
 
 # implementations of things common across multiple element types
