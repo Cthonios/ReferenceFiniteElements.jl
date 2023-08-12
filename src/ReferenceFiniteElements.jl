@@ -165,18 +165,22 @@ include("implementations/Tri6.jl")
 # include("implementations/SimplexTri.jl")
 
 # precompilation
-# @setup_workload begin
-#   @compile_workload begin
-#     for degree in [1, 2]
-#       ReferenceFE(Hex8(degree))
-#       ReferenceFE(Quad4(degree))
-#       ReferenceFE(Quad9(degree))
-#       ReferenceFE(Tet4(degree))
-#       # ReferenceFE(Tet10(degree))
-#       ReferenceFE(Tri3(degree))
-#       ReferenceFE(Tri6(degree))
-#     end
-#   end
-# end
+@setup_workload begin
+  @compile_workload begin
+    for degree in [1, 2, 3, 4, 5, 6]
+      ReferenceFE(Hex8(degree))
+      ReferenceFE(Quad4(degree))
+      ReferenceFE(Quad9(degree))
+      # ReferenceFE(Tet4(degree))
+      # ReferenceFE(Tet10(degree))
+      ReferenceFE(Tri3(degree))
+      ReferenceFE(Tri6(degree))
+    end
+
+    for degree in [1, 2]
+      ReferenceFE(Tet4(degree))
+    end
+  end
+end
 
 end # module ReferenceFEs
