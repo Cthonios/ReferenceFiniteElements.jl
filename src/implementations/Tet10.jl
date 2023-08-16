@@ -88,7 +88,7 @@ function shape_function_values(::Tet10, ξ::SVector{3, <:Real})
         t2 * (2 * t2 - 1),
         t3 * (2 * t3 - 1),
         4 * t0 * t1,
-        4 * t2 * t2,
+        4 * t1 * t2,
         4 * t2 * t0,
         4 * t0 * t3,
         4 * t1 * t3,
@@ -115,18 +115,16 @@ function shape_function_gradients(::Tet10, ξ::SVector{3, <:Real})
     ]) |> SMatrix{10, 3, eltype(ξ), 30}
 end
 
-# AM: These are the entries for this array in Norma, but I don't
-# know what order to use here.
-# ddN = zeros(3, 3, 10)
-# ddN[1,1,:] = [4  4  0  0 -8  0  0  0  0  0] * 1.0
-# ddN[1,2,:] = [4  0  0  0 -4  4 -4  0  0  0] * 1.0
-# ddN[1,3,:] = [4  0  0  0 -4  0  0 -4  4  0] * 1.0
-# ddN[2,1,:] = [4  0  0  0 -4  4 -4  0  0  0] * 1.0
-# ddN[2,2,:] = [4  0  4  0  0  0 -8  0  0  0] * 1.0
-# ddN[2,3,:] = [4  0  0  0  0  0 -4 -4  0  4] * 1.0
-# ddN[3,1,:] = [4  0  0  0 -4  0  0 -4  4  0] * 1.0
-# ddN[3,2,:] = [4  0  0  0  0  0 -4 -4  0  4] * 1.0
-# ddN[3,3,:] = [4  0  0  4  0  0  0 -8  0  0] * 1.0
 function shape_function_hessians(::Tet10, ξ::SVector{3, <:Real})
-    ∇∇N_ξ = zeros(SArray{Tuple{10, 3, 3}, eltype(ξ), 3, 90})
+    ∇∇N_ξ = (@SArray [
+        4;  4;  0;  0; -8;  0;  0;  0;  0;  0;;
+        4;  0;  0;  0; -4;  4; -4;  0;  0;  0;;
+        4;  0;  0;  0; -4;  0;  0; -4;  4;  0;;;
+        4;  0;  0;  0; -4;  4; -4;  0;  0;  0;;
+        4;  0;  4;  0;  0;  0; -8;  0;  0;  0;;
+        4;  0;  0;  0;  0;  0; -4; -4;  0;  4;;;
+        4;  0;  0;  0; -4;  0;  0; -4;  4;  0;;
+        4;  0;  0;  0;  0;  0; -4; -4;  0;  4;;
+        4;  0;  0;  4;  0;  0;  0; -8;  0;  0;;;
+    ]) |> SArray{Tuple{10, 3, 3}, eltype(ξ), 3, 90}
 end

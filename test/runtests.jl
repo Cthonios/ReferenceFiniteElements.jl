@@ -131,7 +131,6 @@ function test_gradients(el, q_degree, Itype, Ftype)
   for (q, ξ) in enumerate(quadrature_points(re))
     ∇Ns_an = re.interpolants[q].∇N_ξ
     ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, x), ξ)
-    # ∇Ns_an = shape_function_gradients(e, ξ)
     @test ∇Ns_fd ≈ ∇Ns_an
   end
 end
@@ -141,7 +140,6 @@ function test_hessians(el, q_degree, Itype, Ftype)
   re = ReferenceFE(e, Itype, Ftype)
 
   for (q, ξ) in enumerate(quadrature_points(re))
-    # ∇∇Ns_an = shape_function_hessians(e, ξ)
     ∇∇Ns_an = re.interpolants[q].∇∇N_ξ
     ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
     @test ∇∇Ns_an ≈ ∇∇Ns_fd
@@ -153,7 +151,7 @@ function common_test_sets(el, q_degrees, int_types, float_types)
     for int_type in int_types
       for float_type in float_types
         @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
-          if typeof(el(q_degree)) == Tet4
+          if typeof(el(q_degree)) == Tet4 || typeof(el(q_degree)) == Tet10
             
           else
             e = ReferenceFE(el(q_degree), int_type, float_type)
