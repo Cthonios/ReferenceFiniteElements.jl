@@ -4,8 +4,7 @@ module ReferenceFiniteElements
 # export Edge
 export Hex8
 export Quad4, Quad9
-# export Tet4, Tet10
-export Tet4
+export Tet4, Tet10
 export Tri3, Tri6
 
 # types
@@ -42,7 +41,6 @@ struct Interpolants{N, D, Ftype, L1, L2}
   ξ::SVector{D, Ftype}
   w::Ftype
   N::SVector{N, Ftype}
-  # ∇N_ξ::SMatrix{D, N, Ftype, L1}
   ∇N_ξ::SMatrix{N, D, Ftype, L1}
   ∇∇N_ξ::SArray{Tuple{N, D, D}, Ftype, 3, L2}
 end
@@ -56,7 +54,6 @@ function Interpolants(
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
   ∇∇N_ξs = Vector{SArray{Tuple{N, D, D}, Ftype, 3, N * D * D}}(undef, length(ξs))
-  # ∇N_ξs = Vector{SMatrix{D, N, Ftype, N * D}}(undef, length(ξs))
   for (q, ξ) in enumerate(ξs)
     Ns[q]     = shape_function_values(e, ξ)
     ∇N_ξs[q]  = shape_function_gradients(e, ξ)
@@ -83,7 +80,6 @@ struct ReferenceFE{Itype, N, D, Ftype, L1, L2}
         Vector{SVector{D, Ftype}}, 
         Vector{Ftype}, 
         Vector{SVector{N, Ftype}}, 
-        # Vector{SMatrix{D, N, Ftype, L1}}
         Vector{SMatrix{N, D, Ftype, L1}},
         Vector{SArray{Tuple{N, D, D}, Ftype, 3, L2}}
       }
@@ -158,7 +154,7 @@ include("implementations/Hex8.jl")
 include("implementations/Quad4.jl")
 include("implementations/Quad9.jl")
 include("implementations/Tet4.jl")
-# # include("implementations/Tet10.jl")
+include("implementations/Tet10.jl")
 include("implementations/Tri3.jl")
 include("implementations/Tri6.jl")
 

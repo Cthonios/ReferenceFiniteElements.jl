@@ -10,6 +10,12 @@ end
 
 """
 """
+struct Tet10 <: AbstractTet{10, 3}
+  degree::Int64
+end
+
+"""
+"""
 function quadrature_points_and_weights(e::E, ::Type{Ftype}) where {E <: AbstractTet, Ftype <: AbstractFloat}
   if degree(e) == 1
     # ξs = Matrix{Ftype}(undef, 3, 1)
