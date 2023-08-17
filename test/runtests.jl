@@ -1,6 +1,7 @@
 using Aqua
 using Distributions
 using ForwardDiff
+using JET
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
@@ -236,11 +237,18 @@ end
 @includetests ARGS
 
 # Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
-Aqua.test_ambiguities(ReferenceFiniteElements)
-Aqua.test_unbound_args(ReferenceFiniteElements)
-Aqua.test_undefined_exports(ReferenceFiniteElements)
-Aqua.test_piracy(ReferenceFiniteElements)
-Aqua.test_project_extras(ReferenceFiniteElements)
-Aqua.test_stale_deps(ReferenceFiniteElements)
-Aqua.test_deps_compat(ReferenceFiniteElements)
-Aqua.test_project_toml_formatting(ReferenceFiniteElements)
+@testset ExtendedTestSet "Aqua Tests" begin
+  Aqua.test_ambiguities(ReferenceFiniteElements)
+  Aqua.test_unbound_args(ReferenceFiniteElements)
+  Aqua.test_undefined_exports(ReferenceFiniteElements)
+  Aqua.test_piracy(ReferenceFiniteElements)
+  Aqua.test_project_extras(ReferenceFiniteElements)
+  Aqua.test_stale_deps(ReferenceFiniteElements)
+  Aqua.test_deps_compat(ReferenceFiniteElements)
+  Aqua.test_project_toml_formatting(ReferenceFiniteElements)
+end
+
+# JET testing
+@testset ExtendedTestSet "JET Tests" begin
+  test_package("ReferenceFiniteElements"; target_defined_modules=true)
+end
