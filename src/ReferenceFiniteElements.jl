@@ -106,11 +106,9 @@ function Base.show(io::IO, e::ReferenceFE)
   print(io, "Element type             = $(typeof(e))\n\n")
   print(io, "Nodal coordinates        = \n")
   display(e.nodal_coordinates)
-  print(io, "\n")
   print(io, "Face nodes               = \n")
   display(e.face_nodes)
   print(io, "\n")
-  print(io, "Interior nodes           = \n")
   display(e.interior_nodes)
   print(io, "\n")
   print(io, "Shape function values    = \n")
@@ -167,14 +165,13 @@ include("implementations/Tri6.jl")
       ReferenceFE(Hex8(degree))
       ReferenceFE(Quad4(degree))
       ReferenceFE(Quad9(degree))
-      # ReferenceFE(Tet4(degree))
-      # ReferenceFE(Tet10(degree))
       ReferenceFE(Tri3(degree))
       ReferenceFE(Tri6(degree))
     end
 
     for degree in [1, 2]
       ReferenceFE(Tet4(degree))
+      ReferenceFE(Tet10(degree))
     end
   end
 end
