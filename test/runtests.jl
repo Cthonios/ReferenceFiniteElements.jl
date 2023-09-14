@@ -130,7 +130,7 @@ function test_gradients(el, q_degree, Itype, Ftype)
   re = ReferenceFE(e, Itype, Ftype)
 
   for (q, ξ) in enumerate(quadrature_points(re))
-    ∇Ns_an = re.interpolants[q].∇N_ξ
+    ∇Ns_an = shape_function_gradients(re, q)
     ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, x), ξ)
     @test ∇Ns_fd ≈ ∇Ns_an
   end
@@ -141,7 +141,7 @@ function test_hessians(el, q_degree, Itype, Ftype)
   re = ReferenceFE(e, Itype, Ftype)
 
   for (q, ξ) in enumerate(quadrature_points(re))
-    ∇∇Ns_an = re.interpolants[q].∇∇N_ξ
+    ∇∇Ns_an = shape_function_hessians(re, q)
     ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
     @test ∇∇Ns_an ≈ ∇∇Ns_fd
   end
@@ -238,14 +238,7 @@ end
 
 # Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
 @testset ExtendedTestSet "Aqua Tests" begin
-  Aqua.test_ambiguities(ReferenceFiniteElements)
-  Aqua.test_unbound_args(ReferenceFiniteElements)
-  Aqua.test_undefined_exports(ReferenceFiniteElements)
-  Aqua.test_piracy(ReferenceFiniteElements)
-  Aqua.test_project_extras(ReferenceFiniteElements)
-  Aqua.test_stale_deps(ReferenceFiniteElements)
-  Aqua.test_deps_compat(ReferenceFiniteElements)
-  Aqua.test_project_toml_formatting(ReferenceFiniteElements)
+  Aqua.test_all(ReferenceFiniteElements)
 end
 
 # JET testing
