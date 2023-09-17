@@ -2,7 +2,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://cthonios.github.io/ReferenceFiniteElements.jl/) 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://cthonios.github.io/ReferenceFiniteElements.jl/dev/) 
 [![Build Status](https://github.com/Cthonios/ReferenceFiniteElements.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Cthonios/ReferenceFiniteElements.jl/actions/workflows/CI.yml?query=branch%3Amain) 
-[![Coverage](https://app.codecov.io/gh/Cthonios/ReferenceFiniteElements.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/Cthonios/ReferenceFiniteElements.jl)
+[![Coverage](https://codecov.io/gh/Cthonios/ReferenceFiniteElements.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/Cthonios/ReferenceFiniteElements.jl)
 
 ReferenceFiniteElements.jl is meant to serve as an educational and lightweight package to define finite elements in the reference (quadrature space) configuration. The goal is to provide a very simple to utilize interface so researchers can play with new finite element formulations without having to learn an entire large code or package base. 
 
