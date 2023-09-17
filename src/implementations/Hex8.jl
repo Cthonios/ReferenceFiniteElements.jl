@@ -82,6 +82,8 @@ function element_stencil(::Hex8, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
+"""
+"""
 function shape_function_values(::Hex8, ξ::SVector{3, <:Real})
   N = SVector{8, eltype(ξ)}(
     0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]) * (1.0 - ξ[3]),
@@ -95,6 +97,8 @@ function shape_function_values(::Hex8, ξ::SVector{3, <:Real})
   )
 end
 
+"""
+"""
 function shape_function_gradients(::Hex8, ξ::SVector{3, <:Real})
   ∇N_ξ = (@SMatrix [
     -0.125 * (1.0 - ξ[2]) * (1.0 - ξ[3]) -0.125 * (1.0 - ξ[1]) * (1.0 - ξ[3]) -0.125 * (1.0 - ξ[1]) * (1.0 - ξ[2]);
@@ -108,6 +112,8 @@ function shape_function_gradients(::Hex8, ξ::SVector{3, <:Real})
   ]) |> SMatrix{8, 3, eltype(ξ), 24}
 end
 
+"""
+"""
 function shape_function_hessians(::Hex8, ξ::SVector{3, <:Real})
   ∇∇N_ξ = (@SArray [
     0.; 

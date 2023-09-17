@@ -51,6 +51,8 @@ function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
+"""
+"""
 function shape_function_values(::Tet4, ξ::SVector{3, <:Real})
   N = SVector{4, eltype(ξ)}(
     1. - ξ[1] - ξ[2] - ξ[3],
@@ -60,6 +62,8 @@ function shape_function_values(::Tet4, ξ::SVector{3, <:Real})
   )
 end
 
+"""
+"""
 function shape_function_gradients(::Tet4, ξ::SVector{3, <:Real})
   ∇N_ξ = (@SMatrix [
     -1. -1. -1.;
@@ -69,6 +73,8 @@ function shape_function_gradients(::Tet4, ξ::SVector{3, <:Real})
   ]) |> SMatrix{4, 3, eltype(ξ), 12}
 end
 
+"""
+"""
 function shape_function_hessians(::Tet4, ξ::SVector{3, <:Real})
   ∇∇N_ξ = zeros(SArray{Tuple{4, 3, 3}, eltype(ξ), 3, 36})
 end
