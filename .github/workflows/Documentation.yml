@@ -3,7 +3,7 @@ name: Documentation
 on:
   push:
     branches:
-      - master # update to match your development branch (master, main, dev, trunk, ...)
+      - main # update to match your development branch (master, main, dev, trunk, ...)
     tags: '*'
   pull_request:
 
@@ -13,22 +13,14 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
         with:
-          version: '1.8'
+          version: '1.9'
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install dependencies
-        run: |
-          julia --color=yes --project=docs/ -e '
-            using Pkg 
-            #Pkg.develop(PackageSpec(path=pwd())) 
-            #Pkg.instantiate()
-            Pkg.add("Documenter")
-            Pkg.add("ReferenceFiniteElements")
-          '
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
         run: julia --color=yes --project=docs/ docs/make.jl
-
