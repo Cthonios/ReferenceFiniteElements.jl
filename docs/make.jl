@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(ReferenceFiniteElements, :DocTestSetup, :(using ReferenceFin
 makedocs(;
     modules=[ReferenceFiniteElements],
     authors="Craig M. Hamel <cmhamel32@gmail.com> and contributors",
-    repo="https://github.com/cmhamel/ReferenceFiniteElements.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/Cthonios/ReferenceFiniteElements.jl/blob/{commit}{path}#{line}",
     sitename="ReferenceFiniteElements.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
