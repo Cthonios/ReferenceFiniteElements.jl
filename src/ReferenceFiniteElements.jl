@@ -21,13 +21,28 @@ export quadrature_point,
        vertex_nodes
 
 # dependencies
-using FastGaussQuadrature,
+using DocStringExtensions,
+      FastGaussQuadrature,
       LinearAlgebra,
       Polynomials,
       PrecompileTools,
       SpecialPolynomials,
       StaticArrays,
       StructArrays
+
+# for docs
+@template (FUNCTIONS, METHODS, MACROS) =
+"""
+$(TYPEDSIGNATURES)
+$(DOCSTRING)
+$(METHODLIST)
+"""
+
+@template (TYPES) =
+"""
+$(TYPEDFIELDS)
+$(DOCSTRING)
+"""
 
 # type used to exploit multiple dispatch
 abstract type ReferenceFEType{N, D} end
