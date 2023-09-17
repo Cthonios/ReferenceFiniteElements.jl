@@ -10,7 +10,7 @@ makedocs(;
     sitename="ReferenceFiniteElements.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://Cthonios.github.io/ReferenceFiniteElements.jl",
+        canonical="https://cthonios.github.io/ReferenceFiniteElements.jl",
         edit_link="main",
         assets=String[],
     ),
