@@ -65,10 +65,10 @@ function Interpolants(
 end
 
 # main type of the package
-struct ReferenceFE{Itype, N, D, Ftype, L1, L2, S}
-  nodal_coordinates::VOM where VOM <: AbstractVecOrMat{Ftype}
-  face_nodes::M where M <: AbstractMatrix{Itype}
-  interior_nodes::V where V <: AbstractVector{Itype}
+struct ReferenceFE{Itype, N, D, Ftype, L1, L2, S, VOM <: AbstractVecOrMat, M <: AbstractMatrix, V <: AbstractVector}
+  nodal_coordinates::VOM
+  face_nodes::M
+  interior_nodes::V
   interpolants::S
 end
 
@@ -80,7 +80,8 @@ function ReferenceFE(
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, Itype, Ftype)
   interps = Interpolants(e, Ftype)
 
-  return ReferenceFE{Itype, N, D, Ftype, N * D, N * D *D, typeof(interps)}(
+  return ReferenceFE{Itype, N, D, Ftype, N * D, N * D *D, typeof(interps), 
+                     typeof(nodal_coordinates), typeof(face_nodes), typeof(interior_nodes)}(
     nodal_coordinates, face_nodes, interior_nodes,
     interps
   )
