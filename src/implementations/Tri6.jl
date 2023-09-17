@@ -27,6 +27,8 @@ function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
+"""
+"""
 function shape_function_values(::Tri6, ξ::SVector{2, <:Real})
   λ = 1. - ξ[1] - ξ[2]
   N = SVector{6, eltype(ξ)}(
@@ -39,6 +41,8 @@ function shape_function_values(::Tri6, ξ::SVector{2, <:Real})
   )
 end
 
+"""
+"""
 function shape_function_gradients(::Tri6, ξ::SVector{2, <:Real})
   λ = 1. - ξ[1] - ξ[2]
   ∇N_ξ = (@SMatrix [
@@ -51,6 +55,8 @@ function shape_function_gradients(::Tri6, ξ::SVector{2, <:Real})
   ]) |> SMatrix{6, 2, eltype(ξ), 12}
 end 
 
+"""
+"""
 function shape_function_hessians(::Tri6, ξ::SVector{2, <:Real})
   λ = 1. - ξ[1] - ξ[2]
   ∇∇N_ξ = (@SArray [

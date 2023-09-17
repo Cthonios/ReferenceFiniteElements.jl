@@ -15,7 +15,6 @@ struct Tri6 <: AbstractTri{6, 2}
 end
 
 """
-Eventually move this to FastQuassQuadrature implementation
 """
 function quadrature_points_and_weights(e::E, ::Type{Ftype}) where {E <: AbstractTri, Ftype <: AbstractFloat}
   if degree(e) == 1

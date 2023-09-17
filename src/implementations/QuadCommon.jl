@@ -26,12 +26,16 @@ function quadrature_points_and_weights(e::E, ::Type{Ftype} = Float64) where {E <
   return ξ_return, w_return
 end
 
+"""
+"""
 function setup_quad_quadrature_points!(ξ_return::Vector{SVector{2, Ftype}}, ξs::T) where {Ftype <: AbstractFloat, T <: AbstractArray}
   for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs))
     ξ_return[q] = SVector{2, Ftype}(ξ[1], ξ[2])
   end
 end
 
+"""
+"""
 function setup_quad_quadrature_weights!(w_return::Vector{Ftype}, ws::T) where {Ftype <: AbstractFloat, T <: AbstractArray}
   for (q, w) in enumerate(Base.Iterators.product(ws, ws))
     w_return[q] = w[1] * w[2]

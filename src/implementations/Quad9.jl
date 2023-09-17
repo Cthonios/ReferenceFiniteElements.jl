@@ -31,6 +31,8 @@ function element_stencil(::Quad9, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
+"""
+"""
 function shape_function_values(::Quad9, ξ::SVector{2, <:Real})
   N = SVector{9, eltype(ξ)}(
     0.25 * (ξ[1]^2 - ξ[1]) * (ξ[2]^2 - ξ[2]),
@@ -45,6 +47,8 @@ function shape_function_values(::Quad9, ξ::SVector{2, <:Real})
   )
 end
 
+"""
+"""
 function shape_function_gradients(::Quad9, ξ::SVector{2, <:Real})
   ∇N_ξ = (@SMatrix [
     0.25 * (ξ[2]^2 - ξ[2]) * (2. * ξ[1] - 1.)  0.25 * (ξ[1]^2 - ξ[1]) * (2. * ξ[2] - 1.);
@@ -59,6 +63,8 @@ function shape_function_gradients(::Quad9, ξ::SVector{2, <:Real})
   ]) |> SMatrix{9, 2, eltype(ξ), 18}
 end
 
+"""
+"""
 function shape_function_hessians(::Quad9, ξ::SVector{2, <:Real})
   ∇∇N_ξ = (@SArray [
     0.5 * (ξ[2]^2 - ξ[2]); 
