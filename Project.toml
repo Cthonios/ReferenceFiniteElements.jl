@@ -21,7 +21,7 @@ ReferenceFiniteElementsAdaptExt = ["Adapt"]
 
 [compat]
 DocStringExtensions = "0.9"
-FastGaussQuadrature = "0.5"
+FastGaussQuadrature = "0.5, 1"
 Polynomials = "3, 4"
 PrecompileTools = "1"
 SpecialPolynomials = "0.4"
