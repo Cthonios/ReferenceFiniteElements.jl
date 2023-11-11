@@ -1,5 +1,6 @@
 using Aqua
 using Distributions
+using Exodus
 using ForwardDiff
 using JET
 using LinearAlgebra
@@ -246,11 +247,12 @@ end
   Aqua.test_stale_deps(ReferenceFiniteElements)
   Aqua.test_deps_compat(ReferenceFiniteElements)
   Aqua.test_project_toml_formatting(ReferenceFiniteElements)
-  # below seems to only work on 1.9 or later
+  # below seems to only work on 1.9 or later... structarrays throwing issues
   # Aqua.test_all(ReferenceFiniteElements)
 end
 
 # JET testing
 @testset ExtendedTestSet "JET Tests" begin
+  report_package("ReferenceFiniteElements")
   test_package("ReferenceFiniteElements"; target_defined_modules=true)
 end
