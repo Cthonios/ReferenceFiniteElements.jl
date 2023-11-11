@@ -1,3 +1,5 @@
+using Adapt
+using Exodus
 using ReferenceFiniteElements
 using Documenter
 
