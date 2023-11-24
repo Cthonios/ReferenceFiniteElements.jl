@@ -10,7 +10,7 @@ export Hex8,
 # types
 export ReferenceFE
 
-# methods
+# methods.
 export quadrature_point,
        quadrature_points,
        quadrature_weight,
