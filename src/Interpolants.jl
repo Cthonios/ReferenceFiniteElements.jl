@@ -26,7 +26,7 @@ function Interpolants(
   for (q, ξ) in enumerate(ξs)
     # Ns[q]     = shape_function_values(e, ξ)
     Ns[q]     = shape_function_values(e, SVector, ξ)
-    ∇N_ξs[q]  = shape_function_gradients(e, ξ)
+    ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
     ∇∇N_ξs[q] = shape_function_hessians(e, ξ)
   end
   s = StructArray{Interpolants{N, D, Ftype, N * D, N * D * D}}((

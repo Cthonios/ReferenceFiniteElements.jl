@@ -24,16 +24,15 @@ for type in types_to_generate_interpolants(Tri3(1))
       ξ[2]
     )
   end
-end
 
-"""
-"""
-function shape_function_gradients(::Tri3, ξ::SVector{2, <:Real})
-  ∇N_ξ = (@SMatrix [
-    -1. -1.;
-     1.  0.;
-     0.  1.
-  ]) |> SMatrix{3, 2, eltype(ξ), 6}
+  """
+  """
+  @eval function shape_function_gradients(e::Tri3, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+      -1., 1., 0.,
+      -1., 0., 1.
+    )
+  end
 end
 
 """

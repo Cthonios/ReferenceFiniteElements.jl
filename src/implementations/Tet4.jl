@@ -63,17 +63,16 @@ for type in types_to_generate_interpolants(Tet4(1))
       ξ[3]
     )
   end
-end
 
-"""
-"""
-function shape_function_gradients(::Tet4, ξ::SVector{3, <:Real})
-  ∇N_ξ = (@SMatrix [
-    -1. -1. -1.;
-     1.  0.  0.;
-     0.  1.  0.;
-     0.  0.  1.;
-  ]) |> SMatrix{4, 3, eltype(ξ), 12}
+  """
+  """
+  @eval function shape_function_gradients(e::Tet4, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<: Number, 1}
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+      -1., 1., 0., 0.,
+      -1., 0., 1., 0.,
+      -1., 0., 0., 1. 
+    )
+  end
 end
 
 """

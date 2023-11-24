@@ -42,21 +42,28 @@ for type in types_to_generate_interpolants(Tri6(1))
       4. * ξ[2] * λ
     )
   end
-end
 
-"""
-"""
-function shape_function_gradients(::Tri6, ξ::SVector{2, <:Real})
-  λ = 1. - ξ[1] - ξ[2]
-  ∇N_ξ = (@SMatrix [
-    -1. * (2. * λ - 1.) - 2. * λ  -1. * (2. * λ - 1.) - 2. * λ;
-     (2. * ξ[1] - 1.) + 2. * ξ[1]  0.0;
-     0.0                           (2. * ξ[2] - 1.) + 2. * ξ[2];
-     4. * λ - 4. * ξ[1]           -4. * ξ[1];
-     4. * ξ[2]                     4. * ξ[1];
-    -4. * ξ[2]                     4. * λ - 4. * ξ[2]
-  ]) |> SMatrix{6, 2, eltype(ξ), 12}
-end 
+  """
+  """
+  @eval function shape_function_gradients(e::Tri6, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number}
+    λ = 1. - ξ[1] - ξ[2]
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+      -1. * (2. * λ - 1.) - 2. * λ,
+       (2. * ξ[1] - 1.) + 2. * ξ[1],
+       0.0,
+       4. * λ - 4. * ξ[1],
+       4. * ξ[2],
+      -4. * ξ[2],
+      #
+      -1. * (2. * λ - 1.) - 2. * λ,
+       0.0,
+       (2. * ξ[2] - 1.) + 2. * ξ[2],
+      -4. * ξ[1],
+       4. * ξ[1],
+       4. * λ - 4. * ξ[2]
+    )
+  end
+end
 
 """
 """

@@ -25,17 +25,22 @@ for type in types_to_generate_interpolants(Quad4(1))
       0.25 * (1.0 - ξ[1]) * (1.0 + ξ[2])
     )
   end
-end
 
-"""
-"""
-function shape_function_gradients(::Quad4, ξ::SVector{2, <:Real})
-  ∇N_ξ = (@SMatrix [
-    -0.25 * (1.0 - ξ[2]) -0.25 * (1.0 - ξ[1]);
-     0.25 * (1.0 - ξ[2]) -0.25 * (1.0 + ξ[1]);
-     0.25 * (1.0 + ξ[2])  0.25 * (1.0 + ξ[1]);
-    -0.25 * (1.0 + ξ[2])  0.25 * (1.0 - ξ[1])
-  ]) |> SMatrix{4, 2, eltype(ξ), 8}
+  """
+  """
+  @eval function shape_function_gradients(e::Quad4, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+      -0.25 * (1.0 - ξ[2]),
+       0.25 * (1.0 - ξ[2]),
+       0.25 * (1.0 + ξ[2]),
+      -0.25 * (1.0 + ξ[2]),
+      #
+      -0.25 * (1.0 - ξ[1]),
+      -0.25 * (1.0 + ξ[1]),
+       0.25 * (1.0 + ξ[1]),
+       0.25 * (1.0 - ξ[1])
+    )
+  end
 end
 
 """

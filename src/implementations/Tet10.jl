@@ -99,27 +99,49 @@ for type in types_to_generate_interpolants(Tet10(1))
       4 * t2 * t3
     )
   end
-end
 
-"""
-"""
-function shape_function_gradients(::Tet10, ξ::SVector{3, <:Real})
+  """
+  """
+  @eval function shape_function_gradients(e::Tet10, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
     t0 = 1 - ξ[1] - ξ[2] - ξ[3]
     t1 = ξ[1]
     t2 = ξ[2]
     t3 = ξ[3]
-    ∇N_ξ = (@SMatrix [
-        1-4*t0      1-4*t0      1-4*t0;
-        4*t1-1      0           0;
-        0           4*t2-1      0;
-        0           0           4*t3-1;
-        4*(t0-t1)   -4*t1       -4*t1;
-        4*t2        4*t1        0;
-        -4*t2       4*(t0-t2)   -4*t2;
-        -4*t3       -4*t3       4*(t0-t3);
-        4*t3        0           4*t1;
-        0           4*t3        4*t2;
-    ]) |> SMatrix{10, 3, eltype(ξ), 30}
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+       1-4*t0,
+       4*t1-1,
+       0,
+       0,
+       4*(t0-t1),
+       4*t2,
+      -4*t2,
+      -4*t3,
+       4*t3,
+       0,
+      #
+       1-4*t0,
+       0,
+       4*t2-1,
+       0,
+      -4*t1,
+       4*t1,
+       4*(t0-t2),
+      -4*t3,
+       0,
+       4*t3,
+      #
+       1-4*t0,
+       0,
+       0,
+       4*t3-1,
+      -4*t1,
+       0,
+      -4*t2,
+       4*(t0-t3),
+       4*t1,
+       4*t2
+    )
+  end
 end
 
 """

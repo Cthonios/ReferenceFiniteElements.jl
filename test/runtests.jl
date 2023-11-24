@@ -145,10 +145,11 @@ end
 function test_hessians(el, q_degree, Itype, Ftype)
   e  = el(q_degree)
   re = ReferenceFE(e, Itype, Ftype)
-
+  # TODO hardcoding to SMatrix for now
   for (q, ξ) in enumerate(quadrature_points(re))
     ∇∇Ns_an = shape_function_hessians(re, q)
-    ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
+    # ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
+    ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, SMatrix, x), ξ), size(∇∇Ns_an))
     @test ∇∇Ns_an ≈ ∇∇Ns_fd
   end
 end

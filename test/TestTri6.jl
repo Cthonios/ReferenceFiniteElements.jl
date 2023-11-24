@@ -70,7 +70,9 @@ end
       expected_dy = dpolyval2d(x[1], x[2], poly_coeffs, 2)
 
       e = ReferenceFE(Tri6(q_degree), int_type, float_type)
-      ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), x)
+      # ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), x)
+      # TODO defaulting to SMatrix for now
+      ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), SMatrix, x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
 
       temp_x = dot(∇N_ξ[:, 1], fn)
