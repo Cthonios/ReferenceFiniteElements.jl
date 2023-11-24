@@ -63,16 +63,18 @@ for type in types_to_generate_interpolants(Tri6(1))
        4. * λ - 4. * ξ[2]
     )
   end
+
+  """
+  """
+  @eval function shape_function_hessians(e::Tri6, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+    λ = 1. - ξ[1] - ξ[2]
+    ∇∇N_ξ = $(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D}(
+      4., 4., 0., -8., 0., 0.,
+      4., 0., 0., -4., 4., -4.,
+      4., 0., 0., -4., 4., -4.,
+      4., 0., 4.,  0., 0., -8.
+    )
+  end
 end
 
-"""
-"""
-function shape_function_hessians(::Tri6, ξ::SVector{2, <:Real})
-  λ = 1. - ξ[1] - ξ[2]
-  ∇∇N_ξ = (@SArray [
-    4.; 4.; 0.; -8.; 0.; 0.;;
-    4.; 0.; 0.; -4.; 4.; -4.;;;
-    4.; 0.; 0.; -4.; 4.; -4.;;
-    4.; 0.; 4.;  0.; 0.; -8.;;;
-  ]) |> SArray{Tuple{6, 2, 2}, eltype(ξ), 3, 24}
-end

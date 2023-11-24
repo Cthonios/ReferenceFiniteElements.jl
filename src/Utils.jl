@@ -28,13 +28,15 @@ function types_to_generate_interpolants(e::E) where E <: ReferenceFEType
   types = (types...,
     (
       :(SVector),
-      :(SMatrix)
+      :(SMatrix),
+      :(SArray)
     )
   )
   types = (types...,
     (
       :(MVector),
-      :(MMatrix)
+      :(MMatrix),
+      :(MArray)
     )
   )
   return types

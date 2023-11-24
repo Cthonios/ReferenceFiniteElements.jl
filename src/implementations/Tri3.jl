@@ -33,10 +33,13 @@ for type in types_to_generate_interpolants(Tri3(1))
       -1., 0., 1.
     )
   end
+
+  """
+  """
+  @eval function shape_function_hessians(e::Tri3, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+    ∇∇N_ξ = zeros($(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D})
+  end
 end
 
-"""
-"""
-function shape_function_hessians(::Tri3, ξ::SVector{2, <:Real})
-  ∇∇N_ξ = zeros(SArray{Tuple{3, 2, 2}, eltype(ξ), 3, 12})
-end
+

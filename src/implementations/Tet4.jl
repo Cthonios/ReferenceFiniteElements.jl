@@ -66,17 +66,21 @@ for type in types_to_generate_interpolants(Tet4(1))
 
   """
   """
-  @eval function shape_function_gradients(e::Tet4, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<: Number, 1}
-    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+  @eval function shape_function_gradients(e::Tet4, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+
+    ∇N_ξ = $(type[2]){N, D, eltype(ξ), N * D}(
       -1., 1., 0., 0.,
       -1., 0., 1., 0.,
       -1., 0., 0., 1. 
     )
   end
+
+  """
+  """
+  @eval function shape_function_hessians(e::Tet4, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+    ∇∇N_ξ = zeros($(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D})
+  end
 end
 
-"""
-"""
-function shape_function_hessians(::Tet4, ξ::SVector{3, <:Real})
-  ∇∇N_ξ = zeros(SArray{Tuple{4, 3, 3}, eltype(ξ), 3, 36})
-end
