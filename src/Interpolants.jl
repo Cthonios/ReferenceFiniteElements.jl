@@ -18,7 +18,7 @@ function Interpolants(
   e::ReferenceFEType{N, D}, ::Type{Ftype} = Float64
 ) where {N, D, Ftype}
 
-  ξs_temp, ws = quadrature_points_and_weights(e, Ftype)
+  ξs_temp, ws = quadrature_points_and_weights(e, SVector{D, Ftype}, Ftype)
   ξs = reinterpret(SVector{D, Ftype}, vec(ξs_temp))
   Ns = Vector{SVector{N, Ftype}}(undef, length(ξs))
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
