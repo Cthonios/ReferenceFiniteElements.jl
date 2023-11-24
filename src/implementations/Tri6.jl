@@ -27,18 +27,21 @@ function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Tri6, ξ::SVector{2, <:Real})
-  λ = 1. - ξ[1] - ξ[2]
-  N = SVector{6, eltype(ξ)}(
-    λ * (2. * λ - 1.),
-    ξ[1] * (2. * ξ[1] - 1.),
-    ξ[2] * (2. * ξ[2] - 1.),
-    4. * ξ[1] * λ,
-    4. * ξ[1] * ξ[2],
-    4. * ξ[2] * λ
-  )
+# using Tri6(1) as a template
+for type in types_to_generate_interpolants(Tri6(1))
+  """
+  """
+  @eval function shape_function_values(e::Tri6, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    λ = 1. - ξ[1] - ξ[2]
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      λ * (2. * λ - 1.),
+      ξ[1] * (2. * ξ[1] - 1.),
+      ξ[2] * (2. * ξ[2] - 1.),
+      4. * ξ[1] * λ,
+      4. * ξ[1] * ξ[2],
+      4. * ξ[2] * λ
+    )
+  end
 end
 
 """

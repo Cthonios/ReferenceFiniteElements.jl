@@ -11,7 +11,9 @@ export Hex8,
 export ReferenceFE
 
 # methods.
-export quadrature_point,
+export num_dimensions,
+       num_nodes,
+       quadrature_point,
        quadrature_points,
        quadrature_weight,
        quadrature_weights,
@@ -45,12 +47,13 @@ $(DOCSTRING)
 """
 
 # MACROS
-include("Macros.jl")
+# include("Macros.jl")
 
 # Types
 include("ReferenceFETypes.jl")
 include("Interpolants.jl")
 include("ReferenceFEs.jl")
+include("Utils.jl")
 
 # implementations of things common across multiple element types
 include("implementations/HexCommon.jl")

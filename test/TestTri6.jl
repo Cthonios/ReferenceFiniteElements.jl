@@ -39,7 +39,9 @@ end
       expected = polyval2d(x[1], x[2], poly_coeffs)
     
       e = ReferenceFE(Tri6(q_degree), int_type, float_type)
-      Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), x)
+      # Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), x)
+      # TODO currently defaulting to SVector
+      Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), SVector, x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
     
       finterpolated = dot(Ns, fn)

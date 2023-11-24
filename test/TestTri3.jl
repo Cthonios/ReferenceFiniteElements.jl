@@ -56,7 +56,9 @@ end
       poly_coeffs = mapreduce(permutedims, vcat, poly_coeffs)
       expected = polyval2d(x[1], x[2], poly_coeffs)
       e = ReferenceFE(Tri3(1))
-      Ns = ReferenceFiniteElements.shape_function_values(Tri3(1), x)
+      # Ns = ReferenceFiniteElements.shape_function_values(Tri3(1), x)
+      # TODO currently defaulting to SVector in these tests
+      Ns = ReferenceFiniteElements.shape_function_values(Tri3(1), SVector, x)
       fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
       finterpolated = dot(Ns, fn)
       if float_type == Float32

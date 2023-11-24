@@ -24,7 +24,8 @@ function Interpolants(
   ∇N_ξs = Vector{SMatrix{N, D, Ftype, N * D}}(undef, length(ξs))
   ∇∇N_ξs = Vector{SArray{Tuple{N, D, D}, Ftype, 3, N * D * D}}(undef, length(ξs))
   for (q, ξ) in enumerate(ξs)
-    Ns[q]     = shape_function_values(e, ξ)
+    # Ns[q]     = shape_function_values(e, ξ)
+    Ns[q]     = shape_function_values(e, SVector, ξ)
     ∇N_ξs[q]  = shape_function_gradients(e, ξ)
     ∇∇N_ξs[q] = shape_function_hessians(e, ξ)
   end

@@ -51,15 +51,18 @@ function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Tet4, ξ::SVector{3, <:Real})
-  N = SVector{4, eltype(ξ)}(
-    1. - ξ[1] - ξ[2] - ξ[3],
-    ξ[1],
-    ξ[2],
-    ξ[3]
-  )
+# using Tet4(1) as a template
+for type in types_to_generate_interpolants(Tet4(1))
+  """
+  """
+  @eval function shape_function_values(e::Tet4, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      1. - ξ[1] - ξ[2] - ξ[3],
+      ξ[1],
+      ξ[2],
+      ξ[3]
+    )
+  end
 end
 
 """

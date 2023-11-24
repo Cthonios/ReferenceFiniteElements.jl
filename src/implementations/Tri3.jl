@@ -13,14 +13,17 @@ function element_stencil(::Tri3, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Tri3, ξ::SVector{2, <:Real})
-  N = SVector{3, eltype(ξ)}(
-    1. - ξ[1] - ξ[2],
-    ξ[1],
-    ξ[2]
-  )
+# using Tri3(1) as a template
+for type in types_to_generate_interpolants(Tri3(1))
+  """
+  """
+  @eval function shape_function_values(e::Tri3, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      1. - ξ[1] - ξ[2],
+      ξ[1],
+      ξ[2]
+    )
+  end
 end
 
 """

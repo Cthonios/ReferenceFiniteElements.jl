@@ -13,15 +13,18 @@ function element_stencil(::Quad4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Quad4, ξ::SVector{2, <:Real})
-  N = SVector{4, eltype(ξ)}(
-    0.25 * (1.0 - ξ[1]) * (1.0 - ξ[2]),
-    0.25 * (1.0 + ξ[1]) * (1.0 - ξ[2]),
-    0.25 * (1.0 + ξ[1]) * (1.0 + ξ[2]),
-    0.25 * (1.0 - ξ[1]) * (1.0 + ξ[2])
-  )
+# using Quad4(1) as a template
+for type in types_to_generate_interpolants(Quad4(1))
+  """
+  """
+  @eval function shape_function_values(e::Quad4, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      0.25 * (1.0 - ξ[1]) * (1.0 - ξ[2]),
+      0.25 * (1.0 + ξ[1]) * (1.0 - ξ[2]),
+      0.25 * (1.0 + ξ[1]) * (1.0 + ξ[2]),
+      0.25 * (1.0 - ξ[1]) * (1.0 + ξ[2])
+    )
+  end
 end
 
 """
