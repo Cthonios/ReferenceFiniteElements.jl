@@ -10,7 +10,9 @@ end
 
 """
 """
-function quadrature_points_and_weights(e::E, ::Type{Ftype} = Float64) where {E <: AbstractHex, Ftype <: AbstractFloat}
+function quadrature_points_and_weights(
+  e::E, ::Type{Ftype} = Float64
+) where {E <: AbstractHex, Ftype <: AbstractFloat}
   ξs, ws = gausslegendre(degree(e))
   n_q_points = length(ws)^3
   ξ_return = Vector{SVector{3, Ftype}}(undef, n_q_points)

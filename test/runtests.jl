@@ -236,19 +236,10 @@ function common_test_sets(el, q_degrees, int_types, float_types)
 end
 
 @includetests ARGS
+# include("TestHex8.jl")
 
-# Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
 @testset ExtendedTestSet "Aqua Tests" begin
-  Aqua.test_ambiguities(ReferenceFiniteElements)
-  Aqua.test_unbound_args(ReferenceFiniteElements)
-  Aqua.test_undefined_exports(ReferenceFiniteElements)
-  Aqua.test_piracy(ReferenceFiniteElements)
-  Aqua.test_project_extras(ReferenceFiniteElements)
-  Aqua.test_stale_deps(ReferenceFiniteElements)
-  Aqua.test_deps_compat(ReferenceFiniteElements)
-  Aqua.test_project_toml_formatting(ReferenceFiniteElements)
-  # below seems to only work on 1.9 or later... structarrays throwing issues
-  # Aqua.test_all(ReferenceFiniteElements)
+  Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
 end
 
 # JET testing
