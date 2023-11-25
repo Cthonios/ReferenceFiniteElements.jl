@@ -16,12 +16,14 @@ end
 Constructor for ReferenceFE
 """
 function ReferenceFE(
-  e::ReferenceFEType{N, D},
-  ::Type{Itype} = Int64, ::Type{Ftype} = Float64
-) where {N, D, Itype, Ftype}
+  e::ReferenceFEType{N, D};
+  int_type::Type{Itype} = Int64, 
+  float_type::Type{Ftype} = Float64,
+  array_type::Type{ArrType} = SArray
+) where {N, D, Itype, Ftype, ArrType <: Union{SArray, MArray}}
 
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, Itype, Ftype)
-  interps = Interpolants(e, Ftype)
+  interps = Interpolants(e, ArrType, Ftype)
 
   return ReferenceFE{Itype, N, D, Ftype, N * D, N * D *D, typeof(interps), 
                      typeof(nodal_coordinates), typeof(face_nodes), typeof(interior_nodes)}(
