@@ -13,28 +13,33 @@ function element_stencil(::Tri3, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Tri3, ξ::SVector{2, <:Real})
-  N = SVector{3, eltype(ξ)}(
-    1. - ξ[1] - ξ[2],
-    ξ[1],
-    ξ[2]
-  )
+# using Tri3(1) as a template
+for type in types_to_generate_interpolants(Tri3(1))
+  """
+  """
+  @eval function shape_function_values(e::Tri3, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      1. - ξ[1] - ξ[2],
+      ξ[1],
+      ξ[2]
+    )
+  end
+
+  """
+  """
+  @eval function shape_function_gradients(e::Tri3, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    ∇N_ξ = $(type[2]){num_nodes(e), num_dimensions(e), eltype(ξ), num_nodes(e) * num_dimensions(e)}(
+      -1., 1., 0.,
+      -1., 0., 1.
+    )
+  end
+
+  """
+  """
+  @eval function shape_function_hessians(e::Tri3, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+    ∇∇N_ξ = zeros($(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D})
+  end
 end
 
-"""
-"""
-function shape_function_gradients(::Tri3, ξ::SVector{2, <:Real})
-  ∇N_ξ = (@SMatrix [
-    -1. -1.;
-     1.  0.;
-     0.  1.
-  ]) |> SMatrix{3, 2, eltype(ξ), 6}
-end
 
-"""
-"""
-function shape_function_hessians(::Tri3, ξ::SVector{2, <:Real})
-  ∇∇N_ξ = zeros(SArray{Tuple{3, 2, 2}, eltype(ξ), 3, 12})
-end

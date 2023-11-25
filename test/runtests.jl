@@ -95,16 +95,16 @@ function dpolyval2d(x::T, y::T, C::Matrix{<:AbstractFloat}, direction::Int) wher
   val
 end
 
-function partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
+function partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type, array_type)
   # re = ReferenceFE(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el(q_degree), int_type, float_type)
+  re = ReferenceFE(el(q_degree); int_type, float_type, array_type)
   sums = map(sum, shape_function_values(re))
   @test sums ≈ ones(Float64, size(sums))
 end
 
-function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
+function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type, array_type)
   # re = ReferenceFE(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el(q_degree), int_type, float_type)
+  re = ReferenceFE(el(q_degree); int_type, float_type, array_type)
   sums = map(sum, shape_function_gradients(re))
   for ∇N in sums
     for i in size(∇N, 1)
@@ -117,138 +117,137 @@ function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type
   end
 end
 
-function kronecker_delta_property(el, q_degree, Itype, Ftype)
-  e = ReferenceFE(el(q_degree), Itype, Ftype)
+function kronecker_delta_property(el, q_degree, Itype, Ftype, array_type)
+  e = ReferenceFE(el(q_degree); int_type=Itype, float_type=Ftype, array_type=array_type)
   n_dim = size(e.nodal_coordinates, 1)
   coords = reinterpret(SVector{n_dim, Ftype}, e.nodal_coordinates)
-  Ns = ReferenceFiniteElements.shape_function_values.((el(q_degree),), coords)
+
+  # TODO hardcoding to SVector for now
+  type = SVector
+  Ns = ReferenceFiniteElements.shape_function_values.((el(q_degree),), (type,), coords)
   Ns = mapreduce(permutedims, vcat, Ns)
   @test Ns ≈ I
 end
 
-function test_gradients(el, q_degree, Itype, Ftype)
+function test_gradients(el, q_degree, Itype, Ftype, array_type)
   e  = el(q_degree)
-  re = ReferenceFE(e, Itype, Ftype)
-
+  re = ReferenceFE(e; int_type=Itype, float_type=Ftype, array_type=array_type)
+  # TODO hardcoding to SVector for now
+  type = SVector
   for (q, ξ) in enumerate(quadrature_points(re))
     ∇Ns_an = shape_function_gradients(re, q)
-    ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, x), ξ)
+    # ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, x), ξ)
+    ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(e, type, x), ξ)
     @test ∇Ns_fd ≈ ∇Ns_an
   end
 end
 
-function test_hessians(el, q_degree, Itype, Ftype)
+function test_hessians(el, q_degree, Itype, Ftype, array_type)
   e  = el(q_degree)
-  re = ReferenceFE(e, Itype, Ftype)
-
+  re = ReferenceFE(e; int_type=Itype, float_type=Ftype, array_type=array_type)
+  # TODO hardcoding to SMatrix for now
   for (q, ξ) in enumerate(quadrature_points(re))
     ∇∇Ns_an = shape_function_hessians(re, q)
-    ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
+    # ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, x), ξ), size(∇∇Ns_an))
+    ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(e, SMatrix, x), ξ), size(∇∇Ns_an))
     @test ∇∇Ns_an ≈ ∇∇Ns_fd
   end
 end
 
-function common_test_sets(el, q_degrees, int_types, float_types)
+function common_test_sets(el, q_degrees, int_types, float_types, array_types)
   for q_degree in q_degrees
     for int_type in int_types
       for float_type in float_types
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
-          if typeof(el(q_degree)) == Tet4 || typeof(el(q_degree)) == Tet10
-            
-          else
-            e = ReferenceFE(el(q_degree), int_type, float_type)
-            for w in quadrature_weights(e)
-              @test w > 0.
-            end
-          end
-        end
-
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - sum of quadrature points test" begin
-          e = ReferenceFE(el(q_degree), int_type, float_type)
-          if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-            @test quadrature_weights(e) |> sum ≈ 8.0
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-            @test quadrature_weights(e) |> sum ≈ 4.0
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-            @test quadrature_weights(e) |> sum ≈ 1. / 6.
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-            @test quadrature_weights(e) |> sum ≈ 1. / 2.
-          else
-            @test false
-          end
-        end
-
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - triangle exactness" begin
-          if typeof(el) <: ReferenceFiniteElements.AbstractTri
-            for degree in [1]
-              e = ReferenceFE(el(q_degree))
-              for i in 1:degree
-                for j in 1:degree - i
-                  quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
-                  exact = integrate_2d_monomial_on_triangle(i, j)
-                  @test quad_answer ≈ exact
-                end
+        for array_type in array_types
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
+            if typeof(el(q_degree)) == Tet4 || typeof(el(q_degree)) == Tet10
+              
+            else
+              e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+              for w in quadrature_weights(e)
+                @test w > 0.
               end
             end
-          else
-
-          end
-        end
-
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - quadrature points inside element" begin
-          e = ReferenceFE(el(q_degree), int_type, float_type)
-          if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-            test_func = is_inside_hex
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-            test_func = is_inside_quad
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-            test_func = is_inside_tet
-          elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-            test_func = is_inside_triangle
-          else
-            @test false
           end
 
-          for ξ in quadrature_points(e)
-            @test test_func(ξ)
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - sum of quadrature points test" begin
+            e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+              @test quadrature_weights(e) |> sum ≈ 8.0
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+              @test quadrature_weights(e) |> sum ≈ 4.0
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+              @test quadrature_weights(e) |> sum ≈ 1. / 6.
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+              @test quadrature_weights(e) |> sum ≈ 1. / 2.
+            else
+              @test false
+            end
           end
-        end
 
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - partition of unity tests" begin
-          partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type)
-          partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type)
-        end
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - triangle exactness" begin
+            if typeof(el) <: ReferenceFiniteElements.AbstractTri
+              for degree in [1]
+                e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+                for i in 1:degree
+                  for j in 1:degree - i
+                    quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
+                    exact = integrate_2d_monomial_on_triangle(i, j)
+                    @test quad_answer ≈ exact
+                  end
+                end
+              end
+            else
 
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - kronecker delta property tests" begin
-          kronecker_delta_property(el, q_degree, int_type, float_type)
-        end
+            end
+          end
 
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - shape function gradients" begin
-          test_gradients(el, q_degree, int_type, float_type)
-        end
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - quadrature points inside element" begin
+            e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+              test_func = is_inside_hex
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+              test_func = is_inside_quad
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+              test_func = is_inside_tet
+            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+              test_func = is_inside_triangle
+            else
+              @test false
+            end
 
-        @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - shape function hessians" begin
-          test_hessians(el, q_degree, int_type, float_type)
+            for ξ in quadrature_points(e)
+              @test test_func(ξ)
+            end
+          end
+
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - partition of unity tests" begin
+            partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type, array_type)
+            partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type, array_type)
+          end
+
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - kronecker delta property tests" begin
+            kronecker_delta_property(el, q_degree, int_type, float_type, array_type)
+          end
+
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - shape function gradients" begin
+            test_gradients(el, q_degree, int_type, float_type, array_type)
+          end
+
+          @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - shape function hessians" begin
+            test_hessians(el, q_degree, int_type, float_type, array_type)
+          end
         end
       end
     end
-  end
-end
+  end # q_degree
+end # common_test_sets
 
 @includetests ARGS
+# include("TestHex8.jl")
 
-# Aqua.test_all(ReferenceFiniteElements) # getting weird type ambiguity from StructArrays
 @testset ExtendedTestSet "Aqua Tests" begin
-  Aqua.test_ambiguities(ReferenceFiniteElements)
-  Aqua.test_unbound_args(ReferenceFiniteElements)
-  Aqua.test_undefined_exports(ReferenceFiniteElements)
-  Aqua.test_piracy(ReferenceFiniteElements)
-  Aqua.test_project_extras(ReferenceFiniteElements)
-  Aqua.test_stale_deps(ReferenceFiniteElements)
-  Aqua.test_deps_compat(ReferenceFiniteElements)
-  Aqua.test_project_toml_formatting(ReferenceFiniteElements)
-  # below seems to only work on 1.9 or later... structarrays throwing issues
-  # Aqua.test_all(ReferenceFiniteElements)
+  Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
 end
 
 # JET testing

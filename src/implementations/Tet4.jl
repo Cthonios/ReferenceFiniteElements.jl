@@ -51,30 +51,36 @@ function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-"""
-"""
-function shape_function_values(::Tet4, ξ::SVector{3, <:Real})
-  N = SVector{4, eltype(ξ)}(
-    1. - ξ[1] - ξ[2] - ξ[3],
-    ξ[1],
-    ξ[2],
-    ξ[3]
-  )
+# using Tet4(1) as a template
+for type in types_to_generate_interpolants(Tet4(1))
+  """
+  """
+  @eval function shape_function_values(e::Tet4, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N = $(type[1]){num_nodes(e), eltype(ξ)}(
+      1. - ξ[1] - ξ[2] - ξ[3],
+      ξ[1],
+      ξ[2],
+      ξ[3]
+    )
+  end
+
+  """
+  """
+  @eval function shape_function_gradients(e::Tet4, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+
+    ∇N_ξ = $(type[2]){N, D, eltype(ξ), N * D}(
+      -1., 1., 0., 0.,
+      -1., 0., 1., 0.,
+      -1., 0., 0., 1. 
+    )
+  end
+
+  """
+  """
+  @eval function shape_function_hessians(e::Tet4, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
+    N, D = num_nodes(e), num_dimensions(e)
+    ∇∇N_ξ = zeros($(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D})
+  end
 end
 
-"""
-"""
-function shape_function_gradients(::Tet4, ξ::SVector{3, <:Real})
-  ∇N_ξ = (@SMatrix [
-    -1. -1. -1.;
-     1.  0.  0.;
-     0.  1.  0.;
-     0.  0.  1.;
-  ]) |> SMatrix{4, 3, eltype(ξ), 12}
-end
-
-"""
-"""
-function shape_function_hessians(::Tet4, ξ::SVector{3, <:Real})
-  ∇∇N_ξ = zeros(SArray{Tuple{4, 3, 3}, eltype(ξ), 3, 36})
-end
