@@ -11,8 +11,10 @@ export Hex8,
 export ReferenceFE
 
 # methods.
-export num_dimensions,
-       num_nodes,
+export element_type,
+       num_dimensions,
+       num_nodes_per_element,
+       num_q_points,
        quadrature_point,
        quadrature_points,
        quadrature_weight,

@@ -5,7 +5,22 @@ ReferenceFE is the main type.
 This type defines the nodal coordinates, face nodes, interior nodes
 and interpolants
 """
-struct ReferenceFE{Itype, N, D, Ftype, L1, L2, S, VOM <: AbstractVecOrMat, M <: AbstractMatrix, V <: AbstractVector}
+# struct ReferenceFE{
+#   Itype, N, D, Ftype, L1, L2, S, 
+#   RefFE <: ReferenceFEType{N, D},
+#   VOM <: AbstractVecOrMat, 
+#   M <: AbstractMatrix, 
+#   V <: AbstractVector
+# }
+struct ReferenceFE{
+  Itype, N, D, Ftype, L1, L2,
+  RefFEType <: ReferenceFEType{N, D},
+  S,
+  VOM       <: AbstractVecOrMat,
+  M         <: AbstractMatrix,
+  V         <: AbstractVector
+}
+  ref_fe_type::RefFEType
   nodal_coordinates::VOM
   face_nodes::M
   interior_nodes::V
@@ -17,19 +32,19 @@ Constructor for ReferenceFE
 """
 function ReferenceFE(
   e::ReferenceFEType{N, D};
-  int_type::Type{Itype} = Int64, 
-  float_type::Type{Ftype} = Float64,
-  array_type::Type{ArrType} = SArray
-) where {N, D, Itype, Ftype, ArrType <: Union{SArray, MArray}}
+  int_type::Type{<:Integer} = Int64, 
+  float_type::Type{<:Number} = Float64,
+  array_type::Type{<:Union{<:MArray, <:SArray}} = SArray
+) where {N, D}
 
-  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, Itype, Ftype)
-  interps = Interpolants(e, ArrType, Ftype)
+  nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, int_type, float_type)
+  interps = Interpolants(e, array_type, float_type)
 
-  return ReferenceFE{Itype, N, D, Ftype, N * D, N * D *D, typeof(interps), 
-                     typeof(nodal_coordinates), typeof(face_nodes), typeof(interior_nodes)}(
-    nodal_coordinates, face_nodes, interior_nodes,
-    interps
-  )
+  return ReferenceFE{
+    int_type, N, D, float_type, N * D, N * D * D,
+    typeof(e), typeof(interps), typeof(nodal_coordinates),
+    typeof(face_nodes), typeof(interior_nodes)
+  }(e, nodal_coordinates, face_nodes, interior_nodes, interps)
 end
 
 """
@@ -120,4 +135,20 @@ shape_function_hessians(e::ReferenceFE, i::Integer) = LazyRow(getfield(e, :inter
 Returns the nodes of vertices
 TODO this is probably not very useful
 """
-vertex_nodes(::ReferenceFE{Itype, N, D, Ftype, L1, L2}) where {Itype, N, D, Ftype, L1, L2} = 1:N
+element_type(::ReferenceFE{
+  Itype, N, D, Ftype, L1, L2, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = RefFE
+
+vertex_nodes(::ReferenceFE{
+  Itype, N, D, Ftype, L1, L2, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
+
+"""
+Returns number of nodes per element
+"""
+num_nodes_per_element(e::ReferenceFE) = num_nodes(e.ref_fe_type)
+
+"""
+Returns number of quadrature points
+"""
+num_q_points(e::ReferenceFE) = length(e.interpolants)
