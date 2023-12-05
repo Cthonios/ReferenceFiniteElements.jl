@@ -21,7 +21,7 @@ function ReferenceFiniteElements.ReferenceFE(
   array_type = SArray
 ) where B <: Exodus.Block
   return ReferenceFiniteElements.ReferenceFE(
-    name_to_type[block.elem_type](q_order);
+    name_to_type[block.elem_type](Val(q_order));
     int_type=int_type, float_type=float_type,
     array_type=array_type
   )

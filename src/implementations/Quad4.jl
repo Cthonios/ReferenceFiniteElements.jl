@@ -14,7 +14,7 @@ function element_stencil(::Quad4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
 end
 
 # using Quad4(1) as a template
-for type in types_to_generate_interpolants(Quad4(1))
+for type in types_to_generate_interpolants(Quad4(Val(1)))
   """
   """
   @eval function shape_function_values(e::Quad4, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}

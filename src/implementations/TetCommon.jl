@@ -1,21 +1,26 @@
 """
 """
-abstract type AbstractTet{N, D} <: ReferenceFEType{N, D} end
+abstract type AbstractTet{N, D, Q} <: ReferenceFEType{N, D, Q} end
 
 """
 """
-struct Tet4 <: AbstractTet{4, 3}
+struct Tet4{Q} <: AbstractTet{4, 3, Q}
   degree::Int64
 end
 
 """
 """
-struct Tet10 <: AbstractTet{10, 3}
+struct Tet10{Q} <: AbstractTet{10, 3, Q}
   degree::Int64
 end
+
+Tet4(::Val{1})  = Tet4{1}(1)
+Tet4(::Val{2})  = Tet4{5}(2)
+Tet10(::Val{1}) = Tet10{1}(1)
+Tet10(::Val{2}) = Tet10{5}(2)
 
 # using Tet4(1) as template
-for type_pair in types_to_generate_quadrature(Tet4(1))
+for type_pair in types_to_generate_quadrature(Tet4(Val(1)))
 
   """
   """

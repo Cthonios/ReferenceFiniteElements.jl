@@ -2,7 +2,7 @@
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
       for array_type in [SArray, MArray]
-        e = ReferenceFE(Tri6(1); int_type=int_type, float_type=float_type, array_type=array_type)
+        e = ReferenceFE(Tri6(Val(1)); int_type=int_type, float_type=float_type, array_type=array_type)
         v_nodes = vertex_nodes(e)
         @test e.nodal_coordinates[:, v_nodes[1]] ≈ [0., 0.]
         @test e.nodal_coordinates[:, v_nodes[2]] ≈ [1., 0.]
@@ -41,10 +41,10 @@ end
         poly_coeffs = mapreduce(permutedims, vcat, poly_coeffs)
         expected = polyval2d(x[1], x[2], poly_coeffs)
       
-        e = ReferenceFE(Tri6(q_degree); int_type=int_type, float_type=float_type, array_type=array_type)
+        e = ReferenceFE(Tri6(Val(q_degree)); int_type=int_type, float_type=float_type, array_type=array_type)
         # Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), x)
         # TODO currently defaulting to SVector
-        Ns = ReferenceFiniteElements.shape_function_values(Tri6(q_degree), SVector, x)
+        Ns = ReferenceFiniteElements.shape_function_values(Tri6(Val(q_degree)), SVector, x)
         fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
       
         finterpolated = dot(Ns, fn)
@@ -74,10 +74,10 @@ end
         expected_dx = dpolyval2d(x[1], x[2], poly_coeffs, 1)
         expected_dy = dpolyval2d(x[1], x[2], poly_coeffs, 2)
 
-        e = ReferenceFE(Tri6(q_degree); int_type=int_type, float_type=float_type, array_type=array_type)
+        e = ReferenceFE(Tri6(Val(q_degree)); int_type=int_type, float_type=float_type, array_type=array_type)
         # ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), x)
         # TODO defaulting to SMatrix for now
-        ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(q_degree), SMatrix, x)
+        ∇N_ξ = ReferenceFiniteElements.shape_function_gradients(Tri6(Val(q_degree)), SMatrix, x)
         fn = polyval2d.(e.nodal_coordinates[1, :], e.nodal_coordinates[2, :], (poly_coeffs,))
 
         temp_x = dot(∇N_ξ[:, 1], fn)

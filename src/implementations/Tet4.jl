@@ -52,7 +52,7 @@ function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
 end
 
 # using Tet4(1) as a template
-for type in types_to_generate_interpolants(Tet4(1))
+for type in types_to_generate_interpolants(Tet4(Val(1)))
   """
   """
   @eval function shape_function_values(e::Tet4, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}

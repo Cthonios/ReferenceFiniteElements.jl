@@ -83,7 +83,7 @@ function element_stencil(::Hex8, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
 end
 
 # using Hex8(1) as a template
-for type in types_to_generate_interpolants(Hex8(1))
+for type in types_to_generate_interpolants(Hex8(Val(1)))
   # @eval function shape_function_values(::Hex8, ξ::$(type[2]))
     # @show type
   @eval function shape_function_values(

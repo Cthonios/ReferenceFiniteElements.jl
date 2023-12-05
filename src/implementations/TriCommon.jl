@@ -1,21 +1,35 @@
 """
 """
-abstract type AbstractTri{N, D} <: ReferenceFEType{N, D} end
+abstract type AbstractTri{N, D, Q} <: ReferenceFEType{N, D, Q} end
 
 """
 """
-struct Tri3 <: AbstractTri{3, 2}
+struct Tri3{Q} <: AbstractTri{3, 2, Q}
   degree::Int64
 end
 
+Tri3(::Val{1}) = Tri3{1}(1)
+Tri3(::Val{2}) = Tri3{3}(2)
+Tri3(::Val{3}) = Tri3{6}(3)
+Tri3(::Val{4}) = Tri3{6}(4)
+Tri3(::Val{5}) = Tri3{7}(5)
+Tri3(::Val{6}) = Tri3{12}(6)
+
 """
 """
-struct Tri6 <: AbstractTri{6, 2}
+struct Tri6{Q} <: AbstractTri{6, 2, Q}
   degree::Int64
 end
 
+Tri6(::Val{1}) = Tri6{1}(1)
+Tri6(::Val{2}) = Tri6{3}(2)
+Tri6(::Val{3}) = Tri6{6}(3)
+Tri6(::Val{4}) = Tri6{6}(4)
+Tri6(::Val{5}) = Tri6{7}(5)
+Tri6(::Val{6}) = Tri6{12}(6)
 
-for type_pair in types_to_generate_quadrature(Tri3(1))
+
+for type_pair in types_to_generate_quadrature(Tri3(Val(1)))
   """
   """
   @eval function quadrature_points_and_weights(

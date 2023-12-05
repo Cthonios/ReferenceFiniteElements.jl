@@ -3,7 +3,7 @@
 Interpolant container for a single quadrature point
 """
 struct Interpolants{
-  N, D, Ftype, L1, L2,
+  N, D, Ftype, L1, L2, Q,
   Vec1 <: AbstractArray{Ftype, 1},
   Vec2 <: AbstractArray{Ftype, 1},
   Mat  <: AbstractArray{Ftype, 2},
@@ -45,10 +45,10 @@ types_to_generate = (
 
 for type in types_to_generate
   @eval function Interpolants(
-    e::ReferenceFEType{N, D},
+    e::ReferenceFEType{N, D, Q},
     ::Type{$(type[4])},
     ::Type{$(type[1])}
-  ) where {N, D}
+  ) where {N, D, Q}
 
     ξs_temp, ws = quadrature_points_and_weights(e, $(type[2]){D, $(type[1])}, $(type[1]))
     ξs          = reinterpret($(type[2]){D, $(type[1])}, vec(ξs_temp))
@@ -61,7 +61,7 @@ for type in types_to_generate
       ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
     end
     s = StructArray{Interpolants{
-      N, D, $(type[1]), N * D, N * D * D,
+      N, D, $(type[1]), N * D, N * D * D, Q,
       eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
     }}((
       ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
