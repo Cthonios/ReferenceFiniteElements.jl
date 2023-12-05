@@ -144,6 +144,11 @@ vertex_nodes(::ReferenceFE{
 }) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
 
 """
+Returns number of dimensions
+"""
+num_dimensions(e::ReferenceFE) = num_dimensions(e.ref_fe_type)
+
+"""
 Returns number of nodes per element
 """
 num_nodes_per_element(e::ReferenceFE) = num_nodes(e.ref_fe_type)
