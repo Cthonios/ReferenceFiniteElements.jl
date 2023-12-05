@@ -1,15 +1,19 @@
 """
 """
-abstract type AbstractHex{N, D} <: ReferenceFEType{N, D} end
+abstract type AbstractHex{N, D, Q} <: ReferenceFEType{N, D, Q} end
 
 """
 """
-struct Hex8 <: AbstractHex{8, 3}
+struct Hex8{Q} <: AbstractHex{8, 3, Q}
   degree::Int
 end
 
+for n in 1:25
+  @eval Hex8(::Val{$n}) = Hex8{$(n^3)}($n)
+end 
+
 # using Hex8(1) as a template
-for type_pair in types_to_generate_quadrature(Hex8(1))
+for type_pair in types_to_generate_quadrature(Hex8(Val(1)))
   @eval function setup_hex_quadrature_points!(ξ_return::Vector{$(type_pair[2])}, ξs::T) where T <: AbstractArray
     for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs, ξs))
       ξ_return[q] = $(type_pair[2])(ξ[1], ξ[2], ξ[3])

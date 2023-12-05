@@ -13,7 +13,7 @@ and interpolants
 #   V <: AbstractVector
 # }
 struct ReferenceFE{
-  Itype, N, D, Ftype, L1, L2,
+  Itype, N, D, Ftype, L1, L2, Q,
   RefFEType <: ReferenceFEType{N, D},
   S,
   VOM       <: AbstractVecOrMat,
@@ -31,17 +31,17 @@ end
 Constructor for ReferenceFE
 """
 function ReferenceFE(
-  e::ReferenceFEType{N, D};
+  e::ReferenceFEType{N, D, Q};
   int_type::Type{<:Integer} = Int64, 
   float_type::Type{<:Number} = Float64,
   array_type::Type{<:Union{<:MArray, <:SArray}} = SArray
-) where {N, D}
+) where {N, D, Q}
 
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, int_type, float_type)
   interps = Interpolants(e, array_type, float_type)
 
   return ReferenceFE{
-    int_type, N, D, float_type, N * D, N * D * D,
+    int_type, N, D, float_type, N * D, N * D * D, Q,
     typeof(e), typeof(interps), typeof(nodal_coordinates),
     typeof(face_nodes), typeof(interior_nodes)
   }(e, nodal_coordinates, face_nodes, interior_nodes, interps)
@@ -136,12 +136,12 @@ Returns the nodes of vertices
 TODO this is probably not very useful
 """
 element_type(::ReferenceFE{
-  Itype, N, D, Ftype, L1, L2, RefFE, S, VOM, M, V
-}) where {Itype, N, D, Ftype, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = RefFE
+  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, L1, L2, Q, RefFE <: ReferenceFEType, S, VOM, M, V} = RefFE
 
 vertex_nodes(::ReferenceFE{
-  Itype, N, D, Ftype, L1, L2, RefFE, S, VOM, M, V
-}) where {Itype, N, D, Ftype, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
+  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
 
 """
 Returns number of nodes per element
@@ -151,4 +151,4 @@ num_nodes_per_element(e::ReferenceFE) = num_nodes(e.ref_fe_type)
 """
 Returns number of quadrature points
 """
-num_q_points(e::ReferenceFE) = length(e.interpolants)
+num_q_points(e::ReferenceFE) = num_q_points(e.ref_fe_type)

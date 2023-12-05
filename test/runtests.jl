@@ -97,14 +97,14 @@ end
 
 function partition_of_unity_shape_function_values_test(el, q_degree, int_type, float_type, array_type)
   # re = ReferenceFE(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+  re = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
   sums = map(sum, shape_function_values(re))
   @test sums ≈ ones(Float64, size(sums))
 end
 
 function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type, float_type, array_type)
   # re = ReferenceFE(el, q_degree, int_type, float_type)
-  re = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+  re = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
   sums = map(sum, shape_function_gradients(re))
   for ∇N in sums
     for i in size(∇N, 1)
@@ -118,19 +118,19 @@ function partition_of_unity_shape_function_gradients_test(el, q_degree, int_type
 end
 
 function kronecker_delta_property(el, q_degree, Itype, Ftype, array_type)
-  e = ReferenceFE(el(q_degree); int_type=Itype, float_type=Ftype, array_type=array_type)
+  e = ReferenceFE(el(Val(q_degree)); int_type=Itype, float_type=Ftype, array_type=array_type)
   n_dim = size(e.nodal_coordinates, 1)
   coords = reinterpret(SVector{n_dim, Ftype}, e.nodal_coordinates)
 
   # TODO hardcoding to SVector for now
   type = SVector
-  Ns = ReferenceFiniteElements.shape_function_values.((el(q_degree),), (type,), coords)
+  Ns = ReferenceFiniteElements.shape_function_values.((el(Val(q_degree)),), (type,), coords)
   Ns = mapreduce(permutedims, vcat, Ns)
   @test Ns ≈ I
 end
 
 function test_gradients(el, q_degree, Itype, Ftype, array_type)
-  e  = el(q_degree)
+  e  = el(Val(q_degree))
   re = ReferenceFE(e; int_type=Itype, float_type=Ftype, array_type=array_type)
   # TODO hardcoding to SVector for now
   type = SVector
@@ -143,7 +143,7 @@ function test_gradients(el, q_degree, Itype, Ftype, array_type)
 end
 
 function test_hessians(el, q_degree, Itype, Ftype, array_type)
-  e  = el(q_degree)
+  e  = el(Val(q_degree))
   re = ReferenceFE(e; int_type=Itype, float_type=Ftype, array_type=array_type)
   # TODO hardcoding to SMatrix for now
   for (q, ξ) in enumerate(quadrature_points(re))
@@ -160,10 +160,10 @@ function common_test_sets(el, q_degrees, int_types, float_types, array_types)
       for float_type in float_types
         for array_type in array_types
           @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - Quadrature weight positivity test" begin
-            if typeof(el(q_degree)) == Tet4 || typeof(el(q_degree)) == Tet10
+            if typeof(el(Val(q_degree))) <: Tet4 || typeof(el(Val(q_degree))) <: Tet10
               
             else
-              e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+              e = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
               for w in quadrature_weights(e)
                 @test w > 0.
               end
@@ -171,14 +171,14 @@ function common_test_sets(el, q_degrees, int_types, float_types, array_types)
           end
 
           @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - sum of quadrature points test" begin
-            e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+            e = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
+            if typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractHex
               @test quadrature_weights(e) |> sum ≈ 8.0
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractQuad
               @test quadrature_weights(e) |> sum ≈ 4.0
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractTet
               @test quadrature_weights(e) |> sum ≈ 1. / 6.
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractTri
               @test quadrature_weights(e) |> sum ≈ 1. / 2.
             else
               @test false
@@ -188,7 +188,7 @@ function common_test_sets(el, q_degrees, int_types, float_types, array_types)
           @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - triangle exactness" begin
             if typeof(el) <: ReferenceFiniteElements.AbstractTri
               for degree in [1]
-                e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+                e = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
                 for i in 1:degree
                   for j in 1:degree - i
                     quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
@@ -203,14 +203,14 @@ function common_test_sets(el, q_degrees, int_types, float_types, array_types)
           end
 
           @testset ExtendedTestSet "$(typeof(el)), q_degree = $q_degree - quadrature points inside element" begin
-            e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+            e = ReferenceFE(el(Val(q_degree)); int_type, float_type, array_type)
+            if typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractHex
               test_func = is_inside_hex
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractQuad
               test_func = is_inside_quad
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractTet
               test_func = is_inside_tet
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+            elseif typeof(el(Val(q_degree))) <: ReferenceFiniteElements.AbstractTri
               test_func = is_inside_triangle
             else
               @test false

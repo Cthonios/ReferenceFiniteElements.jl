@@ -28,7 +28,7 @@ function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
 end
 
 # using Tri6(1) as a template
-for type in types_to_generate_interpolants(Tri6(1))
+for type in types_to_generate_interpolants(Tri6(Val(1)))
   """
   """
   @eval function shape_function_values(e::Tri6, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}

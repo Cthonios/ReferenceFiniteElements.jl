@@ -1,21 +1,26 @@
 """
 """
-abstract type AbstractQuad{N, D} <: ReferenceFEType{N, D} end
+abstract type AbstractQuad{N, D, Q} <: ReferenceFEType{N, D, Q} end
 
 """
 """
-struct Quad4 <: AbstractQuad{4, 2}
+struct Quad4{Q} <: AbstractQuad{4, 2, Q}
   degree::Int64
 end
 
 """
 """
-struct Quad9 <: AbstractQuad{9, 2}
+struct Quad9{Q} <: AbstractQuad{9, 2, Q}
   degree::Int64
+end
+
+for n in 1:25
+  @eval Quad4(::Val{$n}) = Quad4{$(n^2)}($n)
+  @eval Quad9(::Val{$n}) = Quad9{$(n^2)}($n)
 end
 
 # using Quad4(1) as a template
-for type_pair in types_to_generate_quadrature(Quad4(1))
+for type_pair in types_to_generate_quadrature(Quad4(Val(1)))
 
   @eval function setup_quad_quadrature_points!(ξ_return::Vector{$(type_pair[2])}, ξs::T) where T <: AbstractArray
     for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs))
