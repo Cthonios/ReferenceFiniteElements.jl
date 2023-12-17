@@ -41,3 +41,13 @@ function types_to_generate_interpolants(e::E) where E <: ReferenceFEType
   )
   return types
 end
+
+# struct QuadratureDegreeException{E} <: Exception
+#   element::E
+# end
+
+# Base.show(io::IO, e::QuadratureDegreeException) = println(io,
+#   "Invalid quadrature degree $(degree(e)) supplied for element type $(e)"
+# )
+
+# quadrature_degree_error(e::E) where E <: ReferenceFEType = throw(QuadratureDegreeException(e))

@@ -16,56 +16,72 @@ struct Interpolants{
   ∇∇N_ξ::Arr
 end
 
-types_to_generate = (
-  (
-    :(Float32),
-    :(SVector),
-    :(SMatrix),
-    :(SArray)
-  ),
-  (
-    :(Float32),
-    :(MVector),
-    :(MMatrix),
-    :(MArray)
-  ),
-  (
-    :(Float64),
-    :(SVector),
-    :(SMatrix),
-    :(SArray)
-  ),
-  (
-    :(Float64),
-    :(MVector),
-    :(MMatrix),
-    :(MArray)
-  )
-)
 
-for type in types_to_generate
-  @eval function Interpolants(
-    e::ReferenceFEType{N, D, Q},
-    ::Type{$(type[4])},
-    ::Type{$(type[1])}
-  ) where {N, D, Q}
-
-    ξs_temp, ws = quadrature_points_and_weights(e, $(type[2]){D, $(type[1])}, $(type[1]))
-    ξs          = reinterpret($(type[2]){D, $(type[1])}, vec(ξs_temp))
-    Ns          = Vector{$(type[2]){N, $(type[1])}}(undef, length(ξs))
-    ∇N_ξs       = Vector{$(type[3]){N, D, $(type[1]), N * D}}(undef, length(ξs))
-    ∇∇N_ξs      = Vector{$(type[4]){Tuple{N, D, D}, $(type[1]), 3, N * D * D}}(undef, length(ξs))
-    for (q, ξ) in enumerate(ξs)
-      Ns[q]     = shape_function_values(e, SVector, ξ)
-      ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
-      ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
-    end
-    s = StructArray{Interpolants{
-      N, D, $(type[1]), N * D, N * D * D, Q,
-      eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
-    }}((
-      ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
-    ))
-    return s
+function setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e::ReferenceFEType, ξs)
+  for (q, ξ) in enumerate(ξs)
+    Ns[q]     = shape_function_values(e, SVector, ξ)
+    ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
+    ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
   end
+end
+
+function Interpolants(
+  e::ReferenceFEType{N, D, Q},
+  ::Type{A1}, ::Type{A2}, ::Type{A3}, ::Type{T}
+) where {
+  N, D, Q,
+  A1 <: Union{SVector, MVector}, 
+  A2 <: Union{SMatrix, MMatrix},
+  A3 <: Union{SArray, MArray},
+  T <: Number
+}
+
+  ξs, ws      = quadrature_points_and_weights(e, A1, T)
+  Ns          = Vector{A1{N, T}}(undef, length(ξs))
+  ∇N_ξs       = Vector{A2{N, D, T, N * D}}(undef, length(ξs))
+  ∇∇N_ξs      = Vector{A3{Tuple{N, D, D}, T, 3, N * D * D}}(undef, length(ξs))
+  # for (q, ξ) in enumerate(ξs)
+  #   Ns[q]     = shape_function_values(e, SVector, ξ)
+  #   ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
+  #   ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
+  # end
+  setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  s = StructArray{Interpolants{
+    N, D, T, N * D, N * D * D, Q,
+    eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
+  }}((
+    ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
+  ))
+  return s
+end
+
+function Interpolants(
+  e::ReferenceFEType{N, D, Q},
+  ::Type{Vector}, ::Type{Matrix}, ::Type{Array}, ::Type{T}
+) where {N, D, Q, T  <: Number}
+
+  ξs, ws      = quadrature_points_and_weights(e, Vector, T)
+  Ns          = Vector{Vector{T}}(undef, length(ξs))
+  ∇N_ξs       = Vector{Matrix{T}}(undef, length(ξs))
+  ∇∇N_ξs      = Vector{Array{T, 3}}(undef, length(ξs))
+  setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  s = StructArray{Interpolants{
+    N, D, T, N * D, N * D * D, Q,
+    eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
+  }}((
+    ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
+  ))
+  return s
+end
+
+function Interpolants{SArray, T}(e::ReferenceFEType) where T
+  return Interpolants(e, SVector, SMatrix, SArray, T)
+end
+
+function Interpolants{MArray, T}(e::ReferenceFEType) where T
+  return Interpolants(e, MVector, MMatrix, MArray, T)
+end
+
+function Interpolants{Array, T}(e::ReferenceFEType) where T
+  return Interpolants(e, Vector, Matrix, Array, T)
 end

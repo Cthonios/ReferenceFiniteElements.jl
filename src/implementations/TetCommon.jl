@@ -19,41 +19,34 @@ Tet4(::Val{2})  = Tet4{5}(2)
 Tet10(::Val{1}) = Tet10{1}(1)
 Tet10(::Val{2}) = Tet10{5}(2)
 
-# using Tet4(1) as template
-for type_pair in types_to_generate_quadrature(Tet4(Val(1)))
+Tet4(q::Int64)  = Tet4(Val{q}())
+Tet10(q::Int64) = Tet10(Val{q}())
 
-  """
-  """
-  @eval function quadrature_points_and_weights(
-    e::E, 
-    ::Type{$(type_pair[2])},
-    ::Type{$(type_pair[1])}
-  ) where E <: AbstractTet
+function quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {
+  E <: AbstractTet, A <: Union{SVector, MVector}, T <: Number
+}
 
-    if degree(e) == 1
-      ξs    = Vector{$(type_pair[2])}(undef, 1)
-      ξs[1] = $(type_pair[2])(1. / 4., 1. / 4., 1. / 4.)
-      ws    = $(type_pair[1])[1. / 6.]
-    elseif degree(e) == 2
-      ξs    = Vector{$(type_pair[2])}(undef, 5)
-      ξs[1] = $(type_pair[2])(1. / 4., 1. / 4., 1. / 4.)
-      ξs[2] = $(type_pair[2])(1. / 6., 1. / 6., 1. / 6.)
-      ξs[3] = $(type_pair[2])(1. / 6., 1. / 6., 1. / 2.)
-      ξs[4] = $(type_pair[2])(1. / 6., 1. / 2., 1. / 6.)
-      ξs[5] = $(type_pair[2])(1. / 2., 1. / 6., 1. / 6.)
+  D = num_dimensions(e)
+  if degree(e) == 1
+    ξs    = Vector{A{D, T}}(undef, 1)
+    ξs[1] = A{D, T}(1. / 4., 1. / 4., 1. / 4.)
+    ws    = T[1. / 6.]
+  elseif degree(e) == 2
+    ξs    = Vector{A{D, T}}(undef, 5)
+    ξs[1] = A{D, T}(1. / 4., 1. / 4., 1. / 4.)
+    ξs[2] = A{D, T}(1. / 6., 1. / 6., 1. / 6.)
+    ξs[3] = A{D, T}(1. / 6., 1. / 6., 1. / 2.)
+    ξs[4] = A{D, T}(1. / 6., 1. / 2., 1. / 6.)
+    ξs[5] = A{D, T}(1. / 2., 1. / 6., 1. / 6.)
 
-      #
-      ws = $(type_pair[1])[
-        -2. / 15.
-        3. / 40.
-        3. / 40.
-        3. / 40.
-        3. / 40.
-      ]
-    else
-      throw(ErrorException("Unsupported quadrature degree"))
-    end
-    return ξs, ws
+    #
+    ws = T[
+      -2. / 15.
+       3. / 40.
+       3. / 40.
+       3. / 40.
+       3. / 40.
+    ]
   end
-
+  return ξs, ws
 end
