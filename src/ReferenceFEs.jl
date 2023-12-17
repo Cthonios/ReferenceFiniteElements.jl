@@ -34,11 +34,12 @@ function ReferenceFE(
   e::ReferenceFEType{N, D, Q};
   int_type::Type{<:Integer} = Int64, 
   float_type::Type{<:Number} = Float64,
-  array_type::Type{<:Union{<:MArray, <:SArray}} = SArray
+  array_type::Type{<:Union{<:MArray, <:SArray, <:Array}} = SArray
 ) where {N, D, Q}
 
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, int_type, float_type)
-  interps = Interpolants(e, array_type, float_type)
+  # interps = Interpolants(e, array_type, float_type)
+  interps = Interpolants{array_type, float_type}(e)
 
   return ReferenceFE{
     int_type, N, D, float_type, N * D, N * D * D, Q,

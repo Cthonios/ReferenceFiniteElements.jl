@@ -244,7 +244,6 @@ function common_test_sets(el, q_degrees, int_types, float_types, array_types)
 end # common_test_sets
 
 @includetests ARGS
-# include("TestHex8.jl")
 
 @testset ExtendedTestSet "Aqua Tests" begin
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
@@ -252,6 +251,5 @@ end
 
 # JET testing
 @testset ExtendedTestSet "JET Tests" begin
-  report_package("ReferenceFiniteElements")
   test_package("ReferenceFiniteElements"; target_defined_modules=true)
 end

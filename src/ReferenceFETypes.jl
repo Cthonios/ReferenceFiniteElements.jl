@@ -23,3 +23,33 @@ num_dimensions(::ReferenceFEType{N, D, Q}) where {N, D, Q} = D
 Returns the number of quadrature porints for a ReferenceFEType
 """
 num_q_points(::ReferenceFEType{N, D, Q}) where {N, D, Q} = Q
+
+# functions to be defined
+function quadrature_points_and_weights end
+function shape_function_values end
+function shape_function_gradients end
+function shape_function_hessians end
+
+function quadrature_points_and_weights(e::ReferenceFEType, ::Type{Vector}, T::Type{<:Number})
+  ξs, ws = quadrature_points_and_weights(e, SVector, T)
+  new_ξs = map(ξ -> Vector(ξ), ξs)
+  return new_ξs, ws
+end
+
+function shape_function_values(e::ReferenceFEType, ::Type{Vector}, ξ::A) where A <: AbstractArray{<:Number, 1}
+  Ns = shape_function_values(e, SVector, ξ)
+  new_Ns = map(N -> Vector(N), Ns)
+  return new_Ns
+end
+
+function shape_function_gradients(e::ReferenceFEType, ::Type{Matrix}, ξ::A) where A <: AbstractArray{<:Number, 1}
+  ∇N_ξs     = shape_function_gradients(e, SMatrix, ξ)
+  new_∇N_ξs = map(∇N_ξ -> Matrix(∇N_ξ), ∇N_ξs)
+  return new_∇N_ξs
+end
+
+function shape_function_hessians(e::ReferenceFEType, ::Type{Array}, ξ::A) where A <: AbstractArray{<:Number, 1}
+  ∇∇N_ξs     = shape_function_hessians(e, SArray, ξ)
+  new_∇∇N_ξs = map(∇∇N_ξ -> Array(∇∇N_ξ), ∇∇N_ξs)
+  return new_∇∇N_ξs
+end

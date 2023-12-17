@@ -77,18 +77,18 @@ include("implementations/Tri6.jl")
   @compile_workload begin
     for int_type in [Int32, Int64]
       for float_type in [Float32, Float64]
-        for array_type in [SArray, MArray]
+        for array_type in [SArray, MArray, Array]
           for degree in [1, 2, 3, 4, 5, 6]
-            ReferenceFE(Hex8(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
-            ReferenceFE(Quad4(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
-            ReferenceFE(Quad9(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
-            ReferenceFE(Tri3(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
-            ReferenceFE(Tri6(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Hex8(degree); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Quad4(degree); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Quad9(degree); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Tri3(degree); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Tri6(degree); int_type=int_type, float_type=float_type, array_type=array_type)
           end
 
           for degree in [1, 2]
-            ReferenceFE(Tet4(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
-            ReferenceFE(Tet10(Val(degree)); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Tet4(degree); int_type=int_type, float_type=float_type, array_type=array_type)
+            ReferenceFE(Tet10(degree); int_type=int_type, float_type=float_type, array_type=array_type)
           end
         end
       end
