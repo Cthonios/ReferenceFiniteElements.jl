@@ -77,87 +77,90 @@ function element_stencil(::Tet10, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   return nodal_coordinates, face_nodes, interior_nodes
 end
 
-# using Tet10 as a template
-for type in types_to_generate_interpolants(Tet10(Val(1)))
-  """
-  """
-  @eval function shape_function_values(e::Tet10, ::Type{$(type[1])}, ξ::A) where A <: AbstractArray{<:Number, 1}
-    t0 = 1 - ξ[1] - ξ[2] - ξ[3]
-    t1 = ξ[1]
-    t2 = ξ[2]
-    t3 = ξ[3]
-    N = $(type[1]){num_nodes(e), eltype(ξ)}(
-      t0 * (2 * t0 - 1),
-      t1 * (2 * t1 - 1),
-      t2 * (2 * t2 - 1),
-      t3 * (2 * t3 - 1),
-      4 * t0 * t1,
-      4 * t1 * t2,
-      4 * t2 * t0,
-      4 * t0 * t3,
-      4 * t1 * t3,
-      4 * t2 * t3
-    )
-  end
+"""
+"""
+function shape_function_values(e::Tet10, ::Type{A1}, ξ::A2) where {
+  A1 <: Union{SVector, MVector}, A2 <: AbstractArray{<:Number, 1}
+}
+  t0 = 1 - ξ[1] - ξ[2] - ξ[3]
+  t1 = ξ[1]
+  t2 = ξ[2]
+  t3 = ξ[3]
+  N = A1{num_nodes(e), eltype(ξ)}(
+    t0 * (2 * t0 - 1),
+    t1 * (2 * t1 - 1),
+    t2 * (2 * t2 - 1),
+    t3 * (2 * t3 - 1),
+    4 * t0 * t1,
+    4 * t1 * t2,
+    4 * t2 * t0,
+    4 * t0 * t3,
+    4 * t1 * t3,
+    4 * t2 * t3
+  )
+end
 
-  """
-  """
-  @eval function shape_function_gradients(e::Tet10, ::Type{$(type[2])}, ξ::A) where A <: AbstractArray{<:Number, 1}
-    N, D = num_nodes(e), num_dimensions(e)
-    t0 = 1 - ξ[1] - ξ[2] - ξ[3]
-    t1 = ξ[1]
-    t2 = ξ[2]
-    t3 = ξ[3]
-    ∇N_ξ = $(type[2]){N, D, eltype(ξ), N * D}(
-       1-4*t0,
-       4*t1-1,
-       0,
-       0,
-       4*(t0-t1),
-       4*t2,
-      -4*t2,
-      -4*t3,
-       4*t3,
-       0,
-      #
-       1-4*t0,
-       0,
-       4*t2-1,
-       0,
-      -4*t1,
-       4*t1,
-       4*(t0-t2),
-      -4*t3,
-       0,
-       4*t3,
-      #
-       1-4*t0,
-       0,
-       0,
-       4*t3-1,
-      -4*t1,
-       0,
-      -4*t2,
-       4*(t0-t3),
-       4*t1,
-       4*t2
-    )
-  end
+"""
+"""
+function shape_function_gradients(e::Tet10, ::Type{A1}, ξ::A2) where {
+  A1 <: Union{SMatrix, MMatrix}, A2 <: AbstractArray{<:Number, 1}
+}
+  N, D = num_nodes(e), num_dimensions(e)
+  t0 = 1 - ξ[1] - ξ[2] - ξ[3]
+  t1 = ξ[1]
+  t2 = ξ[2]
+  t3 = ξ[3]
+  ∇N_ξ = A1{N, D, eltype(ξ), N * D}(
+      1-4*t0,
+      4*t1-1,
+      0,
+      0,
+      4*(t0-t1),
+      4*t2,
+    -4*t2,
+    -4*t3,
+      4*t3,
+      0,
+    #
+      1-4*t0,
+      0,
+      4*t2-1,
+      0,
+    -4*t1,
+      4*t1,
+      4*(t0-t2),
+    -4*t3,
+      0,
+      4*t3,
+    #
+      1-4*t0,
+      0,
+      0,
+      4*t3-1,
+    -4*t1,
+      0,
+    -4*t2,
+      4*(t0-t3),
+      4*t1,
+      4*t2
+  )
+end
 
-  """
-  """
-  @eval function shape_function_hessians(e::Tet10, ::Type{$(type[3])}, ξ::A) where A <: AbstractArray{<:Number, 1}
-    N, D = num_nodes(e), num_dimensions(e)
-    ∇∇N_ξ = $(type[3]){Tuple{N, D, D}, eltype(ξ), 3, N * D * D}(
-      4,  4,  0,  0, -8,  0,  0,  0,  0,  0,
-      4,  0,  0,  0, -4,  4, -4,  0,  0,  0,
-      4,  0,  0,  0, -4,  0,  0, -4,  4,  0,
-      4,  0,  0,  0, -4,  4, -4,  0,  0,  0,
-      4,  0,  4,  0,  0,  0, -8,  0,  0,  0,
-      4,  0,  0,  0,  0,  0, -4, -4,  0,  4,
-      4,  0,  0,  0, -4,  0,  0, -4,  4,  0,
-      4,  0,  0,  0,  0,  0, -4, -4,  0,  4,
-      4,  0,  0,  4,  0,  0,  0, -8,  0,  0,
-    )
-  end
+"""
+"""
+function shape_function_hessians(e::Tet10, ::Type{A1}, ξ::A2) where {
+  A1 <: Union{SArray, MArray}, A2 <: AbstractArray{<:Number, 1}
+}
+  N, D = num_nodes(e), num_dimensions(e)
+  ∇∇N_ξ = A1{Tuple{N, D, D}, eltype(ξ), 3, N * D * D}(
+    4,  4,  0,  0, -8,  0,  0,  0,  0,  0,
+    4,  0,  0,  0, -4,  4, -4,  0,  0,  0,
+    4,  0,  0,  0, -4,  0,  0, -4,  4,  0,
+    4,  0,  0,  0, -4,  4, -4,  0,  0,  0,
+    4,  0,  4,  0,  0,  0, -8,  0,  0,  0,
+    4,  0,  0,  0,  0,  0, -4, -4,  0,  4,
+    4,  0,  0,  0, -4,  0,  0, -4,  4,  0,
+    4,  0,  0,  0,  0,  0, -4, -4,  0,  4,
+    4,  0,  0,  4,  0,  0,  0, -8,  0,  0,
+  )
 end
