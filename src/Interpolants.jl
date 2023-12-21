@@ -17,7 +17,7 @@ struct Interpolants{
 end
 
 
-function setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e::ReferenceFEType, ξs)
+function setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e::ReferenceFEType, ξs)
   for (q, ξ) in enumerate(ξs)
     Ns[q]     = shape_function_values(e, SVector, ξ)
     ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
@@ -45,7 +45,13 @@ function Interpolants(
   #   ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
   #   ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
   # end
-  setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  if typeof(e) <: SimplexTri
+    # @assert false
+    coordinates, _, _ = element_stencil(e, Int64, T)
+    setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
+  else
+    setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  end
   s = StructArray{Interpolants{
     N, D, T, N * D, N * D * D, Q,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
@@ -64,7 +70,14 @@ function Interpolants(
   Ns          = Vector{Vector{T}}(undef, length(ξs))
   ∇N_ξs       = Vector{Matrix{T}}(undef, length(ξs))
   ∇∇N_ξs      = Vector{Array{T, 3}}(undef, length(ξs))
-  setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  # setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  if typeof(e) <: SimplexTri
+    # @assert false
+    coordinates, _, _ = element_stencil(e, Int64, T)
+    setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
+  else
+    setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
+  end
   s = StructArray{Interpolants{
     N, D, T, N * D, N * D * D, Q,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)

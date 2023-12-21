@@ -30,6 +30,34 @@ Tri6(::Val{5}) = Tri6{7}(5)
 Tri6(::Val{6}) = Tri6{12}(6)
 Tri6(q::Int)   = Tri6(Val{q}())
 
+"""
+"""
+struct SimplexTri{N, Q} <: AbstractTri{N, 2, Q}
+  n_nodes::Int64
+  degree::Int64
+end
+
+# SimplexTri(::Val{1}, ::Val{1}) = SimplexTri{3, 1}(3, 1)
+# SimplexTri(::Val{1}, ::Val{2}) = SimplexTri{3, 3}(3, 2)
+# SimplexTri(::Val{1}, ::Val{3}) = SimplexTri{3, 6}(3, 3)
+# SimplexTri(::Val{1}, ::Val{4}) = SimplexTri{3, 6}(3, 4)
+# SimplexTri(::Val{1}, ::Val{5}) = SimplexTri{3, 7}(3, 5)
+# SimplexTri(::Val{1}, ::Val{6}) = SimplexTri{3, 12}(3, 6)
+
+# SimplexTri(::Val{2}, ::Val{1}) = SimplexTri{6, 1}(6, 1)
+# SimplexTri(::Val{2}, ::Val{2}) = SimplexTri{6, 3}(6, 2)
+# SimplexTri(::Val{2}, ::Val{3}) = SimplexTri{6, 6}(6, 3)
+# SimplexTri(::Val{2}, ::Val{4}) = SimplexTri{6, 6}(6, 4)
+# SimplexTri(::Val{2}, ::Val{5}) = SimplexTri{6, 7}(6, 5)
+# SimplexTri(::Val{2}, ::Val{6}) = SimplexTri{6, 12}(6, 6)
+
+# SimplexTri(n::Int, q::Int)     = SimplexTri(Val(n), Val(q))
+
+SimplexTri(::Val{1}) = SimplexTri{3, 1}(3, 1)
+SimplexTri(::Val{2}) = SimplexTri{6, 3}(6, 2)
+SimplexTri(::Val{3}) = SimplexTri{10, 6}(10, 3)
+SimplexTri(q::Int)   = SimplexTri(Val(q))
+
 function quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {
   A <: Union{SVector, MVector}, T <: Number, E <: AbstractTri
 }
