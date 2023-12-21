@@ -1,145 +1,92 @@
 """
 """
-struct SimplexTri <: AbstractTri
-end
+function element_stencil(e::SimplexTri, ::Type{Itype}, ::Type{Ftype}) where {Itype <: Integer, Ftype <: AbstractFloat}
+  n_points = (e.degree + 1) * (e.degree + 2) ÷ 2
 
-"""
-"""
-function ReferenceFEStencil(e::SimplexTri, degree::I, Itype::Type = Integer, Ftype::Type = Float64) where I <: Integer
-  n_points = (degree + 1) * (degree + 2) / 2 |> Integer
-  
   # to be consistent with optimism
-  degree = degree + 1
+  degree = e.degree + 1
 
   lobatto_points, _ = gausslobatto(degree)
   lobatto_points .= (1. .+ lobatto_points) ./ 2.
 
-  # points = zeros(Float64, 2, n_points)
-  points = Matrix{Float64}(undef, 2, n_points)
+  nodal_coordinates = Matrix{Float64}(undef, 2, n_points)
   point = 1
   for i in 1:degree
     for j in 1:degree + 1 - i
       k = degree - i - j + 2
-      points[1, point] = (1. + 2. * lobatto_points[k] - lobatto_points[j] - lobatto_points[i]) / 3.
-      points[2, point] = (1. + 2. * lobatto_points[j] - lobatto_points[i] - lobatto_points[k]) / 3.
+      nodal_coordinates[1, point] = (1. + 2. * lobatto_points[k] - lobatto_points[j] - lobatto_points[i]) / 3.
+      nodal_coordinates[2, point] = (1. + 2. * lobatto_points[j] - lobatto_points[i] - lobatto_points[k]) / 3.
       point = point + 1
     end
   end
 
+  # TODO what about thsi guy?
   vertex_points = [1, degree, n_points]
 
-  ii = 0:degree - 1 |> collect
-  jj = cumsum(reverse(ii)) + ii
-  kk = reverse(jj) - ii
+  # ii = 0:degree - 1 |> collect
+  # jj = cumsum(reverse(ii)) + ii
+  # kk = reverse(jj) - ii
 
-  ii .= ii .+ 1
-  jj .= jj .+ 1
-  kk .= kk .+ 1
+  # ii .= ii .+ 1
+  # jj .= jj .+ 1
+  # kk .= kk .+ 1
+
+  ii = 1:degree
+  jj = cumsum(reverse(0:degree - 1)) + ii .+ 1
+  kk = reverse(jj) - ii .+ 1
 
   face_points = hcat(ii, jj, kk)
   interior_nodes = findall(x -> x ∉ face_points, 1:n_points)
-  return ReferenceFEStencil{Itype, Ftype, SimplexTri}(e, degree - 1, points, vertex_points, face_points, interior_nodes)
+
+  return nodal_coordinates, face_points, interior_nodes
 end
 
 """
 """
-function ShapeFunctions(
-  ::SimplexTri, 
-  stencil::ReferenceFEStencil{Itype, Ftype}, 
-  q_rule::Quadrature{Ftype}
-) where {Itype <: Integer, Ftype <: Real}
+function setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
+  n_nodes = (e.degree + 1) * (e.degree + 2) ÷ 2
+  Ftype   = eltype(coordinates)
 
-  n_nodes = (stencil.degree + 1) * (stencil.degree + 2) ÷ 2
+  A  = zeros(Ftype, n_nodes, size(coordinates, 2))
+  Ax = zeros(Ftype, n_nodes, size(coordinates, 2))
+  Ay = zeros(Ftype, n_nodes, size(coordinates, 2))
 
-  A  = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
-  Ax = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
-  Ay = zeros(Ftype, n_nodes, size(stencil.coordinates, 2))
+  nf  = zeros(Ftype, n_nodes, size(ξs, 1))
+  nfx = zeros(Ftype, n_nodes, size(ξs, 1))
+  nfy = zeros(Ftype, n_nodes, size(ξs, 1))
 
-  nf  = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
-  nfx = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
-  nfy = zeros(Ftype, n_nodes, size(q_rule.ξs, 2))
+  temp_ξs = mapreduce(permutedims, vcat, ξs)'
 
-  vander2d!(A, Ax, Ay, stencil.coordinates, stencil.degree)
-  vander2d!(nf, nfx, nfy, q_rule.ξs, stencil.degree)
+  vander2d!(A, Ax, Ay, coordinates, e.degree)
+  vander2d!(nf, nfx, nfy, temp_ξs, e.degree)
 
-  Ns = A \ nf
+  shapes    = A \ nf
   dshapes_x = A \ nfx
   dshapes_y = A \ nfy
 
-  ∇N_ξs = Array{Ftype, 3}(undef, size(Ns, 1), 2, size(Ns, 2))
-  ∇N_ξs[:, 1, :] .= dshapes_x
-  ∇N_ξs[:, 2, :] .= dshapes_y
-
-  # convert to static arrays
-  Ns    = SVector{n_nodes, Ftype}.(eachcol(Ns))
-  ∇N_ξs = SMatrix{n_nodes, 2, Ftype}.(eachslice(∇N_ξs, dims=3))
-
-  return StructArray{ShapeFunctionPair{n_nodes, 2, Ftype}}((Ns, ∇N_ξs))
-end
-
-# internals
-function pascal_triangle_monomials(degree::Itype) where Itype <: Integer
-  pq = Matrix{Integer}(undef, 2, sum(1:degree + 1))
-  range_begin = 1
-  for i in 1:degree + 1
-    monomial_indices = 1:i
-    pq[2, range_begin:range_begin + i - 1] = monomial_indices
-    pq[1, range_begin:range_begin + i - 1] = reverse(monomial_indices)
-    range_begin = range_begin + i
+  for n in 1:num_q_points(e)
+    if eltype(Ns) <: Union{SVector, MVector}
+      Ns[n] = eltype(Ns)(@views shapes[:, n])
+      ∇N_ξs[n] = eltype(∇N_ξs)(@views hcat(dshapes_x[:, n], dshapes_y[:, n]))
+    else
+      Ns[n] = shapes[:, n]
+      ∇N_ξs[n] = hcat(dshapes_x[:, n], dshapes_y[:, n])'
+    end
   end
-  pq
-end
-
-function map_from_tri_to_square_old(ξs::Matrix{<:Real})
-  small = 1e-12
-  index_singular = ξs[:, 2] .> 1. - small
-  ξs[index_singular, 2] .= 1. - small
-
-  ηs = zeros(typeof(ξs[1]), size(ξs))
-  ηs[:, 1] .= 2. * (1. .+ ξs[:, 1]) ./ (1. .- ξs[:, 2]) .- 1.
-  ηs[:, 2] .= ξs[:, 2]
-  ηs[index_singular, 1] .= -1.
-  ηs[index_singular, 2] .= 1.
-
-  dηs = zeros(typeof(ξs[1]), size(ξs))
-  dηs[:, 1] = 2. ./ (1 .- ξs[:, 2])
-  dηs[:, 2] = 2. * (1. .+ ξs[:, 1]) ./ (1. .- ξs[:, 2]).^2
-  return ηs, dηs
-end
-
-function map_from_tri_to_square(ξs_in::Matrix{T}) where T <: Real
-  small = 1e-12::T
-  ξs = copy(ξs_in)
-
-  index_singular = 2
-  ξs[2, index_singular] = 1. - small
-
-  ηs = zeros(typeof(ξs[1]), size(ξs))
-  # @time @views ηs[1, :] .= 2. * (1. .+ ξs[1, :]) ./ (1. .- ξs[2, :]) .- 1.
-  @views @. ηs[1, :] = 2. * (1. + ξs[1, :]) / (1. - ξs[2, :]) - 1.
-  @views ηs[2, :] .= ξs[2, :]
-
-  ηs[1, index_singular] = -1.
-  ηs[2, index_singular] = 1.
-
-  dηs = zeros(typeof(ξs[1]), size(ξs))
-  @views @. dηs[1, :] = 2. / (1 - ξs[2, :])
-  @views @. dηs[2, :] = 2. * (1. + ξs[1, :]) / (1. - ξs[2, :])^2
-  return ηs, dηs
 end
 
 function vander2d!(
   A::Matrix{Ftype}, Ax::Matrix{Ftype}, Ay::Matrix{Ftype},
-  Xs::Matrix{Ftype}, degree::Itype
+  Xs, degree::Itype
 ) where {Itype <: Integer, Ftype <: Real}
-  n_nodes = (degree + 1) * (degree + 2) ÷ 2
 
+  n_nodes = (degree + 1) * (degree + 2) ÷ 2
   pq = pascal_triangle_monomials(degree)
 
-  zs = @. 2. * Xs - 1.
+  zs = 2. * Xs .- 1.
 
   # ηs, dηs = map_from_tri_to_square(zs)
-  ηs, dηs = map_from_tri_to_square_old(zs' |> collect)
+  ηs, dηs = map_from_tri_to_square(zs' |> collect)
   ηs = ηs'
   dηs = dηs'
 
@@ -163,4 +110,32 @@ function vander2d!(
   end
 end
 
-export SimplexTri
+# internals
+function pascal_triangle_monomials(degree::Itype) where Itype <: Integer
+  pq = Matrix{Integer}(undef, 2, sum(1:degree + 1))
+  range_begin = 1
+  for i in 1:degree + 1
+    monomial_indices = 1:i
+    pq[2, range_begin:range_begin + i - 1] = monomial_indices
+    pq[1, range_begin:range_begin + i - 1] = reverse(monomial_indices)
+    range_begin = range_begin + i
+  end
+  pq
+end
+
+function map_from_tri_to_square(ξs::Matrix{<:Real})
+  small = 1e-12
+  index_singular = ξs[:, 2] .> 1. - small
+  ξs[index_singular, 2] .= 1. - small
+
+  ηs = zeros(typeof(ξs[1]), size(ξs))
+  ηs[:, 1] .= 2. * (1. .+ ξs[:, 1]) ./ (1. .- ξs[:, 2]) .- 1.
+  ηs[:, 2] .= ξs[:, 2]
+  ηs[index_singular, 1] .= -1.
+  ηs[index_singular, 2] .= 1.
+
+  dηs = zeros(typeof(ξs[1]), size(ξs))
+  dηs[:, 1] = 2. ./ (1 .- ξs[:, 2])
+  dηs[:, 2] = 2. * (1. .+ ξs[:, 1]) ./ (1. .- ξs[:, 2]).^2
+  return ηs, dηs
+end
