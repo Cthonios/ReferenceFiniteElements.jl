@@ -1,10 +1,10 @@
 """
 """
-abstract type AbstractTri{N, D, Q} <: ReferenceFEType{N, D, Q} end
+abstract type AbstractTri{N, D, P, Q} <: ReferenceFEType{N, D, P, Q} end
 
 """
 """
-struct Tri3{Q} <: AbstractTri{3, 2, Q}
+struct Tri3{Q} <: AbstractTri{3, 2, 1, Q}
   degree::Int64
 end
 
@@ -18,7 +18,7 @@ Tri3(q::Int)   = Tri3(Val{q}())
 
 """
 """
-struct Tri6{Q} <: AbstractTri{6, 2, Q}
+struct Tri6{Q} <: AbstractTri{6, 2, 2, Q}
   degree::Int64
 end
 
@@ -32,7 +32,7 @@ Tri6(q::Int)   = Tri6(Val{q}())
 
 """
 """
-struct SimplexTri{N, Q} <: AbstractTri{N, 2, Q}
+struct SimplexTri{N, P, Q} <: AbstractTri{N, 2, P, Q}
   n_nodes::Int64
   degree::Int64
 end
@@ -53,9 +53,9 @@ end
 
 # SimplexTri(n::Int, q::Int)     = SimplexTri(Val(n), Val(q))
 
-SimplexTri(::Val{1}) = SimplexTri{3, 1}(3, 1)
-SimplexTri(::Val{2}) = SimplexTri{6, 3}(6, 2)
-SimplexTri(::Val{3}) = SimplexTri{10, 6}(10, 3)
+SimplexTri(::Val{1}) = SimplexTri{3, 1, 1}(3, 1)
+SimplexTri(::Val{2}) = SimplexTri{6, 2, 3}(6, 2)
+SimplexTri(::Val{3}) = SimplexTri{10, 3, 6}(10, 3)
 SimplexTri(q::Int)   = SimplexTri(Val(q))
 
 function quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {

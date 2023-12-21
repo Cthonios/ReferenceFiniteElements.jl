@@ -3,7 +3,7 @@
 Interpolant container for a single quadrature point
 """
 struct Interpolants{
-  N, D, Ftype, L1, L2, Q,
+  N, D, Ftype, L1, L2, P, Q,
   Vec1 <: AbstractArray{Ftype, 1},
   Vec2 <: AbstractArray{Ftype, 1},
   Mat  <: AbstractArray{Ftype, 2},
@@ -26,10 +26,10 @@ function setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e::ReferenceFET
 end
 
 function Interpolants(
-  e::ReferenceFEType{N, D, Q},
+  e::ReferenceFEType{N, D, P, Q},
   ::Type{A1}, ::Type{A2}, ::Type{A3}, ::Type{T}
 ) where {
-  N, D, Q,
+  N, D, P, Q,
   A1 <: Union{SVector, MVector}, 
   A2 <: Union{SMatrix, MMatrix},
   A3 <: Union{SArray, MArray},
@@ -40,20 +40,15 @@ function Interpolants(
   Ns          = Vector{A1{N, T}}(undef, length(ξs))
   ∇N_ξs       = Vector{A2{N, D, T, N * D}}(undef, length(ξs))
   ∇∇N_ξs      = Vector{A3{Tuple{N, D, D}, T, 3, N * D * D}}(undef, length(ξs))
-  # for (q, ξ) in enumerate(ξs)
-  #   Ns[q]     = shape_function_values(e, SVector, ξ)
-  #   ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
-  #   ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
-  # end
+
   if typeof(e) <: SimplexTri
-    # @assert false
     coordinates, _, _ = element_stencil(e, Int64, T)
     setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
   else
     setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
   end
   s = StructArray{Interpolants{
-    N, D, T, N * D, N * D * D, Q,
+    N, D, T, N * D, N * D * D, P, Q,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
   }}((
     ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
@@ -62,9 +57,9 @@ function Interpolants(
 end
 
 function Interpolants(
-  e::ReferenceFEType{N, D, Q},
+  e::ReferenceFEType{N, D, P, Q},
   ::Type{Vector}, ::Type{Matrix}, ::Type{Array}, ::Type{T}
-) where {N, D, Q, T  <: Number}
+) where {N, D, P, Q, T  <: Number}
 
   ξs, ws      = quadrature_points_and_weights(e, Vector, T)
   Ns          = Vector{Vector{T}}(undef, length(ξs))
@@ -79,7 +74,7 @@ function Interpolants(
     setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
   end
   s = StructArray{Interpolants{
-    N, D, T, N * D, N * D * D, Q,
+    N, D, T, N * D, N * D * D, P, Q,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
   }}((
     ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs

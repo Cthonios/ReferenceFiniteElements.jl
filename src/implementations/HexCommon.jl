@@ -1,10 +1,10 @@
 """
 """
-abstract type AbstractHex{N, D, Q} <: ReferenceFEType{N, D, Q} end
+abstract type AbstractHex{N, D, P, Q} <: ReferenceFEType{N, D, P, Q} end
 
 """
 """
-struct Hex8{Q} <: AbstractHex{8, 3, Q}
+struct Hex8{Q} <: AbstractHex{8, 3, 1, Q}
   degree::Int
 end
 

@@ -1,16 +1,16 @@
 """
 """
-abstract type AbstractTet{N, D, Q} <: ReferenceFEType{N, D, Q} end
+abstract type AbstractTet{N, D, P, Q} <: ReferenceFEType{N, D, P, Q} end
 
 """
 """
-struct Tet4{Q} <: AbstractTet{4, 3, Q}
+struct Tet4{Q} <: AbstractTet{4, 3, 1, Q}
   degree::Int64
 end
 
 """
 """
-struct Tet10{Q} <: AbstractTet{10, 3, Q}
+struct Tet10{Q} <: AbstractTet{10, 3, 2, Q}
   degree::Int64
 end
 

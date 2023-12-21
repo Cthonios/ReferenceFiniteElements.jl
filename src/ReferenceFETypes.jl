@@ -2,7 +2,7 @@
 """
 Type to define new element shapes
 """
-abstract type ReferenceFEType{N, D, Q} end
+abstract type ReferenceFEType{N, D, P, Q} end
 
 """
 Returns the quadrature degree of a ReferenceFEType
@@ -12,17 +12,22 @@ degree(e::ReferenceFEType) = e.degree
 """
 Returns the number of nodes for a ReferenceFEType
 """
-num_nodes(::ReferenceFEType{N, D, Q}) where {N, D, Q} = N
+num_nodes(::ReferenceFEType{N, D, P, Q}) where {N, D, P, Q} = N
 
 """
 Returns the number of dimensions for a ReferenceFEType
 """
-num_dimensions(::ReferenceFEType{N, D, Q}) where {N, D, Q} = D
+num_dimensions(::ReferenceFEType{N, D, P, Q}) where {N, D, P, Q} = D
+
+"""
+Polynomial degree, i.e. p-refinement
+"""
+polynomial_degree(::ReferenceFEType{N, D, P, Q}) where {N, D, P, Q} = P
 
 """
 Returns the number of quadrature porints for a ReferenceFEType
 """
-num_q_points(::ReferenceFEType{N, D, Q}) where {N, D, Q} = Q
+num_q_points(::ReferenceFEType{N, D, P, Q}) where {N, D, P, Q} = Q
 
 # functions to be defined
 function quadrature_points_and_weights end

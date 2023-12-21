@@ -13,8 +13,8 @@ and interpolants
 #   V <: AbstractVector
 # }
 struct ReferenceFE{
-  Itype, N, D, Ftype, L1, L2, Q,
-  RefFEType <: ReferenceFEType{N, D},
+  Itype, N, D, Ftype, L1, L2, P, Q,
+  RefFEType <: ReferenceFEType{N, D, P, Q},
   S,
   VOM       <: AbstractVecOrMat,
   M         <: AbstractMatrix,
@@ -31,18 +31,18 @@ end
 Constructor for ReferenceFE
 """
 function ReferenceFE(
-  e::ReferenceFEType{N, D, Q};
+  e::ReferenceFEType{N, D, P, Q};
   int_type::Type{<:Integer} = Int64, 
   float_type::Type{<:Number} = Float64,
   array_type::Type{<:Union{<:MArray, <:SArray, <:Array}} = SArray
-) where {N, D, Q}
+) where {N, D, P, Q}
 
   nodal_coordinates, face_nodes, interior_nodes = element_stencil(e, int_type, float_type)
   # interps = Interpolants(e, array_type, float_type)
   interps = Interpolants{array_type, float_type}(e)
 
   return ReferenceFE{
-    int_type, N, D, float_type, N * D, N * D * D, Q,
+    int_type, N, D, float_type, N * D, N * D * D, P, Q,
     typeof(e), typeof(interps), typeof(nodal_coordinates),
     typeof(face_nodes), typeof(interior_nodes)
   }(e, nodal_coordinates, face_nodes, interior_nodes, interps)
@@ -137,12 +137,12 @@ Returns the nodes of vertices
 TODO this is probably not very useful
 """
 element_type(::ReferenceFE{
-  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
-}) where {Itype, N, D, Ftype, L1, L2, Q, RefFE <: ReferenceFEType, S, VOM, M, V} = RefFE
+  Itype, N, D, Ftype, L1, L2, P, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, L1, L2, P, Q, RefFE <: ReferenceFEType, S, VOM, M, V} = RefFE
 
 vertex_nodes(::ReferenceFE{
-  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
-}) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
+  Itype, N, D, Ftype, L1, L2, P, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, P, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
 
 """
 Returns number of dimensions

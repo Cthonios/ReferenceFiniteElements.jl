@@ -1,16 +1,16 @@
 """
 """
-abstract type AbstractQuad{N, D, Q} <: ReferenceFEType{N, D, Q} end
+abstract type AbstractQuad{N, D, P, Q} <: ReferenceFEType{N, D, P, Q} end
 
 """
 """
-struct Quad4{Q} <: AbstractQuad{4, 2, Q}
+struct Quad4{Q} <: AbstractQuad{4, 2, 1, Q}
   degree::Int64
 end
 
 """
 """
-struct Quad9{Q} <: AbstractQuad{9, 2, Q}
+struct Quad9{Q} <: AbstractQuad{9, 2, 2, Q}
   degree::Int64
 end
 

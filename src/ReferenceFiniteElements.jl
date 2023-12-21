@@ -2,7 +2,8 @@ module ReferenceFiniteElements
 
 # element types
 # export Edge
-export Hex8,
+export Edge2, Edge3,
+       Hex8,
        Quad4, Quad9,
        SimplexTri,
        Tet4, Tet10,
@@ -16,6 +17,7 @@ export element_type,
        num_dimensions,
        num_nodes_per_element,
        num_q_points,
+       polynomial_degree,
        quadrature_point,
        quadrature_points,
        quadrature_weight,
@@ -61,7 +63,7 @@ include("implementations/TetCommon.jl")
 include("implementations/TriCommon.jl")
 
 # implementations of things specific to element types
-# include("implementations/Edge.jl")
+include("implementations/Edge.jl")
 include("implementations/Hex8.jl")
 include("implementations/Quad4.jl")
 include("implementations/Quad9.jl")
