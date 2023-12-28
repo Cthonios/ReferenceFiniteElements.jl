@@ -144,6 +144,14 @@ vertex_nodes(::ReferenceFE{
   Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
 }) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Base.OneTo(N)
 
+int_type(::ReferenceFE{
+  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Itype
+
+float_type(::ReferenceFE{
+  Itype, N, D, Ftype, L1, L2, Q, RefFE, S, VOM, M, V
+}) where {Itype, N, D, Ftype, Q, L1, L2, RefFE <: ReferenceFEType, S, VOM, M, V} = Ftype
+
 """
 Returns number of dimensions
 """
@@ -158,3 +166,4 @@ num_nodes_per_element(e::ReferenceFE) = num_nodes(e.ref_fe_type)
 Returns number of quadrature points
 """
 num_q_points(e::ReferenceFE) = num_q_points(e.ref_fe_type)
+
