@@ -18,8 +18,8 @@
   end
 end  
 
-common_test_sets(Quad9, [1, 2], [Int32, Int64], [Float32, Float64], [SArray, MArray])
+common_test_sets(Quad9, [1, 2], [Int32, Int64], [Float32, Float64], [SArray, MArray, Array], [Array, StructArray])
 
 if CUDA.has_cuda()
-  common_test_sets(Quad9, [1, 2], [Int32, Int64], [Float32, Float64], [SArray]; cuda=true)
+  common_test_sets(Quad9, [1, 2], [Int32, Int64], [Float32, Float64], [SArray], [StructArray]; cuda=true)
 end

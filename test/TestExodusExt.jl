@@ -4,18 +4,25 @@
   close(exo)
 
   re_1 = ReferenceFE(blocks[1], 1)
-  re_2 = ReferenceFE(Tet4(Val(1)))
+  re_2 = ReferenceFE(Tet4(1))
 
   @test re_1.nodal_coordinates == re_2.nodal_coordinates
   @test re_1.face_nodes == re_2.face_nodes
   @test re_1.interior_nodes == re_2.interior_nodes
-  @test re_1.interpolants == re_2.interpolants
+  # @test re_1.interpolants == re_2.interpolants
+
+  @test re_1.interpolants.N == re_2.interpolants.N
+  @test re_1.interpolants.∇N_ξ == re_2.interpolants.∇N_ξ
+  @test re_1.interpolants.∇∇N_ξ == re_2.interpolants.∇∇N_ξ
 
   re_1 = ReferenceFE(blocks[2], 1)
-  re_2 = ReferenceFE(Tet10(Val(1)))
+  re_2 = ReferenceFE(Tet10(1))
 
   @test re_1.nodal_coordinates == re_2.nodal_coordinates
   @test re_1.face_nodes == re_2.face_nodes
   @test re_1.interior_nodes == re_2.interior_nodes
-  @test re_1.interpolants == re_2.interpolants
+  # @test re_1.interpolants == re_2.interpolants
+  @test re_1.interpolants.N == re_2.interpolants.N
+  @test re_1.interpolants.∇N_ξ == re_2.interpolants.∇N_ξ
+  @test re_1.interpolants.∇∇N_ξ == re_2.interpolants.∇∇N_ξ
 end
