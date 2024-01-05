@@ -42,7 +42,11 @@ function element_stencil(::Hex8, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   #
   # first one stupidly cuases an allocation
   # edge nodes TODO
-  edge_nodes = Matrix{Itype}(undef, 2, 12)
+  # edge_nodes = Matrix{Itype}(undef, 2, 12)
+  edge_nodes = Itype[
+    1 2 6 5 2 3 7 3 4 8 5 1 
+    2 6 5 1 3 7 6 4 8 7 8 4
+  ]
   # TODO
   # @time face_nodes = Itype[
   #   1 2 3 1 1 5

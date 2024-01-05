@@ -10,19 +10,24 @@ function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   #   4 5 6
   #   2 3 1
   # ]
-  edge_nodes = Matrix{Itype}(undef, 3, 3)
-  edge_nodes[1, 1] = 1
-  edge_nodes[2, 1] = 4
-  edge_nodes[3, 1] = 2
-  #
-  edge_nodes[1, 2] = 2
-  edge_nodes[2, 2] = 5
-  edge_nodes[3, 2] = 3
-  #
-  edge_nodes[1, 1] = 3
-  edge_nodes[2, 1] = 6
-  edge_nodes[3, 1] = 1
+  # edge_nodes = Matrix{Itype}(undef, 3, 2)
+  # edge_nodes[1, 1] = 1
+  # edge_nodes[2, 1] = 4
+  # edge_nodes[3, 1] = 2
+  # #
+  # edge_nodes[1, 2] = 2
+  # edge_nodes[2, 2] = 5
+  # edge_nodes[3, 2] = 3
+  # #
+  # edge_nodes[1, 1] = 3
+  # edge_nodes[2, 1] = 6
+  # edge_nodes[3, 1] = 1
   
+  edge_nodes = Itype[
+    1 4 2 5 3 6
+    4 2 5 3 6 1
+  ]
+
   face_nodes = Itype[;;]
 
   interior_nodes = Vector{Itype}(undef, 0)

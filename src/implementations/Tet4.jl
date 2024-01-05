@@ -25,7 +25,12 @@ function element_stencil(::Tet4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   nodal_coordinates[3, 4] = 1.0
   #
   # TODO add edge nodes
-  edge_nodes = Matrix{Itype}(undef, 2, 6)
+  # edge_nodes = Matrix{Itype}(undef, 2, 6)
+ 
+  edge_nodes = Itype[
+    1 2 4 2 3 1
+    2 4 1 3 4 3
+  ]
 
   # first one stupidly causes an allocation
   # face_nodes = Itype[
