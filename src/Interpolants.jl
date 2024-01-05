@@ -3,19 +3,18 @@
 Interpolant container for a single quadrature point
 """
 struct Interpolants{
-  N, D, Ftype, L1, L2, Q,
-  Vec1 <: AbstractArray{Ftype, 1},
-  Vec2 <: AbstractArray{Ftype, 1},
-  Mat  <: AbstractArray{Ftype, 2},
-  Arr  <: AbstractArray{Ftype, 3}
+  T, N, D,
+  Vec1 <: AbstractArray{T, 1},
+  Vec2 <: AbstractArray{T, 1},
+  Mat  <: AbstractArray{T, 2},
+  Arr  <: AbstractArray{T, 3}
 }
   ξ::Vec1
-  w::Ftype
+  w::T
   N::Vec2
   ∇N_ξ::Mat
   ∇∇N_ξ::Arr
 end
-
 
 function setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e::ReferenceFEType, ξs)
   for (q, ξ) in enumerate(ξs)
@@ -40,20 +39,14 @@ function Interpolants(
   Ns          = Vector{A1{N, T}}(undef, length(ξs))
   ∇N_ξs       = Vector{A2{N, D, T, N * D}}(undef, length(ξs))
   ∇∇N_ξs      = Vector{A3{Tuple{N, D, D}, T, 3, N * D * D}}(undef, length(ξs))
-  # for (q, ξ) in enumerate(ξs)
-  #   Ns[q]     = shape_function_values(e, SVector, ξ)
-  #   ∇N_ξs[q]  = shape_function_gradients(e, SMatrix, ξ)
-  #   ∇∇N_ξs[q] = shape_function_hessians(e, SArray, ξ)
-  # end
   if typeof(e) <: SimplexTri
-    # @assert false
     coordinates, _, _ = element_stencil(e, Int64, T)
     setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
   else
     setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
   end
   s = StructArray{Interpolants{
-    N, D, T, N * D, N * D * D, Q,
+    T, N, D,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
   }}((
     ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs
@@ -70,16 +63,14 @@ function Interpolants(
   Ns          = Vector{Vector{T}}(undef, length(ξs))
   ∇N_ξs       = Vector{Matrix{T}}(undef, length(ξs))
   ∇∇N_ξs      = Vector{Array{T, 3}}(undef, length(ξs))
-  # setup_interpolants!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
   if typeof(e) <: SimplexTri
-    # @assert false
     coordinates, _, _ = element_stencil(e, Int64, T)
     setup_interpolants_simplex_tri!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs, coordinates)
   else
     setup_interpolants_standard!(Ns, ∇N_ξs, ∇∇N_ξs, e, ξs)
   end
   s = StructArray{Interpolants{
-    N, D, T, N * D, N * D * D, Q,
+    T, N, D,
     eltype(ξs), eltype(Ns), eltype(∇N_ξs), eltype(∇∇N_ξs)
   }}((
     ξ=ξs, w=ws, N=Ns, ∇N_ξ=∇N_ξs, ∇∇N_ξ=∇∇N_ξs

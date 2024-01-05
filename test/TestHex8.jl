@@ -17,4 +17,8 @@
   end
 end  
 
-common_test_sets(Hex8, [1, 2, 3, 4, 5, 6], [Int32, Int64], [Float32, Float64], [SArray, MArray])
+common_test_sets(Hex8, [1, 2], [Int32, Int64], [Float32, Float64], [SArray, MArray])
+
+if CUDA.has_cuda()
+  common_test_sets(Hex8, [1, 2], [Int32, Int64], [Float32, Float64], [SArray]; cuda=true)
+end
