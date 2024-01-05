@@ -5,12 +5,15 @@ function element_stencil(::Quad4, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
     -1.0  1.0 1.0 -1.0;
     -1.0 -1.0 1.0  1.0
   ]
-  face_nodes = Itype[
+  edge_nodes = Itype[
     1 2 3 4
     2 3 4 1
   ]
+  face_nodes = Itype[
+    ;;
+  ]
   interior_nodes = Vector{Itype}(undef, 0)
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 """

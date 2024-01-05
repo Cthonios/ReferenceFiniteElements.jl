@@ -59,7 +59,7 @@ include("implementations/TetCommon.jl")
 include("implementations/TriCommon.jl")
 
 # implementations of things specific to element types
-# include("implementations/Edge.jl")
+include("implementations/Edge.jl")
 include("implementations/Hex8.jl")
 include("implementations/Quad4.jl")
 include("implementations/Quad9.jl")

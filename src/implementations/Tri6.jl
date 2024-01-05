@@ -5,26 +5,28 @@ function element_stencil(::Tri6, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
     0.0 1.0 0.0 0.5 0.5 0.0;
     0.0 0.0 1.0 0.0 0.5 0.5
   ]
-  # @time face_nodes = Itype[
+  # @time edge_nodes = Itype[
   #   1 2 3
   #   4 5 6
   #   2 3 1
   # ]
-  face_nodes = Matrix{Itype}(undef, 3, 3)
-  face_nodes[1, 1] = 1
-  face_nodes[2, 1] = 4
-  face_nodes[3, 1] = 2
+  edge_nodes = Matrix{Itype}(undef, 3, 3)
+  edge_nodes[1, 1] = 1
+  edge_nodes[2, 1] = 4
+  edge_nodes[3, 1] = 2
   #
-  face_nodes[1, 2] = 2
-  face_nodes[2, 2] = 5
-  face_nodes[3, 2] = 3
+  edge_nodes[1, 2] = 2
+  edge_nodes[2, 2] = 5
+  edge_nodes[3, 2] = 3
   #
-  face_nodes[1, 1] = 3
-  face_nodes[2, 1] = 6
-  face_nodes[3, 1] = 1
+  edge_nodes[1, 1] = 3
+  edge_nodes[2, 1] = 6
+  edge_nodes[3, 1] = 1
   
+  face_nodes = Itype[;;]
+
   interior_nodes = Vector{Itype}(undef, 0)
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 """
