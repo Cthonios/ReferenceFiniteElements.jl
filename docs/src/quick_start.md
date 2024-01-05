@@ -19,6 +19,7 @@ ReferenceFE
   Integer type                = Int64
   Float type                  = Float64
   Nodal coordinates type      = Matrix{Float64}
+  Edge nodes type             = Matrix{Int64}
   Face nodes type             = Matrix{Int64}
   Interior nodes type         = Vector{Int64}
   Interpolants type           = StructArray{Interpolants}

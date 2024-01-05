@@ -1,5 +1,7 @@
 using Adapt
 using Exodus
+using LaTeXStrings
+using RecipesBase
 using ReferenceFiniteElements
 using Documenter
 
@@ -18,13 +20,14 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home"      => [
+        "Home"       => [
             "Installation"  => "installation.md",
             "Quick start"   => "quick_start.md",
             "Storage types" => "storage_types.md"
         ],
-        "Developer" => "developer.md",
-        "Index"     => "index.md"
+        "Extensions" => "extensions.md",
+        "Developer"  => "developer.md",
+        "Index"      => "index.md"
     ],
 )
 
