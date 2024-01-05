@@ -5,25 +5,9 @@ ReferenceFE is the main type.
 This type defines the nodal coordinates, face nodes, interior nodes
 and interpolants
 """
-# struct ReferenceFE{
-#   Itype, N, D, Ftype, L1, L2, S, 
-#   RefFE <: ReferenceFEType{N, D},
-#   VOM <: AbstractVecOrMat, 
-#   M <: AbstractMatrix, 
-#   V <: AbstractVector
-# }
-# struct ReferenceFE{
-#   Itype, N, D, Ftype, L1, L2, Q,
-#   RefFEType <: ReferenceFEType{N, D},
-#   S,
-#   VOM       <: AbstractVecOrMat,
-#   M         <: AbstractMatrix,
-#   V         <: AbstractVector
-# }
 struct ReferenceFE{
   Itype, Ftype, N, D, Q,
   RefFEType <: ReferenceFEType{N, D},
-  # S         <: StructArray, # TODO figure out how to genarilze beyond structarrays
   Interp,
   VOM       <: AbstractVecOrMat,
   M         <: AbstractMatrix,
