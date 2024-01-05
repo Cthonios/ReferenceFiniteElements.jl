@@ -22,3 +22,4 @@ end
 
 # erroring on gradient partition of unity check
 common_test_sets(Tet10, [1, 2], [Int32, Int64], [Float32, Float64], [SArray, MArray])
+common_test_sets(Tet10, [1, 2], [Int32, Int64], [Float32, Float64], [SArray]; cuda=true)

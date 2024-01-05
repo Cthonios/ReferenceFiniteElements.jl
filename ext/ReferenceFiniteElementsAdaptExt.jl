@@ -17,7 +17,8 @@ function Adapt.adapt_structure(to, re::ReferenceFE)
   interpolants      = Adapt.adapt_structure(to, re.interpolants)
 
   return ReferenceFE{
-    Itype, N, D, Ftype, N * D, N * D * D, Q, 
+    # Itype, N, D, Ftype, N * D, N * D * D, Q, 
+    Itype, Ftype, N, D, Q,
     typeof(ref_fe_type), typeof(interpolants), typeof(nodal_coordinates), typeof(face_nodes),
     typeof(interior_nodes)
   }(ref_fe_type, nodal_coordinates, face_nodes, interior_nodes, interpolants)
