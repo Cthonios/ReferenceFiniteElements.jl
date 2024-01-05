@@ -9,6 +9,7 @@ using KernelAbstractions
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
+using StructArrays
 using Test
 using TestSetExtensions
 
@@ -242,122 +243,126 @@ function test_quadrature_weight_positivity(re, backend)
   # kernel(ws, ndrange=length(ws))
 end
 
-function common_test_sets(el, q_degrees, int_types, float_types, array_types; cuda = false)
+function common_test_sets_inner(el, q_degree, int_type, float_type, array_type, storage_type, cuda, re)
+  if cuda
+    re = Adapt.adapt_structure(CuArray, re)
+    backend = CUDABackend()
+  else
+    backend = CPU()
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - Quadrature weight positivity test" begin
+    if typeof(re.ref_fe_type) <: Tet4 || typeof(re.ref_fe_type) <: Tet10
+      
+    else
+      # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+      # for w in quadrature_weights(re)
+      #   @test w > 0.
+      # end
+      test_quadrature_weight_positivity(re, backend)
+    end
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - sum of quadrature points test" begin
+    # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+    if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+      @test quadrature_weights(re) |> sum ≈ 8.0
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+      @test quadrature_weights(re) |> sum ≈ 4.0
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+      @test quadrature_weights(re) |> sum ≈ 1. / 6.
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+      @test quadrature_weights(re) |> sum ≈ 1. / 2.
+    else
+      @test false
+    end
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - triangle exactness" begin
+    if typeof(el) <: ReferenceFiniteElements.AbstractTri
+      for degree in [1]
+        e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+        for i in 1:degree
+          for j in 1:degree - i
+            quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
+            exact = integrate_2d_monomial_on_triangle(i, j)
+            @test quad_answer ≈ exact
+          end
+        end
+      end
+    else
+
+    end
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - quadrature points inside element" begin
+    e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
+    if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
+      test_func = is_inside_hex
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
+      test_func = is_inside_quad
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
+      test_func = is_inside_tet
+    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
+      test_func = is_inside_triangle
+    else
+      @test false
+    end
+
+    for ξ in quadrature_points(e)
+      @test test_func(ξ)
+    end
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - partition of unity tests" begin
+    partition_of_unity_shape_function_values_test(re, backend)
+    partition_of_unity_shape_function_gradients_test(re, backend)
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - kronecker delta property tests" begin
+    if array_type == SArray
+      kronecker_delta_property(re, backend, SVector)
+    else
+      kronecker_delta_property(re, backend, MVector)
+    end
+  end
+
+  # TODO find an AD engine that actually works well with GPUarrays and staticarrays
+  if !cuda
+    @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - shape function gradients" begin
+      test_gradients(re)
+    end
+
+    @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - shape function hessians" begin
+      test_hessians(re)
+    end
+  end
+
+  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - Base.show" begin
+    if !cuda
+      test_show(re)
+    end
+  end
+
+  if cuda
+    if array_type <: SArray
+      @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - AdaptExt, CUDA" begin
+        test_adapt_cuda(re)
+      end
+    else
+      @info "Skipping mutable static arrays since these are not supported on CUDA"
+    end
+  end
+end
+
+function common_test_sets(el, q_degrees, int_types, float_types, array_types, storage_types; cuda = false)
   for q_degree in q_degrees
     for int_type in int_types
       for float_type in float_types
         for array_type in array_types
-
-          re = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-
-          if cuda
-            re = Adapt.adapt_structure(CuArray, re)
-            backend = CUDABackend()
-          else
-            backend = CPU()
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - Quadrature weight positivity test" begin
-            if typeof(el(q_degree)) <: Tet4 || typeof(el(q_degree)) <: Tet10
-              
-            else
-              # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-              # for w in quadrature_weights(re)
-              #   @test w > 0.
-              # end
-              test_quadrature_weight_positivity(re, backend)
-            end
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - sum of quadrature points test" begin
-            # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-              @test quadrature_weights(re) |> sum ≈ 8.0
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-              @test quadrature_weights(re) |> sum ≈ 4.0
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-              @test quadrature_weights(re) |> sum ≈ 1. / 6.
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-              @test quadrature_weights(re) |> sum ≈ 1. / 2.
-            else
-              @test false
-            end
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - triangle exactness" begin
-            if typeof(el) <: ReferenceFiniteElements.AbstractTri
-              for degree in [1]
-                e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-                for i in 1:degree
-                  for j in 1:degree - i
-                    quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
-                    exact = integrate_2d_monomial_on_triangle(i, j)
-                    @test quad_answer ≈ exact
-                  end
-                end
-              end
-            else
-
-            end
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - quadrature points inside element" begin
-            e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-            if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-              test_func = is_inside_hex
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-              test_func = is_inside_quad
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-              test_func = is_inside_tet
-            elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-              test_func = is_inside_triangle
-            else
-              @test false
-            end
-
-            for ξ in quadrature_points(e)
-              @test test_func(ξ)
-            end
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - partition of unity tests" begin
-            partition_of_unity_shape_function_values_test(re, backend)
-            partition_of_unity_shape_function_gradients_test(re, backend)
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - kronecker delta property tests" begin
-            if array_type == SArray
-              kronecker_delta_property(re, backend, SVector)
-            else
-              kronecker_delta_property(re, backend, MVector)
-            end
-          end
-
-          # TODO find an AD engine that actually works well with GPUarrays and staticarrays
-          if !cuda
-            @testset ExtendedTestSet "$el, q_degree = $q_degree - shape function gradients" begin
-              test_gradients(re)
-            end
-
-            @testset ExtendedTestSet "$el, q_degree = $q_degree - shape function hessians" begin
-              test_hessians(re)
-            end
-          end
-
-          @testset ExtendedTestSet "$el, q_degree = $q_degree - Base.show" begin
-            if !cuda
-              test_show(re)
-            end
-          end
-
-          if cuda
-            if array_type <: SArray
-              @testset ExtendedTestSet "$el, q_degree = $q_degree - AdaptExt, CUDA" begin
-                test_adapt_cuda(re)
-              end
-            else
-              @info "Skipping mutable static arrays since these are not supported on CUDA"
-            end
+          for storage_type in storage_types
+            re = ReferenceFE(el(q_degree); int_type, float_type, array_type, storage_type)
+            common_test_sets_inner(el, q_degree, int_type, float_type, array_type, storage_type, cuda, re)
           end
         end
       end
@@ -368,10 +373,12 @@ end # common_test_sets
 @includetests ARGS
 
 @testset ExtendedTestSet "Aqua Tests" begin
+  # ambiguities due to StructArrays
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
 end
 
 # JET testing
 @testset ExtendedTestSet "JET Tests" begin
+  # lots of erros if we don't target only ReferenceFiniteElements
   test_package("ReferenceFiniteElements"; target_defined_modules=true)
 end

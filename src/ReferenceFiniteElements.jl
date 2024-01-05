@@ -16,9 +16,7 @@ export element_type,
        num_dimensions,
        num_nodes_per_element,
        num_q_points,
-       quadrature_point,
        quadrature_points,
-       quadrature_weight,
        quadrature_weights,
        shape_function_gradients,
        shape_function_hessians,
@@ -52,7 +50,7 @@ $(DOCSTRING)
 include("ReferenceFETypes.jl")
 include("Interpolants.jl")
 include("ReferenceFEs.jl")
-include("Utils.jl")
+# include("Utils.jl")
 
 # implementations of things common across multiple element types
 include("implementations/HexCommon.jl")
