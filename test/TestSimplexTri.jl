@@ -37,7 +37,7 @@
         @test e.interpolants.N[3] ≈ [-0.11111111, 0.11111111, -0.11111111, 0.44444444, 0.44444444, 0.22222222]
 
         if float_type == Float32
-          tol = 5e-7
+          tol = 1e-6
         else
           tol = 1e-14
         end

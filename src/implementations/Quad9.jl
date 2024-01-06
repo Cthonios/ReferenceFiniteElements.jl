@@ -11,24 +11,28 @@ function element_stencil(::Quad9, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   #   2 3 4 1
   # ]
   # allocation if I don't do the below rather than above
-  face_nodes = Matrix{Itype}(undef, 3, 4)
-  face_nodes[1, 1] = 1
-  face_nodes[1, 2] = 2
-  face_nodes[1, 3] = 3
-  face_nodes[1, 4] = 4
+  edge_nodes = Matrix{Itype}(undef, 3, 4)
+  edge_nodes[1, 1] = 1
+  edge_nodes[1, 2] = 2
+  edge_nodes[1, 3] = 3
+  edge_nodes[1, 4] = 4
   #
-  face_nodes[2, 1] = 5
-  face_nodes[2, 2] = 6
-  face_nodes[2, 3] = 7
-  face_nodes[2, 4] = 8
+  edge_nodes[2, 1] = 5
+  edge_nodes[2, 2] = 6
+  edge_nodes[2, 3] = 7
+  edge_nodes[2, 4] = 8
   #
-  face_nodes[3, 1] = 2
-  face_nodes[3, 2] = 3
-  face_nodes[3, 3] = 4
-  face_nodes[3, 4] = 1
+  edge_nodes[3, 1] = 2
+  edge_nodes[3, 2] = 3
+  edge_nodes[3, 3] = 4
+  edge_nodes[3, 4] = 1
+
+  face_nodes = Itype[
+    ;;
+  ]
 
   interior_nodes = Itype[9]
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 """

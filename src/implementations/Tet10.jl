@@ -42,6 +42,12 @@ function element_stencil(::Tet10, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   nodal_coordinates[2, 10] = 0.5
   nodal_coordinates[3, 10] = 0.5
   #
+  # TODO add edge nodes
+  # edge_nodes = Matrix{Itype}(undef, 2, 6)
+  edge_nodes = Itype[
+    1 5 2 9 4 8 2 6 3  10 3 7
+    5 2 9 4 8 1 6 3 10 4  7 1
+  ] 
 
   #
   face_nodes = Matrix{Itype}(undef, 6, 4)
@@ -74,7 +80,7 @@ function element_stencil(::Tet10, ::Type{Itype}, ::Type{Ftype}) where {Itype <: 
   face_nodes[6, 4] = 5
   #
   interior_nodes = Vector{Itype}(undef, 0)
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 """

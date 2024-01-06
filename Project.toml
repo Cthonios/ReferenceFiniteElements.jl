@@ -15,10 +15,13 @@ StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 
 [extensions]
 ReferenceFiniteElementsAdaptExt = ["Adapt"]
 ReferenceFiniteElementsExodusExt = ["Exodus"]
+ReferenceFiniteElementsRecipesBaseExt = ["LaTeXStrings", "RecipesBase"]
 
 [compat]
 Adapt = "3"
@@ -31,8 +34,10 @@ FastGaussQuadrature = "0.5, 1"
 ForwardDiff = "0.10"
 JET = "0.8"
 KernelAbstractions = "0.9"
+LaTeXStrings = "1"
 LinearAlgebra = "1"
 Polynomials = "3, 4"
+RecipesBase = "1"
 SpecialPolynomials = "0.4"
 StaticArrays = "1"
 StructArrays = "0.6"

@@ -216,6 +216,7 @@ end
 
 function test_adapt_cuda(re_cuda)
   @test device(re_cuda.nodal_coordinates) |> typeof <: CuDevice
+  @test device(re_cuda.edge_nodes) |> typeof <: CuDevice
   @test device(re_cuda.face_nodes) |> typeof <: CuDevice
   @test device(re_cuda.interior_nodes) |> typeof <: CuDevice
   @test device(re_cuda.interpolants.N) |> typeof <: CuDevice

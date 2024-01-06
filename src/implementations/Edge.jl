@@ -8,9 +8,10 @@ function element_stencil(::Edge, degree::I, ::Type{Itype}, ::Type{Ftype}) where 
   nodal_coordinates, _ = gausslobatto(degree)
   # to be consistent with optimism
   nodal_coordinates .= (1. .+ nodal_coordinates) ./ 2.
-  face_nodes = Matrix{Integer}(undef, 0, 0)
+  edge_nodes = Itype[;;]
+  face_nodes = Itype[;;]
   interior_nodes = 2:degree - 1
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 function quadrature_points_and_weights(::Edge, degree::I, ::Type{Ftype} = Float64) where {I <: Integer, Ftype <: AbstractFloat}

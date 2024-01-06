@@ -9,7 +9,7 @@ function element_stencil(e::SimplexTri, ::Type{Itype}, ::Type{Ftype}) where {Ity
   lobatto_points, _ = gausslobatto(degree)
   lobatto_points .= (1. .+ lobatto_points) ./ 2.
 
-  nodal_coordinates = Matrix{Float64}(undef, 2, n_points)
+  nodal_coordinates = Matrix{Ftype}(undef, 2, n_points)
   point = 1
   for i in 1:degree
     for j in 1:degree + 1 - i
@@ -21,7 +21,7 @@ function element_stencil(e::SimplexTri, ::Type{Itype}, ::Type{Ftype}) where {Ity
   end
 
   # TODO what about thsi guy?
-  vertex_points = [1, degree, n_points]
+  # vertex_points = [1, degree, n_points]
 
   # ii = 0:degree - 1 |> collect
   # jj = cumsum(reverse(ii)) + ii
@@ -35,10 +35,12 @@ function element_stencil(e::SimplexTri, ::Type{Itype}, ::Type{Ftype}) where {Ity
   jj = cumsum(reverse(0:degree - 1)) + ii .+ 1
   kk = reverse(jj) - ii .+ 1
 
-  face_points = hcat(ii, jj, kk)
-  interior_nodes = findall(x -> x ∉ face_points, 1:n_points)
-
-  return nodal_coordinates, face_points, interior_nodes
+  edge_nodes = hcat(ii, jj, kk)
+  edge_nodes = convert.(Itype, edge_nodes)
+  face_nodes = Itype[;;]
+  interior_nodes = findall(x -> x ∉ edge_nodes, 1:n_points)
+  interior_nodes = convert.(Itype, interior_nodes)
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 """

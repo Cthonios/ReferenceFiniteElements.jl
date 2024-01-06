@@ -41,6 +41,13 @@ function element_stencil(::Hex8, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   nodal_coordinates[3, 8] =  1.0
   #
   # first one stupidly cuases an allocation
+  # edge nodes TODO
+  # edge_nodes = Matrix{Itype}(undef, 2, 12)
+  edge_nodes = Itype[
+    1 2 6 5 2 3 7 3 4 8 5 1 
+    2 6 5 1 3 7 6 4 8 7 8 4
+  ]
+  # TODO
   # @time face_nodes = Itype[
   #   1 2 3 1 1 5
   #   2 3 4 5 4 6
@@ -79,7 +86,7 @@ function element_stencil(::Hex8, ::Type{Itype}, ::Type{Ftype}) where {Itype <: I
   face_nodes[4, 6] = 8
   #
   interior_nodes = Vector{Itype}(undef, 0)
-  return nodal_coordinates, face_nodes, interior_nodes
+  return nodal_coordinates, edge_nodes, face_nodes, interior_nodes
 end
 
 function shape_function_values(e::Hex8, ::Type{A1}, ξ::A2) where {
