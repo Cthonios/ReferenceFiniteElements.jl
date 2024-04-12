@@ -50,3 +50,45 @@ function quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {
   end
   return ξs, ws
 end
+
+function surface_quadrature_points_and_weights(e::E, t1::Type{A}, t2::Type{T}) where {
+  A <: Union{SVector, MVector}, T <: Number, E <: AbstractTet
+}
+  D = num_dimensions(e)
+
+  ξs_2d, ws_2d = quadrature_points_and_weights(Tri3(degree(e)), t1, t2)
+
+  ξs = Matrix{A{D, T}}(undef, 4, length(ξs_2d))
+  ws = Matrix{T}(undef, 4, length(ξs_2d))
+  ns = Matrix{A{D, T}}(undef, 4, length(ξs_2d))
+
+  # side 1
+  for (q, ξ) in enumerate(ξs_2d)
+    ξs[1, q] = A{D, T}(0.0, ξ[1], ξ[2])
+    ws[1, q] = ws_2d[q]
+    ns[1, q] = A{D, T}(-1., 0., 0.)
+  end
+
+  # side 2
+  for (q, ξ) in enumerate(ξs_2d)
+    ξs[2, q] = A{D, T}(ξ[1], ξ[2], 1. - ξ[1] - ξ[2])
+    ws[2, q] = ws_2d[q]
+    ns[2, q] = A{D, T}(1. / sqrt(3.), 1. / sqrt(3.), 1. / sqrt(3.))
+  end
+
+  # side 3
+  for (q, ξ) in enumerate(ξs_2d)
+    ξs[3, q] = A{D, T}(ξ[1], ξ[2], 0.0)
+    ws[3, q] = ws_2d[q]
+    ns[3, q] = A{D, T}(0., 0., -1.)
+  end
+
+  # side 4
+  for (q, ξ) in enumerate(ξs_2d)
+    ξs[4, q] = A{D, T}(ξ[1], 0.0, ξ[2])
+    ws[4, q] = ws_2d[q]
+    ns[4, q] = A{D, T}(0., -1., 0.)
+  end
+
+  return ξs, ws, ns
+end

@@ -8,7 +8,7 @@ and interpolants
 struct ReferenceFE{
   Itype, Ftype, N, D, Q,
   RefFEType <: ReferenceFEType{N, D},
-  Interp,
+  Interp, SurfInterp,
   VOM       <: AbstractVecOrMat{Ftype},
   # M1        <: AbstractArray, # can be an empty array
   # M2        <: AbstractArray,
@@ -22,6 +22,7 @@ struct ReferenceFE{
   face_nodes::M2
   interior_nodes::V
   interpolants::Interp
+  surface_interpolants::SurfInterp
 end
 
 """
@@ -37,12 +38,12 @@ function ReferenceFE(
 
   nodal_coordinates, edge_nodes, face_nodes, interior_nodes = element_stencil(e, int_type, float_type)
   interps = Interpolants{storage_type, array_type, float_type}(e)
-
+  surf_interps = SurfaceInterpolants{storage_type, array_type, float_type}(e)
   return ReferenceFE{
     int_type, float_type, N, D, Q,
-    typeof(e), typeof(interps), typeof(nodal_coordinates),
+    typeof(e), typeof(interps), typeof(surf_interps), typeof(nodal_coordinates),
     typeof(edge_nodes), typeof(face_nodes), typeof(interior_nodes)
-  }(e, nodal_coordinates, edge_nodes, face_nodes, interior_nodes, interps)
+  }(e, nodal_coordinates, edge_nodes, face_nodes, interior_nodes, interps, surf_interps)
 end
 
 """
@@ -59,14 +60,8 @@ function Base.show(io::IO, e::ReferenceFE)
   print(io, "  Edge nodes type             = $(typeof(e.edge_nodes))\n")
   print(io, "  Face nodes type             = $(typeof(e.face_nodes))\n")
   print(io, "  Interior nodes type         = $(typeof(e.interior_nodes))\n")
-if isa(e.interpolants, Interpolants)
-    print(io, "  Interpolants type           = Interpolants{$(eltype(e.interpolants.N).name.name), ",
-              "$(eltype(e.interpolants.∇N_ξ).name.name), ",
-              "$(eltype(e.interpolants.∇∇N_ξ).name.name)}"
-    )
-  else
-    print(io, "  Interpolants type           = $(typeof(e.interpolants).name.name){Interpolants}\n")
-  end
+  print(io, "  Interpolants type           = $(typeof(e.interpolants).name.name){Interpolants}\n")
+  print(io, "  SurfaceInterpolants type    = $(typeof(e.interpolants).name.name){SurfaceInterpolants}\n")
   print(io, "\n")
 end
 
@@ -78,8 +73,17 @@ quadrature_points(e::ReferenceFE) = e.interpolants.ξ
 """
 Returns a specific quadrature point indexed by q
 """
-# quadrature_point(e::ReferenceFE, q::Int) = LazyRow(e.interpolants, q).ξ
 quadrature_points(e::ReferenceFE, q::Int) = e.interpolants.ξ[q]
+
+"""
+Returns all surface quadrature points at surface s
+"""
+surface_quadrature_points(e::ReferenceFE, s::Int) = LazyRow(e.surface_interpolants, s).ξ
+
+"""
+Returns a specific quadrature point indexed by q and surface s
+"""
+surface_quadrature_points(e::ReferenceFE, s::Int, q::Int) = e.surface_interpolants.ξ[s, q]
 
 """
 Returns all quadrature weights
@@ -89,8 +93,17 @@ quadrature_weights(e::ReferenceFE) = e.interpolants.w
 """
 Returns a specific quadrature weight indexed by q
 """
-# quadrature_weight(e::ReferenceFE, q::Int) = LazyRow(e.interpolants, q).w
 quadrature_weights(e::ReferenceFE, q::Int) = e.interpolants.w[q]
+
+"""
+Returns all surface quadrature weights at surface s
+"""
+surface_quadrature_weights(e::ReferenceFE, s::Int) = LazyRow(e.surface_interpolants, s).w
+
+"""
+Returns a specific quadrature weight indexed by q
+"""
+surface_quadrature_weights(e::ReferenceFE, s::Int, q::Int) = e.surface_interpolants.w[s, q]
 
 """
 Returns all shape function values
@@ -103,6 +116,16 @@ Returns a specific quadrature point's shape function value indexed by q
 shape_function_values(e::ReferenceFE, q::Int) = e.interpolants.N[q]
 
 """
+Returns all surface shape function values at side s
+"""
+surface_shape_function_values(e::ReferenceFE, s::Int) = LazyRow(e.surface_interpolants, s).N
+
+"""
+Returns a specific quadrature point's shape function value indexed by q at side s
+"""
+surface_shape_function_values(e::ReferenceFE, s::Int, q::Int) = e.surface_interpolants.N[s, q]
+
+"""
 Returns all shape function gradients
 """
 shape_function_gradients(e::ReferenceFE) = e.interpolants.∇N_ξ
@@ -113,6 +136,16 @@ Returns a specific quadrature point's shape function gradient indexed by q
 shape_function_gradients(e::ReferenceFE, q::Int) = e.interpolants.∇N_ξ[q]
 
 """
+Returns all shape function gradients
+"""
+surface_shape_function_gradients(e::ReferenceFE, s::Int) = LazyRow(e.surface_interpolants, s).∇N_ξ
+
+"""
+Returns a specific quadrature point's shape function gradient indexed by q
+"""
+surface_shape_function_gradients(e::ReferenceFE, s::Int, q::Int) = e.surface_interpolants.∇N_ξ[s, q]
+
+"""
 Returns all shape function hessians
 """
 shape_function_hessians(e::ReferenceFE) = e.interpolants.∇∇N_ξ
@@ -120,7 +153,17 @@ shape_function_hessians(e::ReferenceFE) = e.interpolants.∇∇N_ξ
 """
 Returns a specific quadrature point's shape function hessian indexed by q
 """
-shape_function_hessians(e::ReferenceFE, i::Int) = e.interpolants.∇∇N_ξ[i]
+shape_function_hessians(e::ReferenceFE, q::Int) = e.interpolants.∇∇N_ξ[q]
+
+"""
+Returns all shape function hessians
+"""
+surface_shape_function_hessians(e::ReferenceFE, s::Int) = LazyRow(e.surface_interpolants, s).∇∇N_ξ
+
+"""
+Returns a specific quadrature point's shape function hessian indexed by q
+"""
+surface_shape_function_hessians(e::ReferenceFE, s::Int, q::Int) = e.surface_interpolants.∇∇N_ξ[s, q]
 
 
 """
