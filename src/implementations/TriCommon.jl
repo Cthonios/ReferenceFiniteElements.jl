@@ -142,3 +142,39 @@ function quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {
   end
   return ξs, ws
 end
+
+function surface_quadrature_points_and_weights(e::E, ::Type{A}, ::Type{T}) where {
+  A <: Union{SVector, MVector}, T <: Number, E <: AbstractTri
+}
+  D = num_dimensions(e)
+  ξs_1d, ws_1d = gausslegendre(degree(e))
+  ξs_1d .= (ξs_1d .+ 1.) ./ 2.
+  ws_1d .= 0.5 * ws_1d
+
+  ξs = Matrix{A{D, T}}(undef, 3, length(ξs_1d))
+  ws = Matrix{T}(undef, 3, length(ξs_1d))
+  ns = Matrix{A{D, T}}(undef, 3, length(ξs_1d))
+
+  # side 1
+  for (q, ξ) in enumerate(ξs_1d)
+    ξs[1, q] = A{D, T}(ξ, 0.0)
+    ws[1, q] = ws_1d[q]
+    ns[1, q] = A{D, T}(ξ, -1.0)
+  end
+
+  # side 2
+  for (q, ξ) in enumerate(ξs_1d)
+    ξs[2, q] = A{D, T}(ξ, 1 - ξ)
+    ws[2, q] = ws_1d[q]
+    ns[2, q] = A{D, T}(1. / sqrt(2.), 1. / sqrt(2.))
+  end
+
+  # side 3
+  for (q, ξ) in enumerate(ξs_1d)
+    ξs[3, q] = A{D, T}(0.0, ξ)
+    ws[3, q] = ws_1d[q]
+    ns[3, q] = A{D, T}(-1.0, ξ)
+  end
+
+  return ξs, ws, ns
+end

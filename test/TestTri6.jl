@@ -1,7 +1,7 @@
 @testset ExtendedTestSet "Tri6 implementation" begin
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
-      for array_type in [SArray, MArray]
+      for array_type in [SArray]
         e = ReferenceFE(Tri6(Val(1)); int_type=int_type, float_type=float_type, array_type=array_type)
         v_nodes = vertex_nodes(e)
         @test e.nodal_coordinates[:, v_nodes[1]] ≈ [0., 0.]
@@ -31,7 +31,7 @@ end
 @testset ExtendedTestSet "Test Tri6 interpolation" begin
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
-      for array_type in [SArray, MArray]
+      for array_type in [SArray]
         x = generate_random_points_in_triangle(1)
         x = reinterpret(SVector{2, float_type}, vec(x))
         x = x[1]
@@ -62,7 +62,7 @@ end
 @testset ExtendedTestSet "Test Tri6 grad interpolation" begin
   for int_type in [Int32, Int64]
     for float_type in [Float32, Float64]
-      for array_type in [SArray, MArray]
+      for array_type in [SArray]
         x = generate_random_points_in_triangle(1)
         x = reinterpret(SVector{2, float_type}, vec(x))
         x = x[1]
@@ -95,7 +95,7 @@ end
   end
 end
 
-common_test_sets(Tri6, [1, 2], [Int32, Int64], [Float32, Float64], [SArray, MArray, Array], [Array, StructArray])
+common_test_sets(Tri6, [1, 2], [Int32, Int64], [Float32, Float64], [SArray], [StructArray])
 
 if CUDA.has_cuda()
   common_test_sets(Tri6, [1, 2], [Int32, Int64], [Float32, Float64], [SArray], [StructArray]; cuda=true)

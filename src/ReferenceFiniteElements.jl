@@ -21,6 +21,11 @@ export element_type,
        shape_function_gradients,
        shape_function_hessians,
        shape_function_values,
+       surface_quadrature_points,
+       surface_quadrature_weights,
+       surface_shape_function_gradients,
+       surface_shape_function_hessians,
+       surface_shape_function_values,
        vertex_nodes
 
 # dependencies
