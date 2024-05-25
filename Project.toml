@@ -24,7 +24,7 @@ ReferenceFiniteElementsExodusExt = ["Exodus"]
 ReferenceFiniteElementsRecipesBaseExt = ["LaTeXStrings", "RecipesBase"]
 
 [compat]
-Adapt = "3"
+Adapt = "3, 4"
 Aqua = "0.8"
 CUDA = "5"
 Distributions = "0.25"
