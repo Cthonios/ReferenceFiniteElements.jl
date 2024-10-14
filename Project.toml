@@ -14,26 +14,22 @@ StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [extensions]
 ReferenceFiniteElementsAdaptExt = ["Adapt"]
-ReferenceFiniteElementsExodusExt = ["Exodus"]
 ReferenceFiniteElementsRecipesBaseExt = ["LaTeXStrings", "RecipesBase"]
+ReferenceFiniteElementsSymbolicsExt = ["Symbolics"]
 
 [compat]
-Adapt = "3, 4"
+Adapt = "4"
 Aqua = "0.8"
-CUDA = "5"
 Distributions = "0.25"
 DocStringExtensions = "0.9"
-Exodus = "0.13"
 FastGaussQuadrature = "0.5, 1"
-ForwardDiff = "0.10"
-JET = "0.8"
-KernelAbstractions = "0.9"
+JET = "0.9"
 LaTeXStrings = "1"
 LinearAlgebra = "1"
 Polynomials = "3, 4"
@@ -41,6 +37,7 @@ RecipesBase = "1"
 SpecialPolynomials = "0.4"
 StaticArrays = "1"
 StructArrays = "0.6"
+Symbolics = "6"
 Test = "1"
 TestSetExtensions = "2"
 julia = "1"
@@ -48,14 +45,13 @@ julia = "1"
 [extras]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
-ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
-KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Adapt", "Aqua", "CUDA", "Distributions", "Exodus", "ForwardDiff", "JET", "KernelAbstractions", "Test", "TestSetExtensions"]
+test = ["Adapt", "Aqua", "Distributions", "JET", "LaTeXStrings", "RecipesBase", "Symbolics", "Test", "TestSetExtensions"]
