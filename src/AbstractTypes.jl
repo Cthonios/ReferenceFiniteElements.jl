@@ -29,9 +29,13 @@ abstract type AbstractEdge{I, P, Q} <: AbstractElementType{I, 1, P, Q} end
 # 2d elements
 abstract type AbstractFace{I, P, Q} <: AbstractElementType{I, 2, P, Q} end
 abstract type AbstractQuad{I, P, Q} <: AbstractFace{I, P, Q} end
+abstract type AbstractTri{I, P, Q} <: AbstractFace{I, P, Q} end
 
 # 3d elements
 abstract type AbstractVolume{I, P, Q} <: AbstractElementType{I, 3, P, Q} end
+abstract type AbstractHex{I, P, Q} <: AbstractVolume{I, P, Q} end
+abstract type AbstractTet{I, P, Q} <: AbstractVolume{I, P, Q} end
+# TODO add pyramid and wedge type
 
 # containers for interpolants
 abstract type AbstractInterpolationType end

@@ -1,4 +1,5 @@
 # abstrac methodss
+num_interior_nodes(e::AbstractQuad{I, 0, Q}) where {I, Q} = 0
 num_interior_nodes(e::AbstractQuad) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
 num_faces(e::AbstractQuad) = 4
 

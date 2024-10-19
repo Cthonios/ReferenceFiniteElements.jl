@@ -28,7 +28,7 @@ include("elements/Hex.jl")
 
 # elements
 export Edge0, Edge2, Edge3, Edge
-export Hex
+export Hex0, Hex8, Hex
 export Quad0, Quad4, Quad9, Quad
 export Tri
 export Vertex
