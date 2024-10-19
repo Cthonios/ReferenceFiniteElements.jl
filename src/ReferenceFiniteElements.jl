@@ -25,12 +25,13 @@ include("elements/Tri.jl")
 
 # 3-d elements
 include("elements/Hex.jl")
+# include("elements/Tet.jl")
 
 # elements
 export Edge0, Edge2, Edge3, Edge
 export Hex0, Hex8, Hex
 export Quad0, Quad4, Quad9, Quad
-export Tri
+export Tri0, Tri3, Tri6, Tri
 export Vertex
 
 # interpolations

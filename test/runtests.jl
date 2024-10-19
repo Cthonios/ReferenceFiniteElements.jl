@@ -11,6 +11,10 @@ function is_inside_element(::ReferenceFiniteElements.AbstractEdge, point)
   return (point[1] >= -1.) && (point[1] <= 1.)
 end
 
+function is_inside_surface_element(::ReferenceFiniteElements.AbstractEdge, point)
+  return (point[1] >= 0.) && (point[1] <= 1.)
+end
+
 function is_inside_element(::ReferenceFiniteElements.AbstractHex, point)
   return (point[1] >= -1.) && (point[1] <= 1.) &&
          (point[2] >= -1.) && (point[2] <= 1.) &&
@@ -22,12 +26,17 @@ function is_inside_element(::ReferenceFiniteElements.AbstractQuad, point)
          (point[2] >= -1.) && (point[2] <= 1.)
 end
 
+function is_inside_element(::ReferenceFiniteElements.AbstractTri, point)
+  return (point[1] >= 0.) && (point[1] <= 1.) &&
+         (point[2] >= 0.) && (point[2] <= 1. - point[1])
+end
+
 
 q_weight_sum(::ReferenceFiniteElements.AbstractEdge) = 2.
 q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
 q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
-q_weight_sum(::Tri) = 0.5
-q_weight_sum(::Vertex) = 1.
+q_weight_sum(::ReferenceFiniteElements.AbstractTri) = 0.5
+q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
 
 function test_q_points_inside_element(re) 
   @test all(is_inside_element.((re.element,), quadrature_points(re)))
@@ -37,7 +46,11 @@ function test_q_points_inside_element(re)
   @test all(is_inside_element.((re.element,), surface_quadrature_points(re)))
   for f in 1:num_faces(re.element)
     for n in 1:num_quadrature_points(re.surface_element)
-      @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), surface_quadrature_point(re, n, f))
+      if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
+        @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), 2. * surface_quadrature_point(re, n, f) .- 1.)
+      else
+        @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), surface_quadrature_point(re, n, f))
+      end
     end
   end
 end
@@ -60,7 +73,11 @@ end
 function test_q_weight_sum(re) 
   @test q_weight_sum(re.element) ≈ sum(quadrature_weights(re))
   for f in 1:num_faces(re.element)
-    @test sum(surface_quadrature_weights(re)[:, f]) ≈ q_weight_sum(ReferenceFiniteElements.surface_element(re.element))
+    if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
+      @test sum(surface_quadrature_weights(re)[:, f]) ≈ q_weight_sum(ReferenceFiniteElements.surface_element(re.element)) / 2.
+    else
+      @test sum(surface_quadrature_weights(re)[:, f]) ≈ q_weight_sum(ReferenceFiniteElements.surface_element(re.element))
+    end
   end
 end 
 
@@ -155,7 +172,12 @@ el_types = [
   (Quad4, 1),
   (Quad4, 2),
   (Quad9, 1),
-  (Quad9, 2)
+  (Quad9, 2),
+  (Tri0, 1),
+  (Tri3, 1),
+  (Tri3, 2),
+  (Tri6, 1),
+  (Tri6, 2)
 ]
 # for (el_type, q_order) in zip(el_types, q_orders)
 for el_type in el_types
@@ -205,8 +227,6 @@ for el_type in el_types
     end
   end
 end
-
-
 
 @testset ExtendedTestSet "Aqua Tests" begin
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)

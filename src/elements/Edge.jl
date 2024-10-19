@@ -1,12 +1,4 @@
 # abstract methods
-num_interior_nodes(e::AbstractEdge) = 0
-num_edges(e::AbstractEdge) = 1
-num_faces(e::AbstractEdge) = 0
-num_nodes(e::AbstractEdge) = polynomial_degree(e) + 1
-num_nodes_per_edge(e::AbstractEdge) = 0
-num_nodes_per_face(e::AbstractEdge) = 0
-num_quadrature_points(::AbstractEdge{I, P, Q}) where {I, P, Q} = Q
-num_shape_functions(e::AbstractEdge) = polynomial_degree(e) == 0 ? 1 : num_nodes(e)
 surface_element(::AbstractEdge{I, P, Q}) where {I, P, Q} = Vertex{I, P, Q}()
 
 function element_edge_nodes(::AbstractEdge, backend::ArrayBackend)

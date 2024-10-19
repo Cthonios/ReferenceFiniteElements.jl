@@ -1,42 +1,42 @@
-num_interior_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 0
-num_interior_nodes(e::AbstractHex) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
-num_faces(e::AbstractHex) = 6
+# num_interior_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 0
+# num_interior_nodes(e::AbstractHex) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
+# num_faces(e::AbstractHex) = 6
 
-function num_nodes(e::AbstractHex) 
-  if polynomial_degree(e) < 2
-    return 8
-  else
-    return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
-  end
-end
+# function num_nodes(e::AbstractHex) 
+#   if polynomial_degree(e) < 2
+#     return 8
+#   else
+#     return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
+#   end
+# end
 
-num_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 8
+# num_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 8
 
-function num_nodes_per_edge(e::AbstractHex) 
-  if polynomial_degree(e) < 2
-    return 2
-  else
-    return polynomial_degree(e) + 1
-  end
-end
+# function num_nodes_per_edge(e::AbstractHex) 
+#   if polynomial_degree(e) < 2
+#     return 2
+#   else
+#     return polynomial_degree(e) + 1
+#   end
+# end
 
-function num_shape_functions(e::AbstractHex{Lagrange, P, Q}) where {P, Q}
-  if polynomial_degree(e) == 0
-    return 1
-  else
-    return num_nodes(e)
-  end
-end
+# function num_shape_functions(e::AbstractHex{Lagrange, P, Q}) where {P, Q}
+#   if polynomial_degree(e) == 0
+#     return 1
+#   else
+#     return num_nodes(e)
+#   end
+# end
 
-num_quadrature_points(e::AbstractHex{Lagrange, P, Q}) where {P, Q} = num_quadrature_points(surface_element(surface_element(e)))^3
+# num_quadrature_points(e::AbstractHex{Lagrange, P, Q}) where {P, Q} = num_quadrature_points(surface_element(surface_element(e)))^3
 
-function num_nodes_per_face(e::AbstractHex)
-  if polynomial_degree(e) < 2
-    return 4
-  else
-    return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
-  end
-end
+# function num_nodes_per_face(e::AbstractHex)
+#   if polynomial_degree(e) < 2
+#     return 4
+#   else
+#     return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
+#   end
+# end
 surface_element(::AbstractHex{I, P, Q}) where {I, P, Q} = Quad{I, P, Q}()
 
 function element_edge_nodes(e::AbstractHex, backend::ArrayBackend)
@@ -44,7 +44,7 @@ function element_edge_nodes(e::AbstractHex, backend::ArrayBackend)
 end
 
 function element_face_nodes(e::AbstractHex, backend::ArrayBackend)
-  faces = Matrix{Int64}(undef, num_nodes_per_face(e), 6)
+  faces = Matrix{Int64}(undef, num_vertices_per_face(e), 6)
   edge_nodes = 1:polynomial_degree(e) + 1
 
   # corners
@@ -53,16 +53,16 @@ function element_face_nodes(e::AbstractHex, backend::ArrayBackend)
 end
 
 function element_interior_nodes(e::AbstractHex, backend::ArrayBackend)
-  nodes = Vector{Int64}(undef, num_interior_nodes(e))
+  nodes = Vector{Int64}(undef, num_interior_vertices(e))
   for n in axes(nodes, 1)
-    nodes[n] = 12 * num_nodes_per_edge(e) - 8 + n
+    nodes[n] = 12 * num_vertices_per_edge(e) - 8 + n
   end
   return nodes
 end
 
 function nodal_coordinates(e::AbstractHex, backend::ArrayBackend)
   edge_coords = nodal_coordinates(surface_element(surface_element(e)), backend)
-  coords = Matrix{Float64}(undef, 3, num_nodes(e))
+  coords = Matrix{Float64}(undef, 3, num_vertices(e))
 
   # corner nodes
   coords[1, 1] = -1.
@@ -410,7 +410,7 @@ function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   N_x_rev = reverse(N_x)
   N_y_rev = reverse(N_y)
   N_z_rev = reverse(N_z)
-  N = Vector{eltype(coords_x[1])}(undef, num_nodes(e))
+  N = Vector{eltype(coords_x[1])}(undef, num_vertices(e))
 
   # corner nodes first
   N[1] = N_x[1] * N_y[1] * N_z[1]
@@ -424,7 +424,7 @@ function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
 
   # edge nodes next
   # for n in 2:num_nodes_per_edge(e) - 1
-  for n in 2:num_nodes_per_edge(e) - 1
+  for n in 2:num_vertices_per_edge(e) - 1
     k = 12 * (n - 2)
 
     # face 1
@@ -457,7 +457,7 @@ function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
     # N[8 + k + 8] = N_x[1] * N_y[n] * N_z[end]
   end
 
-  curr_node = 8 + 12 * (num_nodes_per_edge(e) - 2)
+  curr_node = 8 + 12 * (num_vertices_per_edge(e) - 2)
   for (n, (N_1, N_2)) in enumerate(Iterators.product(N_x[2:end - 1], N_y[2:end - 1]))
     k = curr_node + n
     N[k + 1] = N_1 * N_2 * N_z[end]
@@ -495,7 +495,7 @@ function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   end
 
   # now for interior nodes
-  m = num_nodes(e) - num_interior_nodes(e) + 1
+  m = num_vertices(e) - num_interior_vertices(e) + 1
   for (N_1, N_2, N_3) in Iterators.product(N_x[2:end - 1], N_y[2:end - 1], N_z[2:end - 1])
     N[m] = N_1 * N_2 * N_3
     m = m + 1
@@ -514,7 +514,7 @@ function shape_function_gradient(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   ∇N_y = shape_function_gradient(surface_element(surface_element(e)), coords_x, ξ[2], backend)
   ∇N_z = shape_function_gradient(surface_element(surface_element(e)), coords_x, ξ[3], backend)
 
-  ∇N = Matrix{eltype(coords_x[1])}(undef, 3, num_nodes(e))
+  ∇N = Matrix{eltype(coords_x[1])}(undef, 3, num_vertices(e))
 
   # corner nodes first
   ∇N[1, 1] = ∇N_x[1] * N_y[1] * N_z[1]
@@ -563,7 +563,7 @@ function shape_function_gradient(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   # end
 
   # now for interior nodes
-  m = num_nodes(e) - num_interior_nodes(e) + 1
+  m = num_vertices(e) - num_interior_vertices(e) + 1
   Ns = Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
   ∇Ns = Iterators.product(∇N_x[2:end - 1], ∇N_y[2:end - 1])
   for ((N_1, N_2), (∇N_1, ∇N_2)) in zip(Ns, ∇Ns)
@@ -594,7 +594,7 @@ function shape_function_hessian(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
 
   # return N_x * N_y
 
-  ∇∇N = Array{eltype(coords_x[1]), 3}(undef, 3, 3, num_nodes(e))
+  ∇∇N = Array{eltype(coords_x[1]), 3}(undef, 3, 3, num_vertices(e))
 
   # corner nodes first
   # ∇∇N[1, 1, 1] = ∇∇N_x[1] * N_y[1]
