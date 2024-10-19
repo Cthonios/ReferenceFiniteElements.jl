@@ -11,12 +11,20 @@ function is_inside_element(::ReferenceFiniteElements.AbstractEdge, point)
   return (point[1] >= -1.) && (point[1] <= 1.)
 end
 
+function is_inside_element(::ReferenceFiniteElements.AbstractHex, point)
+  return (point[1] >= -1.) && (point[1] <= 1.) &&
+         (point[2] >= -1.) && (point[2] <= 1.) &&
+         (point[3] >= -1.) && (point[3] <= 1.)
+end
+
 function is_inside_element(::ReferenceFiniteElements.AbstractQuad, point)
   return (point[1] >= -1.) && (point[1] <= 1.) &&
          (point[2] >= -1.) && (point[2] <= 1.)
 end
 
+
 q_weight_sum(::ReferenceFiniteElements.AbstractEdge) = 2.
+q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
 q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
 q_weight_sum(::Tri) = 0.5
 q_weight_sum(::Vertex) = 1.
@@ -140,6 +148,9 @@ el_types = [
   (Edge2, 2),
   (Edge3, 1),
   (Edge3, 2),
+  (Hex0, 1),
+  (Hex8, 1),
+  (Hex8, 2),
   (Quad0, 1),
   (Quad4, 1),
   (Quad4, 2),
