@@ -1,10 +1,8 @@
-struct Quad{I, P, Q} <: AbstractElementType{I, 2, P, Q}
-end
+# abstrac methodss
+num_interior_nodes(e::AbstractQuad) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
+num_faces(e::AbstractQuad) = 4
 
-num_interior_nodes(e::Quad) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
-num_faces(e::Quad) = 4
-
-function num_nodes(e::Quad) 
+function num_nodes(e::AbstractQuad) 
   if polynomial_degree(e) < 2
     return 4
   else
@@ -12,9 +10,9 @@ function num_nodes(e::Quad)
   end
 end
 
-num_nodes(e::Quad{I, 0, Q}) where {I, Q} = 4
+num_nodes(e::AbstractQuad{I, 0, Q}) where {I, Q} = 4
 
-function num_nodes_per_edge(e::Quad) 
+function num_nodes_per_edge(e::AbstractQuad) 
   if polynomial_degree(e) < 2
     return 2
   else
@@ -22,7 +20,7 @@ function num_nodes_per_edge(e::Quad)
   end
 end
 
-function num_shape_functions(e::Quad{Lagrange, P, Q}) where {P, Q}
+function num_shape_functions(e::AbstractQuad{Lagrange, P, Q}) where {P, Q}
   if polynomial_degree(e) == 0
     return 1
   else
@@ -30,11 +28,13 @@ function num_shape_functions(e::Quad{Lagrange, P, Q}) where {P, Q}
   end
 end
 
-num_nodes_per_face(e::Quad) = 0
-surface_element(::Quad{I, P, Q}) where {I, P, Q} = Edge{I, P, Q}()
+num_quadrature_points(e::AbstractQuad{Lagrange, P, Q}) where {P, Q} = num_quadrature_points(surface_element(e))^2
+
+num_nodes_per_face(e::AbstractQuad) = 0
+surface_element(::AbstractQuad{I, P, Q}) where {I, P, Q} = Edge{I, P, Q}()
 
 # TODO
-function element_edge_nodes(e::Quad, backend::ArrayBackend)
+function element_edge_nodes(e::AbstractQuad, backend::ArrayBackend)
   edges = Matrix{Int64}(undef, num_nodes_per_edge(e), 4)
   edge_nodes = 1:polynomial_degree(e) + 1
 
@@ -61,14 +61,14 @@ function element_edge_nodes(e::Quad, backend::ArrayBackend)
   return map(x -> convert_to(backend, x...), eachcol(edges))
 end
 
-function element_face_nodes(e::Quad, backend::ArrayBackend)
+function element_face_nodes(e::AbstractQuad, backend::ArrayBackend)
   temp = convert_to(backend, zeros(Int, 0)...)
   face_nodes = [temp]
   return face_nodes
 end
 
 # TODO
-function element_interior_nodes(e::Quad, backend::ArrayBackend)
+function element_interior_nodes(e::AbstractQuad, backend::ArrayBackend)
   nodes = Vector{Int64}(undef, num_interior_nodes(e))
   for n in axes(nodes, 1)
     nodes[n] = 4 * num_nodes_per_edge(e) - 4 + n
@@ -76,7 +76,7 @@ function element_interior_nodes(e::Quad, backend::ArrayBackend)
   return nodes
 end
 
-function nodal_coordinates(e::Quad, backend::ArrayBackend)
+function nodal_coordinates(e::AbstractQuad, backend::ArrayBackend)
   edge_coords = nodal_coordinates(surface_element(e), backend)
   coords = Matrix{Float64}(undef, 2, num_nodes(e))
 
@@ -120,7 +120,7 @@ function nodal_coordinates(e::Quad, backend::ArrayBackend)
   return map(x -> convert_to_vector_coords(e, backend, x...), eachcol(coords))
 end
 
-function surface_nodal_coordinates(e::Quad{P, Q, I}, backend::ArrayBackend) where {P, Q, I}
+function surface_nodal_coordinates(e::AbstractQuad{P, Q, I}, backend::ArrayBackend) where {P, Q, I}
   coords = nodal_coordinates(e, backend)
   edges = element_edge_nodes(e, backend)
   # surf_coords = map(x -> coords[x] |> collect, edges)
@@ -128,7 +128,7 @@ function surface_nodal_coordinates(e::Quad{P, Q, I}, backend::ArrayBackend) wher
   return surf_coords
 end
 
-function quadrature_points_and_weights(e::Quad, backend::ArrayBackend)
+function quadrature_points_and_weights(e::AbstractQuad, backend::ArrayBackend)
   ξs, ws = gausslegendre(quadrature_degree(e))
   ξ_return = Matrix{eltype(ξs)}(undef, 2, length(ξs) * length(ξs))
   w_return = Vector{eltype(ξs)}(undef, length(ξs) * length(ξs))
@@ -142,7 +142,7 @@ function quadrature_points_and_weights(e::Quad, backend::ArrayBackend)
   return map(x -> convert_to(backend, x...), eachcol(ξ_return)), w_return
 end
 
-function surface_quadrature_points_and_weights(e::Quad, backend::ArrayBackend)
+function surface_quadrature_points_and_weights(e::AbstractQuad, backend::ArrayBackend)
   ξs, ws = quadrature_points_and_weights(surface_element(e), backend)
 
   face_1_ξs = map(x -> vcat(x, -1.), ξs)
@@ -153,14 +153,21 @@ function surface_quadrature_points_and_weights(e::Quad, backend::ArrayBackend)
   return [face_1_ξs, face_2_ξs, face_3_ξs, face_4_ξs], [ws, ws, ws, ws]
 end 
 
-function shape_function_value(e::Quad{Lagrange, 0, Q}, X, ξ, backend::ArrayBackend) where Q
+
+# specific implementations
+
+# Constant quad
+struct Quad0{I, Q} <: AbstractQuad{I, 0, Q}
+end
+
+function shape_function_value(e::Quad0{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_vector(e, backend,
     1.
   )
   return Ns
 end
 
-function shape_function_gradient(e::Quad{Lagrange, 0, Q}, X, ξ, backend::ArrayBackend) where Q
+function shape_function_gradient(e::Quad0{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_matrix(e, backend,
     0.,
     #
@@ -169,7 +176,7 @@ function shape_function_gradient(e::Quad{Lagrange, 0, Q}, X, ξ, backend::ArrayB
   return Ns
 end
 
-function shape_function_hessian(e::Quad{Lagrange, 0, Q}, X, ξ, backend::ArrayBackend) where Q
+function shape_function_hessian(e::Quad0{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_3d_array(e, backend,
     0., 0.,
     #
@@ -178,8 +185,12 @@ function shape_function_hessian(e::Quad{Lagrange, 0, Q}, X, ξ, backend::ArrayBa
   return Ns
 end
 
-function shape_function_value(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayBackend{T}) where {Q, T}
-  # display(ξ)
+# linear quad
+struct Quad4{I, Q} <: AbstractQuad{I, 1, Q}
+end
+
+# lagrange implementation
+function shape_function_value(e::Quad4{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_vector(e, backend,
     0.25 * (1 - ξ[1]) * (1 - ξ[2]),
     0.25 * (1 + ξ[1]) * (1 - ξ[2]),
@@ -189,7 +200,7 @@ function shape_function_value(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayBack
   return Ns
 end
 
-function shape_function_gradient(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayBackend) where Q
+function shape_function_gradient(e::Quad4{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_matrix(e, backend,
     -0.25 * (1 - ξ[2]),
     0.25 * (1 - ξ[2]),
@@ -204,7 +215,7 @@ function shape_function_gradient(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayB
   return Ns
 end
 
-function shape_function_hessian(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayBackend) where Q
+function shape_function_hessian(e::Quad4{Lagrange}, X, ξ, backend::ArrayBackend)
   Ns = convert_to_3d_array(e, backend,
     0., 0.,
     0., 0.,
@@ -219,159 +230,252 @@ function shape_function_hessian(e::Quad{Lagrange, 1, Q}, X, ξ, backend::ArrayBa
   return Ns
 end
 
-for n in 2:25
-  @eval function shape_function_value(e::Quad{Lagrange, $n, Q}, X, ξ, backend::ArrayBackend) where Q
-    coords_x = nodal_coordinates(surface_element(e), backend)
-    coords_y = nodal_coordinates(surface_element(e), backend)
-    N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
-    N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
+# quadratic quad
+struct Quad9{I, Q} <: AbstractQuad{I, 2, Q}
+end
 
-    N = Vector{eltype(coords_x[1])}(undef, num_nodes(e))
+# lagrange implementation
+function shape_function_value(e::Quad9{Lagrange}, X, ξ, backend::ArrayBackend)
+  Ns = convert_to_vector(e, backend,
+    0.25 * (ξ[1]^2 - ξ[1]) * (ξ[2]^2 - ξ[2]),
+    0.25 * (ξ[1]^2 + ξ[1]) * (ξ[2]^2 - ξ[2]),
+    0.25 * (ξ[1]^2 + ξ[1]) * (ξ[2]^2 + ξ[2]),
+    0.25 * (ξ[1]^2 - ξ[1]) * (ξ[2]^2 + ξ[2]),
+    0.50 * (ξ[2]^2 - ξ[2]) * (1. - ξ[1]^2),
+    0.50 * (ξ[1]^2 + ξ[1]) * (1. - ξ[2]^2), 
+    0.50 * (ξ[2]^2 + ξ[2]) * (1. - ξ[1]^2), 
+    0.50 * (ξ[1]^2 - ξ[1]) * (1. - ξ[2]^2), 
+    (1.0 - ξ[1]^2) * (1. - ξ[2]^2)
+  )
+  return Ns
+end
 
-    # corner nodes first
-    N[1] = N_x[1] * N_y[1]
-    N[2] = N_x[end] * N_y[1]
-    N[3] = N_x[end] * N_y[end]
-    N[4] = N_x[1] * N_y[end]
+function shape_function_gradient(e::Quad9{Lagrange}, X, ξ, backend::ArrayBackend)
+  Ns = convert_to_matrix(e, backend,
+    0.25 * (ξ[2]^2 - ξ[2]) * (2. * ξ[1] - 1.),
+    0.25 * (ξ[2]^2 - ξ[2]) * (2. * ξ[1] + 1.),
+    0.25 * (ξ[2]^2 + ξ[2]) * (2. * ξ[1] + 1.),
+    0.25 * (ξ[2]^2 + ξ[2]) * (2. * ξ[1] - 1.),
+    0.50 * (ξ[2]^2 - ξ[2]) * (-2. * ξ[1]),
+    0.50 * (2. * ξ[1] + 1.) * (1. - ξ[2]^2),
+    0.50 * (ξ[2]^2 + ξ[2]) * (-2. * ξ[1]),
+    0.50 * (2. * ξ[1] - 1.) * (1. - ξ[2]^2),
+    (-2. * ξ[1]) * (1. - ξ[2]^2),
+    #
+    0.25 * (ξ[1]^2 - ξ[1]) * (2. * ξ[2] - 1.),
+    0.25 * (ξ[1]^2 + ξ[1]) * (2. * ξ[2] - 1.),
+    0.25 * (ξ[1]^2 + ξ[1]) * (2. * ξ[2] + 1.),
+    0.25 * (ξ[1]^2 - ξ[1]) * (2. * ξ[2] + 1.),
+    0.50 * (2. * ξ[2] - 1.) * (1. - ξ[1]^2),
+    0.50 * (ξ[1]^2 + ξ[1]) * (-2. * ξ[2]),
+    0.50 * (2. * ξ[2] + 1.) * (1. - ξ[1]^2),
+    0.50 * (ξ[1]^2 - ξ[1]) * (-2. * ξ[2]),
+    (1. - ξ[1]^2) * (-2. * ξ[2])
+  )
+  return Ns
+end
 
-    # edge nodes next
-    for n in 2:num_nodes_per_edge(e) - 1
-      k = 4 * (n - 2)
-      N[4 + k + 1] = N_x[n] * N_y[1]
-      N[4 + k + 2] = N_x[end] * N_y[n]
-      N[4 + k + 3] = N_x[n] * N_y[end]
-      N[4 + k + 4] = N_x[1] * N_y[n]
-    end
+function shape_function_hessian(e::Quad9{Lagrange}, X, ξ, backend::ArrayBackend)
+  Ns = convert_to_3d_array(e, backend,
+    0.5 * (ξ[2]^2 - ξ[2]),
+    0.5 * (ξ[2]^2 - ξ[2]), 
+    0.5 * (ξ[2]^2 + ξ[2]), 
+    0.5 * (ξ[2]^2 + ξ[2]),
+    -1.0 * (ξ[2]^2 - ξ[2]),
+    1.0 * (1.0 - ξ[2]^2),
+    -1.0 * (ξ[2]^2 + ξ[2]),
+    1.0 * (1.0 - ξ[2]^2),
+    -2.0 * (1. -ξ[2]^2),
+    #
+    0.25 * (2. * ξ[1] - 1.) * (2. * ξ[2] - 1.),
+    0.25 * (2. * ξ[1] + 1.) * (2. * ξ[2] - 1.),
+    0.25 * (2. * ξ[1] + 1.) * (2. * ξ[2] + 1.),
+    0.25 * (2. * ξ[1] - 1.) * (2. * ξ[2] + 1.),
+    0.5 * (2. * ξ[2] - 1.) * (-2. * ξ[1]),
+    0.5 * (2. * ξ[1] + 1.) * (-2. * ξ[2]),
+    0.5 * (2. * ξ[2] + 1.) * (-2. * ξ[1]),
+    0.5 * (2. * ξ[1] - 1.) * (-2. * ξ[2]),
+    (-2. * ξ[1]) * (-2. * ξ[2]),
+    #
+    0.25 * (2. * ξ[1] - 1.) * (2. * ξ[2] - 1.),
+    0.25 * (2. * ξ[1] + 1.) * (2. * ξ[2] - 1.),
+    0.25 * (2. * ξ[1] + 1.) * (2. * ξ[2] + 1.),
+    0.25 * (2. * ξ[1] - 1.) * (2. * ξ[2] + 1.),
+    0.5 * (2. * ξ[2] - 1.) * (-2. * ξ[1]),
+    0.5 * (2.0 * ξ[1] + 1.0) * (-2.0 * ξ[2]),
+    0.5 * (2. * ξ[2] + 1.) * (-2. * ξ[1]),
+    0.5 * (2. * ξ[1] - 1.) * (-2. * ξ[2]),
+    (-2. * ξ[1]) * (-2. * ξ[2]),
+    #
+    0.5 * (ξ[1]^2 - ξ[1]),
+    0.5 * (ξ[1]^2 + ξ[1]), 
+    0.5 * (ξ[1]^2 + ξ[1]), 
+    0.5 * (ξ[1]^2 - ξ[1]),
+    1.0 * (1.0 - ξ[1]^2),
+    -1.0 * (ξ[1]^2 + ξ[1]),
+    1.0 * (1.0 - ξ[1]^2),
+    -1.0 * (ξ[1]^2 - ξ[1]),
+    -2.0 * (1. -ξ[1]^2)
+  )
+  return Ns
+end
 
-    # now for interior nodes
-    m = num_nodes(e) - num_interior_nodes(e) + 1
-    for (N_1, N_2) in Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
-      N[m] = N_1 * N_2
-      m = m + 1
-    end 
-    return convert_to_vector(e, backend, N...)
+# general quad
+struct Quad{I, P, Q} <: AbstractQuad{I, P, Q}
+end
+
+# lagrange implementation
+function shape_function_value(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+  coords_x = nodal_coordinates(surface_element(e), backend)
+  coords_y = nodal_coordinates(surface_element(e), backend)
+  N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
+  N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
+
+  N = Vector{eltype(coords_x[1])}(undef, num_nodes(e))
+
+  # corner nodes first
+  N[1] = N_x[1] * N_y[1]
+  N[2] = N_x[end] * N_y[1]
+  N[3] = N_x[end] * N_y[end]
+  N[4] = N_x[1] * N_y[end]
+
+  # edge nodes next
+  for n in 2:num_nodes_per_edge(e) - 1
+    k = 4 * (n - 2)
+    N[4 + k + 1] = N_x[n] * N_y[1]
+    N[4 + k + 2] = N_x[end] * N_y[n]
+    N[4 + k + 3] = N_x[n] * N_y[end]
+    N[4 + k + 4] = N_x[1] * N_y[n]
   end
 
-  @eval function shape_function_gradient(e::Quad{Lagrange, $n, Q}, X, ξ, backend::ArrayBackend) where Q
-    coords_x = nodal_coordinates(surface_element(e), backend)
-    coords_y = nodal_coordinates(surface_element(e), backend)
-    N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
-    N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
-    ∇N_x = shape_function_gradient(surface_element(e), coords_x, ξ[1], backend)
-    ∇N_y = shape_function_gradient(surface_element(e), coords_x, ξ[2], backend)
+  # now for interior nodes
+  m = num_nodes(e) - num_interior_nodes(e) + 1
+  for (N_1, N_2) in Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
+    N[m] = N_1 * N_2
+    m = m + 1
+  end 
+  return convert_to_vector(e, backend, N...)
+end
 
-    # return N_x * N_y
+function shape_function_gradient(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+  coords_x = nodal_coordinates(surface_element(e), backend)
+  coords_y = nodal_coordinates(surface_element(e), backend)
+  N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
+  N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
+  ∇N_x = shape_function_gradient(surface_element(e), coords_x, ξ[1], backend)
+  ∇N_y = shape_function_gradient(surface_element(e), coords_x, ξ[2], backend)
 
-    ∇N = Matrix{eltype(coords_x[1])}(undef, 2, num_nodes(e))
+  # return N_x * N_y
 
-    # corner nodes first
-    ∇N[1, 1] = ∇N_x[1] * N_y[1]
-    ∇N[2, 1] = N_x[1] * ∇N_y[1]
-    ∇N[1, 2] = ∇N_x[end] * N_y[1]
-    ∇N[2, 2] = N_x[end] * ∇N_y[1]
-    ∇N[1, 3] = ∇N_x[end] * N_y[end]
-    ∇N[2, 3] = N_x[end] * ∇N_y[end]
-    ∇N[1, 4] = ∇N_x[1] * N_y[end]
-    ∇N[2, 4] = N_x[1] * ∇N_y[end]
-    
-    # edge nodes next
-    for n in 2:num_nodes_per_edge(e) - 1
-      k = 4 * (n - 2)
-      ∇N[1, 4 + k + 1] = ∇N_x[1] * N_y[n]
-      ∇N[2, 4 + k + 1] = N_x[1] * ∇N_y[n]
-      ∇N[1, 4 + k + 2] = ∇N_x[n] * N_y[end]
-      ∇N[2, 4 + k + 2] = N_x[n] * ∇N_y[end]
-      ∇N[1, 4 + k + 3] = ∇N_x[end] * N_y[n]
-      ∇N[2, 4 + k + 3] = N_x[end] * ∇N_y[n]
-      ∇N[1, 4 + k + 4] = ∇N_x[n] * N_y[1]
-      ∇N[2, 4 + k + 4] = N_x[n] * ∇N_y[1]
-    end
+  ∇N = Matrix{eltype(coords_x[1])}(undef, 2, num_nodes(e))
 
-    # now for interior nodes
-    m = num_nodes(e) - num_interior_nodes(e) + 1
-    Ns = Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
-    ∇Ns = Iterators.product(∇N_x[2:end - 1], ∇N_y[2:end - 1])
-    for ((N_1, N_2), (∇N_1, ∇N_2)) in zip(Ns, ∇Ns)
-      ∇N[1, m] = ∇N_1 * N_2
-      ∇N[2, m] = N_1 * ∇N_2
-      m = m + 1
-    end 
-
-    return convert_to_matrix(e, backend, ∇N...)
+  # corner nodes first
+  ∇N[1, 1] = ∇N_x[1] * N_y[1]
+  ∇N[2, 1] = N_x[1] * ∇N_y[1]
+  ∇N[1, 2] = ∇N_x[end] * N_y[1]
+  ∇N[2, 2] = N_x[end] * ∇N_y[1]
+  ∇N[1, 3] = ∇N_x[end] * N_y[end]
+  ∇N[2, 3] = N_x[end] * ∇N_y[end]
+  ∇N[1, 4] = ∇N_x[1] * N_y[end]
+  ∇N[2, 4] = N_x[1] * ∇N_y[end]
+  
+  # edge nodes next
+  for n in 2:num_nodes_per_edge(e) - 1
+    k = 4 * (n - 2)
+    ∇N[1, 4 + k + 1] = ∇N_x[1] * N_y[n]
+    ∇N[2, 4 + k + 1] = N_x[1] * ∇N_y[n]
+    ∇N[1, 4 + k + 2] = ∇N_x[n] * N_y[end]
+    ∇N[2, 4 + k + 2] = N_x[n] * ∇N_y[end]
+    ∇N[1, 4 + k + 3] = ∇N_x[end] * N_y[n]
+    ∇N[2, 4 + k + 3] = N_x[end] * ∇N_y[n]
+    ∇N[1, 4 + k + 4] = ∇N_x[n] * N_y[1]
+    ∇N[2, 4 + k + 4] = N_x[n] * ∇N_y[1]
   end
 
-  @eval function shape_function_hessian(e::Quad{Lagrange, $n, Q}, X, ξ, backend::ArrayBackend) where Q
-    coords_x = nodal_coordinates(surface_element(e), backend)
-    coords_y = nodal_coordinates(surface_element(e), backend)
-    N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
-    N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
-    ∇N_x = shape_function_gradient(surface_element(e), coords_x, ξ[1], backend)
-    ∇N_y = shape_function_gradient(surface_element(e), coords_x, ξ[2], backend)
-    ∇∇N_x = shape_function_hessian(surface_element(e), coords_x, ξ[1], backend)
-    ∇∇N_y = shape_function_hessian(surface_element(e), coords_x, ξ[2], backend)
-    # return N_x * N_y
+  # now for interior nodes
+  m = num_nodes(e) - num_interior_nodes(e) + 1
+  Ns = Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
+  ∇Ns = Iterators.product(∇N_x[2:end - 1], ∇N_y[2:end - 1])
+  for ((N_1, N_2), (∇N_1, ∇N_2)) in zip(Ns, ∇Ns)
+    ∇N[1, m] = ∇N_1 * N_2
+    ∇N[2, m] = N_1 * ∇N_2
+    m = m + 1
+  end 
 
-    ∇∇N = Array{eltype(coords_x[1]), 3}(undef, 2, 2, num_nodes(e))
+  return convert_to_matrix(e, backend, ∇N...)
+end
 
-    # corner nodes first
-    ∇∇N[1, 1, 1] = ∇∇N_x[1] * N_y[1]
-    ∇∇N[1, 2, 1] = ∇N_x[1] * ∇N_y[1]
-    ∇∇N[2, 1, 1] = ∇N_x[1] * ∇N_y[1]
-    ∇∇N[2, 2, 1] = N_x[1] * ∇∇N_y[1]
+function shape_function_hessian(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+  coords_x = nodal_coordinates(surface_element(e), backend)
+  coords_y = nodal_coordinates(surface_element(e), backend)
+  N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
+  N_y = shape_function_value(surface_element(e), coords_y, ξ[2], backend)
+  ∇N_x = shape_function_gradient(surface_element(e), coords_x, ξ[1], backend)
+  ∇N_y = shape_function_gradient(surface_element(e), coords_x, ξ[2], backend)
+  ∇∇N_x = shape_function_hessian(surface_element(e), coords_x, ξ[1], backend)
+  ∇∇N_y = shape_function_hessian(surface_element(e), coords_x, ξ[2], backend)
+  # return N_x * N_y
+
+  ∇∇N = Array{eltype(coords_x[1]), 3}(undef, 2, 2, num_nodes(e))
+
+  # corner nodes first
+  ∇∇N[1, 1, 1] = ∇∇N_x[1] * N_y[1]
+  ∇∇N[1, 2, 1] = ∇N_x[1] * ∇N_y[1]
+  ∇∇N[2, 1, 1] = ∇N_x[1] * ∇N_y[1]
+  ∇∇N[2, 2, 1] = N_x[1] * ∇∇N_y[1]
+  #
+  ∇∇N[1, 1, 2] = ∇∇N_x[end] * N_y[1]
+  ∇∇N[1, 2, 2] = ∇N_x[end] * ∇N_y[1]
+  ∇∇N[2, 1, 2] = ∇N_x[end] * ∇N_y[1]
+  ∇∇N[2, 2, 2] = N_x[end] * ∇∇N_y[1]
+  #
+  ∇∇N[1, 1, 3] = ∇∇N_x[end] * N_y[end]
+  ∇∇N[1, 2, 3] = ∇N_x[end] * ∇N_y[end]
+  ∇∇N[2, 1, 3] = ∇N_x[end] * ∇N_y[end]
+  ∇∇N[2, 2, 3] = N_x[end] * ∇∇N_y[end]
+  #
+  ∇∇N[1, 1, 4] = ∇∇N_x[1] * N_y[end]
+  ∇∇N[1, 2, 4] = ∇N_x[1] * ∇N_y[end]
+  ∇∇N[2, 1, 4] = ∇N_x[1] * ∇N_y[end]
+  ∇∇N[2, 2, 4] = N_x[1] * ∇∇N_y[end]
+  
+  # edge nodes next
+  for n in 2:num_nodes_per_edge(e) - 1
+    k = 4 * (n - 2)
+
+    ∇∇N[1, 1, 4 + k + 1] = ∇∇N_x[1] * N_y[n]
+    ∇∇N[1, 2, 4 + k + 1] = ∇N_x[1] * ∇N_y[n]
+    ∇∇N[2, 1, 4 + k + 1] = ∇N_x[1] * ∇N_y[n]
+    ∇∇N[2, 2, 4 + k + 1] = N_x[1] * ∇∇N_y[n]
     #
-    ∇∇N[1, 1, 2] = ∇∇N_x[end] * N_y[1]
-    ∇∇N[1, 2, 2] = ∇N_x[end] * ∇N_y[1]
-    ∇∇N[2, 1, 2] = ∇N_x[end] * ∇N_y[1]
-    ∇∇N[2, 2, 2] = N_x[end] * ∇∇N_y[1]
+    ∇∇N[1, 1, 4 + k + 2] = ∇∇N_x[n] * N_y[end]
+    ∇∇N[1, 2, 4 + k + 2] = ∇N_x[n] * ∇N_y[end]
+    ∇∇N[2, 1, 4 + k + 2] = ∇N_x[n] * ∇N_y[end]
+    ∇∇N[2, 2, 4 + k + 2] = N_x[n] * ∇∇N_y[end]
     #
-    ∇∇N[1, 1, 3] = ∇∇N_x[end] * N_y[end]
-    ∇∇N[1, 2, 3] = ∇N_x[end] * ∇N_y[end]
-    ∇∇N[2, 1, 3] = ∇N_x[end] * ∇N_y[end]
-    ∇∇N[2, 2, 3] = N_x[end] * ∇∇N_y[end]
+    ∇∇N[1, 1, 4 + k + 3] = ∇∇N_x[end] * N_y[n]
+    ∇∇N[1, 2, 4 + k + 3] = ∇N_x[end] * ∇N_y[n]
+    ∇∇N[2, 1, 4 + k + 3] = ∇N_x[end] * ∇N_y[n]
+    ∇∇N[2, 2, 4 + k + 3] = N_x[end] * ∇∇N_y[n]
     #
-    ∇∇N[1, 1, 4] = ∇∇N_x[1] * N_y[end]
-    ∇∇N[1, 2, 4] = ∇N_x[1] * ∇N_y[end]
-    ∇∇N[2, 1, 4] = ∇N_x[1] * ∇N_y[end]
-    ∇∇N[2, 2, 4] = N_x[1] * ∇∇N_y[end]
-    
-    # edge nodes next
-    for n in 2:num_nodes_per_edge(e) - 1
-      k = 4 * (n - 2)
-
-      ∇∇N[1, 1, 4 + k + 1] = ∇∇N_x[1] * N_y[n]
-      ∇∇N[1, 2, 4 + k + 1] = ∇N_x[1] * ∇N_y[n]
-      ∇∇N[2, 1, 4 + k + 1] = ∇N_x[1] * ∇N_y[n]
-      ∇∇N[2, 2, 4 + k + 1] = N_x[1] * ∇∇N_y[n]
-      #
-      ∇∇N[1, 1, 4 + k + 2] = ∇∇N_x[n] * N_y[end]
-      ∇∇N[1, 2, 4 + k + 2] = ∇N_x[n] * ∇N_y[end]
-      ∇∇N[2, 1, 4 + k + 2] = ∇N_x[n] * ∇N_y[end]
-      ∇∇N[2, 2, 4 + k + 2] = N_x[n] * ∇∇N_y[end]
-      #
-      ∇∇N[1, 1, 4 + k + 3] = ∇∇N_x[end] * N_y[n]
-      ∇∇N[1, 2, 4 + k + 3] = ∇N_x[end] * ∇N_y[n]
-      ∇∇N[2, 1, 4 + k + 3] = ∇N_x[end] * ∇N_y[n]
-      ∇∇N[2, 2, 4 + k + 3] = N_x[end] * ∇∇N_y[n]
-      #
-      ∇∇N[1, 1, 4 + k + 4] = ∇∇N_x[n] * N_y[1]
-      ∇∇N[1, 2, 4 + k + 4] = ∇N_x[n] * ∇N_y[1]
-      ∇∇N[2, 1, 4 + k + 4] = ∇N_x[n] * ∇N_y[1]
-      ∇∇N[2, 2, 4 + k + 4] = N_x[n] * ∇∇N_y[1]
-    end
-
-    # now for interior nodes
-    m = num_nodes(e) - num_interior_nodes(e) + 1
-    Ns = Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
-    ∇Ns = Iterators.product(∇N_x[2:end - 1], ∇N_y[2:end - 1])
-    ∇∇Ns = Iterators.product(∇∇N_x[2:end - 1], ∇∇N_y[2:end - 1])
-    for ((N_1, N_2), (∇N_1, ∇N_2), (∇∇N_1, ∇∇N_2)) in zip(Ns, ∇Ns, ∇∇Ns)
-      ∇∇N[1, 1, m] = ∇∇N_1 * N_2
-      ∇∇N[1, 2, m] = ∇N_1 * ∇N_2
-      ∇∇N[2, 1, m] = ∇N_1 * ∇N_2
-      ∇∇N[2, 2, m] = N_1 * ∇∇N_2
-      m = m + 1
-    end 
-
-    return convert_to_3d_array(e, backend, ∇∇N...)
+    ∇∇N[1, 1, 4 + k + 4] = ∇∇N_x[n] * N_y[1]
+    ∇∇N[1, 2, 4 + k + 4] = ∇N_x[n] * ∇N_y[1]
+    ∇∇N[2, 1, 4 + k + 4] = ∇N_x[n] * ∇N_y[1]
+    ∇∇N[2, 2, 4 + k + 4] = N_x[n] * ∇∇N_y[1]
   end
+
+  # now for interior nodes
+  m = num_nodes(e) - num_interior_nodes(e) + 1
+  Ns = Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
+  ∇Ns = Iterators.product(∇N_x[2:end - 1], ∇N_y[2:end - 1])
+  ∇∇Ns = Iterators.product(∇∇N_x[2:end - 1], ∇∇N_y[2:end - 1])
+  for ((N_1, N_2), (∇N_1, ∇N_2), (∇∇N_1, ∇∇N_2)) in zip(Ns, ∇Ns, ∇∇Ns)
+    ∇∇N[1, 1, m] = ∇∇N_1 * N_2
+    ∇∇N[1, 2, m] = ∇N_1 * ∇N_2
+    ∇∇N[2, 1, m] = ∇N_1 * ∇N_2
+    ∇∇N[2, 2, m] = N_1 * ∇∇N_2
+    m = m + 1
+  end 
+
+  return convert_to_3d_array(e, backend, ∇∇N...)
 end
