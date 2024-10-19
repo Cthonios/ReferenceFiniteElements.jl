@@ -7,17 +7,17 @@ using StaticArrays
 using Test
 using TestSetExtensions
 
-function is_inside_element(::Edge, point)
+function is_inside_element(::ReferenceFiniteElements.AbstractEdge, point)
   return (point[1] >= -1.) && (point[1] <= 1.)
 end
 
-function is_inside_element(::Quad, point)
+function is_inside_element(::ReferenceFiniteElements.AbstractQuad, point)
   return (point[1] >= -1.) && (point[1] <= 1.) &&
          (point[2] >= -1.) && (point[2] <= 1.)
 end
 
-q_weight_sum(::Edge) = 2.
-q_weight_sum(::Quad) = 4.
+q_weight_sum(::ReferenceFiniteElements.AbstractEdge) = 2.
+q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
 q_weight_sum(::Tri) = 0.5
 q_weight_sum(::Vertex) = 1.
 
@@ -132,8 +132,36 @@ function test_kronecker_delta_property(re)
   # index based on the edges, since non-edge dofs will be zero 
 end
 
-el_types = [Edge, Quad]
+# el_types = [Edge2, Edge2, Edge3, Quad4, Quad4]
+# q_orders = [1, 2, 2, 1, 2]
+el_types = [
+  (Edge0, 1),
+  (Edge2, 1),
+  (Edge2, 2),
+  (Edge3, 1),
+  (Edge3, 2),
+  (Quad0, 1),
+  (Quad4, 1),
+  (Quad4, 2),
+  (Quad9, 1),
+  (Quad9, 2)
+]
+# for (el_type, q_order) in zip(el_types, q_orders)
+for el_type in el_types
+  el_type, q_order = el_type
+  @testset "$el_type - q order = $q_order Tests" begin
+    re = ReferenceFE{Int64, Float64, SArray}(el_type{Lagrange, q_order}())
+    test_q_points_inside_element(re)
+    test_q_weight_positivity(re)
+    test_q_weight_sum(re)
+    test_partition_of_unity_on_values(re)
+    test_partition_of_unity_on_gradients(re)
+    test_partition_of_unity_on_hessians(re)
+    test_kronecker_delta_property(re)
+  end
+end
 
+el_types = [Edge, Quad]
 for el_type in el_types
   @testset "$el_type Tests" begin
     qs = 1:10
@@ -145,11 +173,11 @@ for el_type in el_types
     end
 
     # just test initializing this
-    re = ReferenceFE{SArray, el_type, Lagrange, 0, 1}()
-    test_partition_of_unity_on_values(re)
-    test_partition_of_unity_on_gradients(re)
-    test_partition_of_unity_on_hessians(re)
-    test_kronecker_delta_property(re)
+    # re = ReferenceFE{SArray, el_type, Lagrange, 0, 1}()
+    # test_partition_of_unity_on_values(re)
+    # test_partition_of_unity_on_gradients(re)
+    # test_partition_of_unity_on_hessians(re)
+    # test_kronecker_delta_property(re)
     
     ps = 1:10
     for p in ps
@@ -166,6 +194,8 @@ for el_type in el_types
     end
   end
 end
+
+
 
 @testset ExtendedTestSet "Aqua Tests" begin
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
