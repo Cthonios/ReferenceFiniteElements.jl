@@ -24,11 +24,12 @@ include("elements/Quad.jl")
 include("elements/Tri.jl")
 
 # 3-d elements
-# TODO
+include("elements/Hex.jl")
 
 # elements
-export Edge
-export Quad
+export Edge0, Edge2, Edge3, Edge
+export Hex
+export Quad0, Quad4, Quad9, Quad
 export Tri
 export Vertex
 
@@ -42,7 +43,8 @@ export ReferenceFE
 export num_faces,
        num_nodes,
        num_quadrature_points,
-       num_shape_functions
+       num_shape_functions,
+       surface_element
 
 export quadrature_point,
        quadrature_points,
@@ -68,6 +70,7 @@ export quadrature_point,
        surface_shape_function_values
 
 export calculate_JxW,
+       integrate,
        map_shape_function_gradient,
        mapping_jacobian
 

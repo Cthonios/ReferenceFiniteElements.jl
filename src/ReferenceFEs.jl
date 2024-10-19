@@ -123,8 +123,36 @@ end
 
 function map_shape_function_gradient(e::ReferenceFE, X, q)
   ∇N_ξ = shape_function_gradient(e, q)
-  J = (X' * shape_function_gradient(e, q))'
+  J = (X' * ∇N_ξ)'
   J_inv = inv(J)
   ∇N_X = (J_inv * ∇N_ξ')'
   return ∇N_X
+end
+
+# function map_shape_function_gradient(e::ReferenceFE, interp, X)
+#   return Interpolants(e.ξ, e.w, e.N, map_shape_function_gradient(e, X, interp.∇N_ξ))
+# end
+
+# below assumes integrand values are already calculated
+function integrate(e::ReferenceFE, vals)
+  return sum(quadrature_weights(e) .* vals)
+end
+
+# TODO need more general integration method
+# that can handle a function and take in maybe X
+# as an input with general number of args supported
+# maybe something like
+# f(X, N, ∇N, ∇∇N, args...)
+
+function integrate(f, e::ReferenceFE, X, args...)
+  val = zero(eltype(X))
+  for q in 1:num_quadrature_points(e)
+    val = val + calculate_JxW(e, X, q) * f(
+      X, 
+      shape_function_value(e, q), 
+      map_shape_function_gradient(e, X, q), 
+      args...
+    )
+  end
+  return val
 end

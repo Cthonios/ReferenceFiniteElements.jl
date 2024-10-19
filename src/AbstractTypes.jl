@@ -20,6 +20,19 @@ function num_surfaces(e::AbstractElementType)
   end
 end
 
-abstract type AbstractInterpolationType end
+# 0d elements
+abstract type AbstractVertex{I, P, Q} <: AbstractElementType{I, 0, P, Q} end
 
+# 1d elements
+abstract type AbstractEdge{I, P, Q} <: AbstractElementType{I, 1, P, Q} end
+
+# 2d elements
+abstract type AbstractFace{I, P, Q} <: AbstractElementType{I, 2, P, Q} end
+abstract type AbstractQuad{I, P, Q} <: AbstractFace{I, P, Q} end
+
+# 3d elements
+abstract type AbstractVolume{I, P, Q} <: AbstractElementType{I, 3, P, Q} end
+
+# containers for interpolants
+abstract type AbstractInterpolationType end
 abstract type AbstractInterpolantsContainer{I} end
