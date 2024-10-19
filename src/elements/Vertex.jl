@@ -1,13 +1,12 @@
-struct Vertex{I, P, Q} <: AbstractElementType{I, 0, P, Q}
+struct Vertex{I, P, Q} <: AbstractVertex{I, P, Q}
 end
 
-num_interior_nodes(e::Vertex) = 0
-num_nodes(e::Vertex) = 1
-num_nodes_per_Vertex(e::Vertex) = 0
-num_nodes_per_face(e::Vertex) = 0
-num_quadrature_points(e::Vertex) = 0
-
-surface_element(::Vertex) = nothing
+num_interior_nodes(e::AbstractVertex) = 0
+num_nodes(e::AbstractVertex) = 1
+num_nodes_per_Vertex(e::AbstractVertex) = 0
+num_nodes_per_face(e::AbstractVertex) = 0
+num_quadrature_points(e::AbstractVertex) = 0
+surface_element(::AbstractVertex) = nothing
 
 function element_edge_nodes(::Vertex, backend::ArrayBackend)
   Vertex_nodes = Vector{Vector{Int}}(undef, 0)
