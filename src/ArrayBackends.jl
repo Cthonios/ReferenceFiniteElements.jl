@@ -20,7 +20,7 @@ convert_to(::ArrayBackend{Array}, a...) = [a...]
 convert_to(::ArrayBackend{MArray}, a...) = MVector(a)
 convert_to(::ArrayBackend{SArray}, a...) = SVector(a)
 
-function convert_to_3d_array(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{Array}, vals...) where {I, D, P, Q}
+function convert_to_3d_array(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{Array}, vals...) where {D, I, P, Q}
   ret = Array{eltype(vals), 3}(undef, num_shape_functions(e), D, D)
   n = 1
   for k in axes(ret, 3)
@@ -34,17 +34,17 @@ function convert_to_3d_array(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{
   return ret
 end
 
-function convert_to_3d_array(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{MArray}, vals...) where {I, D, P, Q}
+function convert_to_3d_array(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{MArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return MArray{Tuple{N, D, D}, eltype(vals), 3, N * D * D}(vals...)
 end
 
-function convert_to_3d_array(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{SArray}, vals...) where {I, D, P, Q}
+function convert_to_3d_array(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{SArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return SArray{Tuple{N, D, D}, eltype(vals), 3, N * D * D}(vals...)
 end
 
-function convert_to_matrix(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{Array}, vals...) where {I, D, P, Q}
+function convert_to_matrix(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{Array}, vals...) where {D, I, P, Q}
   ret = Matrix{eltype(vals)}(undef, num_shape_functions(e), D)
   n = 1
   for j in axes(ret, 2)
@@ -57,38 +57,38 @@ function convert_to_matrix(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{Ar
   # return eltype(vals)[vals...]
 end
 
-function convert_to_matrix(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{MArray}, vals...) where {I, D, P, Q}
+function convert_to_matrix(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{MArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return MMatrix{N, D, eltype(vals), N * D}(vals...)
 end
 
-function convert_to_matrix(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{SArray}, vals...) where {I, D, P, Q}
+function convert_to_matrix(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{SArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return SMatrix{N, D, eltype(vals), N * D}(vals...)
 end
 
-function convert_to_vector(::AbstractElementType{I, D, P, Q}, ::ArrayBackend{Array}, vals...) where {I, D, P, Q}
+function convert_to_vector(::AbstractElementType{D, I, P, Q}, ::ArrayBackend{Array}, vals...) where {D, I, P, Q}
   return eltype(vals)[vals...]
 end
 
-function convert_to_vector(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{MArray}, vals...) where {I, D, P, Q}
+function convert_to_vector(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{MArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return MVector{N, eltype(vals)}(vals...)
 end
 
-function convert_to_vector(e::AbstractElementType{I, D, P, Q}, ::ArrayBackend{SArray}, vals...) where {I, D, P, Q}
+function convert_to_vector(e::AbstractElementType{D, I, P, Q}, ::ArrayBackend{SArray}, vals...) where {D, I, P, Q}
   N = num_shape_functions(e)
   return SVector{N, eltype(vals)}(vals...)
 end
 
-function convert_to_vector_coords(::AbstractElementType{I, D, P, Q}, ::ArrayBackend{Array}, vals...) where {I, D, P, Q}
+function convert_to_vector_coords(::AbstractElementType{D, I, P, Q}, ::ArrayBackend{Array}, vals...) where {D, I, P, Q}
   return eltype(vals)[vals...]
 end
 
-function convert_to_vector_coords(::AbstractElementType{I, D, P, Q}, ::ArrayBackend{MArray}, vals...) where {I, D, P, Q}
+function convert_to_vector_coords(::AbstractElementType{D, I, P, Q}, ::ArrayBackend{MArray}, vals...) where {D, I, P, Q}
   return MVector{D, eltype(vals)}(vals...)
 end
 
-function convert_to_vector_coords(::AbstractElementType{I, D, P, Q}, ::ArrayBackend{SArray}, vals...) where {I, D, P, Q}
+function convert_to_vector_coords(::AbstractElementType{D, I, P, Q}, ::ArrayBackend{SArray}, vals...) where {D, I, P, Q}
   return SVector{D, eltype(vals)}(vals...)
 end

@@ -86,6 +86,7 @@ function nodal_coordinates(e::AbstractTri, backend)
   return map(x -> convert_to_vector_coords(e, backend, x...), eachcol(coords))
 end
 
+# TODO this needs to be fixed maybe?
 function surface_nodal_coordinates(e::AbstractTri, backend)
   coords = nodal_coordinates(e, backend)
   coords = map(x -> 0.5 * (x .+ 1), coords)

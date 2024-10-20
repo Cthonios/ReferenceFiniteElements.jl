@@ -1,42 +1,4 @@
-# num_interior_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 0
-# num_interior_nodes(e::AbstractHex) = (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1) * (polynomial_degree(e) - 1)
-# num_faces(e::AbstractHex) = 6
-
-# function num_nodes(e::AbstractHex) 
-#   if polynomial_degree(e) < 2
-#     return 8
-#   else
-#     return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
-#   end
-# end
-
-# num_nodes(e::AbstractHex{I, 0, Q}) where {I, Q} = 8
-
-# function num_nodes_per_edge(e::AbstractHex) 
-#   if polynomial_degree(e) < 2
-#     return 2
-#   else
-#     return polynomial_degree(e) + 1
-#   end
-# end
-
-# function num_shape_functions(e::AbstractHex{Lagrange, P, Q}) where {P, Q}
-#   if polynomial_degree(e) == 0
-#     return 1
-#   else
-#     return num_nodes(e)
-#   end
-# end
-
-# num_quadrature_points(e::AbstractHex{Lagrange, P, Q}) where {P, Q} = num_quadrature_points(surface_element(surface_element(e)))^3
-
-# function num_nodes_per_face(e::AbstractHex)
-#   if polynomial_degree(e) < 2
-#     return 4
-#   else
-#     return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 1)
-#   end
-# end
+# abstract methods
 surface_element(::AbstractHex{I, P, Q}) where {I, P, Q} = Quad{I, P, Q}()
 
 function element_edge_nodes(e::AbstractHex, backend::ArrayBackend)
@@ -509,10 +471,10 @@ function shape_function_gradient(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   coords_z = nodal_coordinates(surface_element(surface_element(e)), backend)
   N_x = shape_function_value(surface_element(surface_element(e)), coords_x, ξ[1], backend)
   N_y = shape_function_value(surface_element(surface_element(e)), coords_y, ξ[2], backend)
-  N_z = shape_function_value(surface_element(surface_element(e)), coords_y, ξ[3], backend)
+  N_z = shape_function_value(surface_element(surface_element(e)), coords_z, ξ[3], backend)
   ∇N_x = shape_function_gradient(surface_element(surface_element(e)), coords_x, ξ[1], backend)
-  ∇N_y = shape_function_gradient(surface_element(surface_element(e)), coords_x, ξ[2], backend)
-  ∇N_z = shape_function_gradient(surface_element(surface_element(e)), coords_x, ξ[3], backend)
+  ∇N_y = shape_function_gradient(surface_element(surface_element(e)), coords_y, ξ[2], backend)
+  ∇N_z = shape_function_gradient(surface_element(surface_element(e)), coords_z, ξ[3], backend)
 
   ∇N = Matrix{eltype(coords_x[1])}(undef, 3, num_vertices(e))
 

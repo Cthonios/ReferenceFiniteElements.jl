@@ -7,14 +7,14 @@ using Symbolics
 
 function symbolic_shape_function_gradients(e::ReferenceFiniteElements.AbstractElementType, X, ξ, backend)
   Ns = symbolic_shape_function_values(e, X, ξ, backend)
-  Ns = map(x -> Symbolics.derivative(x, ξ), Ns)
+  Ns = Symbolics.jacobian(Ns, ξ)
   return ReferenceFiniteElements.convert_to_matrix(e, backend, Ns...)
 end
 
 function symbolic_shape_function_hessians(e::ReferenceFiniteElements.AbstractElementType, X, ξ, backend)
   Ns = symbolic_shape_function_values(e, X, ξ, backend)
-  Ns = map(x -> Symbolics.derivative(Symbolics.derivative(x, ξ), ξ), Ns)
-  return ReferenceFiniteElements.convert_to_matrix(e, backend, Ns...)
+  Ns = Symbolics.jacobian(Symbolics.jacobian(Ns, ξ), ξ)
+  return ReferenceFiniteElements.convert_to_3d_array(e, backend, Ns...)
 end
 
 function symbolic_shape_function_values(e::Edge{Lagrange, P, Q}, X, ξ, backend) where {P, Q}
@@ -32,18 +32,40 @@ function symbolic_shape_function_values(e::Edge{Lagrange, P, Q}, X, ξ, backend)
   return ReferenceFiniteElements.convert_to_vector(e, backend, Ns...)
 end
 
-# function symbolic_shape_function_gradients(e::Edge{Lagrange, P, Q}, X, ξ, backend) where {P, Q}
-#   Ns = symbolic_shape_function_values(e, X, ξ, backend)
-#   return map(x -> Symbolics.derivative(x, ξ), Ns)
-# end
+function symbolic_shape_function_values(e::Quad{Lagrange, P, Q}, X, ξ, backend) where {P, Q}
+  coords_x = ReferenceFiniteElements.nodal_coordinates(ReferenceFiniteElements.surface_element(e), backend)
+  coords_y = ReferenceFiniteElements.nodal_coordinates(ReferenceFiniteElements.surface_element(e), backend)
+    
+  N_x = symbolic_shape_function_values(ReferenceFiniteElements.surface_element(e), coords_x, ξ[1], backend)
+  N_y = symbolic_shape_function_values(ReferenceFiniteElements.surface_element(e), coords_y, ξ[2], backend)
 
-# function symbolic_shape_function_hessians(e::Edge{Lagrange, P, Q}, X, ξ, backend) where {P, Q}
-#   Ns = symbolic_shape_function_values(e, X, ξ, backend)
-#   return map(x -> Symbolics.derivative(Symbolics.derivative(x, ξ), ξ), Ns)
-# end
+  N = Vector{Num}(undef, num_shape_functions(e))
+  
+  N[1] = N_x[1] * N_y[1]
+  N[2] = N_x[end] * N_y[1]
+  N[3] = N_x[end] * N_y[end]
+  N[4] = N_x[1] * N_y[end]
+
+  # edge nodes next
+  for n in 2:ReferenceFiniteElements.num_nodes_per_edge(e) - 1
+    k = 4 * (n - 2)
+    N[4 + k + 1] = N_x[n] * N_y[1]
+    N[4 + k + 2] = N_x[end] * N_y[n]
+    N[4 + k + 3] = N_x[n] * N_y[end]
+    N[4 + k + 4] = N_x[1] * N_y[n]
+  end
+
+  # now for interior nodes
+  m = num_nodes(e) - ReferenceFiniteElements.num_interior_nodes(e) + 1
+  for (N_1, N_2) in Iterators.product(N_x[2:end - 1], N_y[2:end - 1])
+    N[m] = N_1 * N_2
+    m = m + 1
+  end 
+  return ReferenceFiniteElements.convert_to_vector(e, backend, N...)
+end
 
 function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
-  @variables ξ
+  ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))
   ξs, ws = ReferenceFiniteElements.quadrature_points_and_weights(e, backend)
   Ns = symbolic_shape_function_values(e, Xs, ξ, backend)
   Ns = fill(Ns, num_quadrature_points(e))
@@ -56,7 +78,7 @@ function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElement
 end
 
 function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
-  @variables ξ
+  ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))  
   ξs, ws = ReferenceFiniteElements.surface_quadrature_points_and_weights(e, backend)
   ξs = mapreduce(x -> x, hcat, ξs)
   ws = mapreduce(x -> x, hcat, ws)

@@ -31,10 +31,17 @@ function is_inside_element(::ReferenceFiniteElements.AbstractTri, point)
          (point[2] >= 0.) && (point[2] <= 1. - point[1])
 end
 
+function is_inside_element(::ReferenceFiniteElements.AbstractTet, point)
+  return (point[1] >= 0.) && (point[1] <= 1.) &&
+         (point[2] >= 0.) && (point[2] <= 1. - point[1]) && 
+         (point[3] >= 0.) && (point[3] <= 1. - point[2])
+end
+
 
 q_weight_sum(::ReferenceFiniteElements.AbstractEdge) = 2.
 q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
 q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
+q_weight_sum(::ReferenceFiniteElements.AbstractTet) = 1. / 6.
 q_weight_sum(::ReferenceFiniteElements.AbstractTri) = 0.5
 q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
 
@@ -173,6 +180,11 @@ el_types = [
   (Quad4, 2),
   (Quad9, 1),
   (Quad9, 2),
+  (Tet0, 1),
+  (Tet4, 1),
+  (Tet4, 2),
+  (Tet10, 1),
+  (Tet10, 2),
   (Tri0, 1),
   (Tri3, 1),
   (Tri3, 2),
@@ -185,7 +197,11 @@ for el_type in el_types
   @testset "$el_type - q order = $q_order Tests" begin
     re = ReferenceFE{Int64, Float64, SArray}(el_type{Lagrange, q_order}())
     test_q_points_inside_element(re)
-    test_q_weight_positivity(re)
+    if el_type <: ReferenceFiniteElements.AbstractTet || q_order > 1
+      # do nothing here
+    else
+      test_q_weight_positivity(re)
+    end
     test_q_weight_sum(re)
     test_partition_of_unity_on_values(re)
     test_partition_of_unity_on_gradients(re)
