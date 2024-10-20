@@ -1,5 +1,5 @@
 # abstract methods
-surface_element(::AbstractTri{I, P, Q}) where {I, P, Q} = Edge{I, P, Q}()
+surface_element(::AbstractTri{V, I, P, Q}) where {V, I, P, Q} = Edge{I, P, Q}()
 
 function element_edge_nodes(e::AbstractTri, backend)
   edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 3)
@@ -191,7 +191,10 @@ end
 # Specific implementations
 
 # Constant tri
-struct Tri0{I, Q} <: AbstractTri{I, 0, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tri0{I, Q} <: AbstractTri{3, I, 0, Q}
 end
 
 # Lagrange implementation
@@ -221,7 +224,10 @@ function shape_function_hessian(e::Tri0{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # Linear tri
-struct Tri3{I, Q} <: AbstractTri{I, 1, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tri3{I, Q} <: AbstractTri{3, I, 1, Q}
 end
 
 # Lagrange implementation
@@ -261,7 +267,10 @@ function shape_function_hessian(e::Tri3{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # Quadratic tri
-struct Tri6{I, Q} <: AbstractTri{I, 2, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tri6{I, Q} <: AbstractTri{6, I, 2, Q}
 end
 
 # Lagrange implementation
@@ -318,11 +327,14 @@ function shape_function_hessian(e::Tri6{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # General Tri
-struct Tri{I, P, Q} <: AbstractTri{I, P, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tri{V, I, P, Q} <: AbstractTri{V, I, P, Q}
 end
 
 # Lagrange implementation
-function shape_function_value(e::Tri{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_value(e::Tri{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(e), backend)
   coords_y = nodal_coordinates(surface_element(e), backend)
   coords_x = map(x -> 0.5 * (x .+ 1), coords_x)

@@ -1,5 +1,5 @@
 # abstract methods
-surface_element(::AbstractQuad{I, P, Q}) where {I, P, Q} = Edge{I, P, Q}()
+surface_element(::AbstractQuad{V, I, P, Q}) where {V, I, P, Q} = Edge{I, P, Q}()
 
 # TODO
 function element_edge_nodes(e::AbstractQuad, backend::ArrayBackend)
@@ -125,7 +125,10 @@ end
 # specific implementations
 
 # Constant quad
-struct Quad0{I, Q} <: AbstractQuad{I, 0, Q}
+"""
+$(TYPEDEF)
+"""
+struct Quad0{I, Q} <: AbstractQuad{4, I, 0, Q}
 end
 
 function shape_function_value(e::Quad0{Lagrange}, X, ξ, backend::ArrayBackend)
@@ -154,7 +157,10 @@ function shape_function_hessian(e::Quad0{Lagrange}, X, ξ, backend::ArrayBackend
 end
 
 # linear quad
-struct Quad4{I, Q} <: AbstractQuad{I, 1, Q}
+"""
+$(TYPEDEF)
+"""
+struct Quad4{I, Q} <: AbstractQuad{4, I, 1, Q}
 end
 
 # lagrange implementation
@@ -199,7 +205,10 @@ function shape_function_hessian(e::Quad4{Lagrange}, X, ξ, backend::ArrayBackend
 end
 
 # quadratic quad
-struct Quad9{I, Q} <: AbstractQuad{I, 2, Q}
+"""
+$(TYPEDEF)
+"""
+struct Quad9{I, Q} <: AbstractQuad{9, I, 2, Q}
 end
 
 # lagrange implementation
@@ -289,11 +298,15 @@ function shape_function_hessian(e::Quad9{Lagrange}, X, ξ, backend::ArrayBackend
 end
 
 # general quad
-struct Quad{I, P, Q} <: AbstractQuad{I, P, Q}
+"""
+$(TYPEDEF)
+"""
+struct Quad{V, I, P, Q} <: AbstractQuad{V, I, P, Q}
 end
+Quad{I, P, Q}() where {I, P, Q} = Quad{(P + 1) * (P + 1), I, P, Q}()
 
 # lagrange implementation
-function shape_function_value(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_value(e::Quad{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(e), backend)
   coords_y = nodal_coordinates(surface_element(e), backend)
   N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
@@ -325,7 +338,7 @@ function shape_function_value(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
   return convert_to_vector(e, backend, N...)
 end
 
-function shape_function_gradient(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_gradient(e::Quad{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(e), backend)
   coords_y = nodal_coordinates(surface_element(e), backend)
   N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)
@@ -373,7 +386,7 @@ function shape_function_gradient(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend
   return convert_to_matrix(e, backend, ∇N...)
 end
 
-function shape_function_hessian(e::Quad{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_hessian(e::Quad{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(e), backend)
   coords_y = nodal_coordinates(surface_element(e), backend)
   N_x = shape_function_value(surface_element(e), coords_x, ξ[1], backend)

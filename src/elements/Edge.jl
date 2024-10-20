@@ -59,7 +59,10 @@ end
 
 
 # constant edge
-struct Edge0{I, Q} <: AbstractEdge{I, 0, Q}
+"""
+$(TYPEDEF)
+"""
+struct Edge0{I, Q} <: AbstractEdge{2, I, 0, Q}
 end
 
 # Lagrange implementation
@@ -77,7 +80,7 @@ function shape_function_gradient(e::Edge0{Lagrange}, Xs, ξ, backend)
   return ∇Ns
 end
 
-function shape_function_hessian(e::Edge0{Lagrange}, Xs, ξ, backend)
+function shape_function_hessian(::Edge0{Lagrange}, Xs, ξ, backend)
   ∇∇Ns = convert_to(backend,
     0.
   )
@@ -85,7 +88,10 @@ function shape_function_hessian(e::Edge0{Lagrange}, Xs, ξ, backend)
 end
 
 # Linear edge
-struct Edge2{I, Q} <: AbstractEdge{I, 1, Q}
+"""
+$(TYPEDEF)
+"""
+struct Edge2{I, Q} <: AbstractEdge{2, I, 1, Q}
 end
 
 # Lagrange implementationss
@@ -114,7 +120,10 @@ function shape_function_hessian(e::Edge2{Lagrange}, Xs, ξ, backend)
 end
 
 # Quadratic edge
-struct Edge3{I, Q} <: AbstractEdge{I, 2, Q}
+"""
+$(TYPEDEF)
+"""
+struct Edge3{I, Q} <: AbstractEdge{3, I, 2, Q}
 end
 
 # Lagrange implementations
@@ -146,11 +155,15 @@ function shape_function_hessian(e::Edge3{Lagrange}, Xs, ξ, backend)
 end
 
 # General edge
-struct Edge{I, P, Q} <: AbstractEdge{I, P, Q}
+"""
+$(TYPEDEF)
+"""
+struct Edge{V, I, P, Q} <: AbstractEdge{V, I, P, Q}
 end
+Edge{I, P, Q}() where {I, P, Q} = Edge{P + 1, I, P, Q}()
 
 # Lagrange implementation
-function shape_function_value(e::Edge{Lagrange}, Xs, ξ, backend::ArrayBackend)
+function shape_function_value(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
   n_nodes = polynomial_degree(e) + 1
   A = zeros(length(Xs), n_nodes)
   nf = zeros(1, n_nodes)
@@ -166,7 +179,7 @@ function shape_function_value(e::Edge{Lagrange}, Xs, ξ, backend::ArrayBackend)
   return convert_to_vector(e, backend, N[:, 1]...)
 end
 
-function shape_function_gradient(e::Edge{Lagrange}, Xs, ξ, backend::ArrayBackend)
+function shape_function_gradient(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
   n_nodes = polynomial_degree(e) + 1
   A = zeros(length(Xs), n_nodes)
   nf = zeros(1, n_nodes)
@@ -182,7 +195,7 @@ function shape_function_gradient(e::Edge{Lagrange}, Xs, ξ, backend::ArrayBacken
   return convert_to_matrix(e, backend, ∇N_ξ[:, 1]...)
 end
 
-function shape_function_hessian(e::Edge{Lagrange}, Xs, ξ, backend::ArrayBackend)
+function shape_function_hessian(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
   n_nodes = polynomial_degree(e) + 1
   A = zeros(length(Xs), n_nodes)
   nf = zeros(1, n_nodes)

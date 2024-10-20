@@ -1,94 +1,169 @@
-# D - dimension
-# I - Interpolation type
-# P - polynomial
-# R - quadrature rule
-# Q - quadrature order
-abstract type AbstractElementType{D, I, P, Q} end
+"""
+$(TYPEDEF)
+Base type for the package that all element types
+are subtyped off of. The parameters have the following
+general meaning.
 
-dimension(::AbstractElementType{D, I, P, Q}) where {D, I, P, Q} = D
-interpolation_type(::AbstractElementType{D, I, P, Q}) where {D, I, P, Q} = I
-polynomial_degree(::AbstractElementType{D, I, P, Q}) where {D, I, P, Q} = P
-polynomial_degree(::Type{<:AbstractElementType{D, I, P, Q}}) where {D, I, P, Q} = P
-quadrature_degree(::AbstractElementType{D, I, P, Q}) where {D, I, P, Q} = Q
+``D`` - Dimension
 
-num_edges(e::AbstractElementType) = num_edges(typeof(e))
-num_faces(e::AbstractElementType) = num_faces(typeof(e))
-num_interior_vertices(e::AbstractElementType) = num_interior_vertices(typeof(e))
-num_quadrature_points(e::AbstractElementType) = num_quadrature_points(typeof(e))
-num_vertices(e::AbstractElementType) = num_vertices(typeof(e))
-num_vertices_per_edge(e::AbstractElementType) = num_vertices_per_edge(typeof(e))
-num_vertices_per_face(e::AbstractElementType) = num_vertices_per_face(typeof(e))
+``V`` - Number of vertices
+
+``E`` - Number of edges
+
+``F`` - Number of faces``
+
+``I`` - Interpolation type
+
+``P`` - Polynomial degree
+
+``Q`` - quadrature degree
+
+"""
+abstract type AbstractElementType{D, V, E, F, I, P, Q} end
+
+"""
+$(TYPEDSIGNATURES)
+Returns dimension D.
+"""
+dimension(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = D
+"""
+$(TYPEDSIGNATURES)
+"""
+num_vertices(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = V
+"""
+$(TYPEDSIGNATURES)
+"""
+num_edges(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = E
+"""
+$(TYPEDSIGNATURES)
+"""
+num_faces(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = F
+"""
+$(TYPEDSIGNATURES)
+Returns the interpolation type ``I``.
+"""
+interpolation_type(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = I
+"""
+$(TYPEDSIGNATURES)
+Returns the interpolation polynomial degree ``P``.
+"""
+polynomial_degree(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = P
+"""
+$(TYPEDSIGNATURES)
+Returns the interpolation polynomial degree ``P``.
+"""
+polynomial_degree(::Type{<:AbstractElementType{D, V, E, F, I, P, Q}}) where {D, V, E, F, I, P, Q} = P
+"""
+$(TYPEDSIGNATURES)
+Return the quadrature degree ``Q``
+"""
+quadrature_degree(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = Q
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of edges in the element topology.
+# """
+# num_edges(e::AbstractElementType) = num_edges(typeof(e))
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of faces in the element topology.
+# """
+# num_faces(e::AbstractElementType) = num_faces(typeof(e))
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of interior vertices in the element topology.
+# """
+# num_interior_vertices(e::AbstractElementType) = num_interior_vertices(typeof(e))
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of quadrature points.
+# """
+# num_quadrature_points(e::AbstractElementType) = num_quadrature_points(typeof(e))
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of vertices in the element topology.
+# """
+# num_vertices(e::AbstractElementType) = num_vertices(typeof(e))
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of vertices per edge in the element topology.
+# TODO this may not generalize well to arbitrary elements
+# """
+# num_vertices_per_edge(e::AbstractElementType) = num_vertices_per_edge(e)
+# """
+# $(TYPEDSIGNATURES)
+# Returns the number of vertices per face in the element topology.
+# TODO this may not generalize well to arbitrary elements
+# """
+# num_vertices_per_face(e::AbstractElementType) = num_vertices_per_face(e)
 
 # 0d elements
-abstract type AbstractVertex{I, P, Q} <: AbstractElementType{0, I, P, Q} end
-num_edges(::Type{<:AbstractVertex}) = 0
-num_faces(::Type{<:AbstractVertex}) = 0
-num_interior_vertices(::Type{<:AbstractVertex}) = 0
-num_quadrature_points(::Type{<:AbstractVertex}) = 1
-num_vertices(::Type{<:AbstractVertex}) = 1
-num_vertices_per_edge(::Type{<:AbstractVertex}) = 0
-num_vertices_per_face(e::Type{<:AbstractVertex}) = 0
-surface_element_type(::Type{<:AbstractVertex}) = nothing
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractVertex{I, P, Q} <: AbstractElementType{0, 1, 0, 0, I, P, Q} end
+num_interior_vertices(::AbstractVertex) = 0
+num_quadrature_points(::AbstractVertex) = 1
+num_vertices_per_edge(::AbstractVertex) = 0
+num_vertices_per_face(e::AbstractVertex) = 0
 
 # 1d elements
-abstract type AbstractEdge{I, P, Q} <: AbstractElementType{1, I, P, Q} end
-num_edges(::Type{<:AbstractEdge}) = 1
-num_faces(::Type{<:AbstractEdge}) = 0
-function num_interior_vertices(e::Type{<:AbstractEdge{I, P, Q}}) where {I, P, Q}
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractEdge{V, I, P, Q} <: AbstractElementType{1, V, 1, 0, I, P, Q} end
+function num_interior_vertices(e::AbstractEdge{V, I, P, Q}) where {V, I, P, Q}
   if P < 2
     return 0
   else
     return polynomial_degree(e) - 1
   end
 end
-num_quadrature_points(::Type{<:AbstractEdge{I, P, Q}}) where {I, P, Q} = Q
-function num_vertices(e::Type{<:AbstractEdge{I, P, Q}}) where {I, P, Q}
-  if P == 0
-    return 2
-  else
-    return polynomial_degree(e) + 1
-  end
-end
-num_vertices_per_edge(e::Type{<:AbstractEdge}) = num_vertices(e)
-num_vertices_per_face(e::Type{<:AbstractEdge}) = 0
-surface_element_type(::Type{<:AbstractEdge}) = AbstractVertex
+num_quadrature_points(::AbstractEdge{V, I, P, Q}) where {V, I, P, Q} = Q
+num_vertices_per_edge(e::AbstractEdge) = num_vertices(e)
+num_vertices_per_face(e::AbstractEdge) = 0
 
 # 2d elements
-abstract type AbstractFace{I, P, Q} <: AbstractElementType{2, I, P, Q} end
-num_faces(e::Type{<:AbstractFace}) = 1
-num_vertices_per_edge(e::Type{<:AbstractFace}) = num_vertices(surface_element_type(e))
-num_vertices_per_face(e::Type{<:AbstractFace}) = num_vertices(e)
-surface_element_type(::Type{<:AbstractFace{I, P, Q}}) where {I, P, Q} = AbstractEdge{I, P, Q}
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractFace{V, E, I, P, Q} <: AbstractElementType{2, V, E, 1, I, P, Q} end
+num_vertices_per_edge(e::AbstractFace) = num_vertices(surface_element(e))
+num_vertices_per_face(e::AbstractFace) = num_vertices(e)
 
-abstract type AbstractQuad{I, P, Q} <: AbstractFace{I, P, Q} end
-num_edges(e::Type{<:AbstractQuad}) = 4
-num_interior_vertices(e::Type{<:AbstractQuad}) = num_interior_vertices(surface_element_type(e))^2
-num_quadrature_points(e::Type{<:AbstractQuad}) = num_quadrature_points(surface_element_type(e))^2
-num_vertices(e::Type{<:AbstractQuad}) = num_vertices(surface_element_type(e))^2
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractQuad{V, I, P, Q} <: AbstractFace{V, 4, I, P, Q} end
+num_interior_vertices(e::AbstractQuad) = num_interior_vertices(surface_element(e))^2
+num_quadrature_points(e::AbstractQuad) = num_quadrature_points(surface_element(e))^2
 
-abstract type AbstractTri{I, P, Q} <: AbstractFace{I, P, Q} end
-num_edges(e::Type{<:AbstractTri}) = 3
-num_interior_vertices(e::Type{<:AbstractTri}) = num_interior_vertices(surface_element_type(e)) * (num_interior_vertices(surface_element_type(e)) + 1) ÷ 2
-num_quadrature_points(e::Type{<:AbstractTri}) = num_quadrature_points(surface_element_type(e)) * (num_quadrature_points(surface_element_type(e)) + 1) ÷ 2
-num_vertices(e::Type{<:AbstractTri}) = num_vertices(surface_element_type(e)) * (num_vertices(surface_element_type(e)) + 1) ÷ 2
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractTri{V, I, P, Q} <: AbstractFace{V, 3, I, P, Q} end
+num_interior_vertices(e::AbstractTri) = num_interior_vertices(surface_element(e)) * (num_interior_vertices(surface_element(e)) + 1) ÷ 2
+num_quadrature_points(e::AbstractTri) = num_quadrature_points(surface_element(e)) * (num_quadrature_points(surface_element(e)) + 1) ÷ 2
 
 # 3d elements
-abstract type AbstractVolume{I, P, Q} <: AbstractElementType{3, I, P, Q} end
-num_vertices_per_edge(e::Type{<:AbstractVolume}) = num_vertices(surface_element_type(surface_element_type(e)))
-num_vertices_per_face(e::Type{<:AbstractVolume}) = num_vertices(surface_element_type(e))
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractVolume{V, E, F, I, P, Q} <: AbstractElementType{3, V, E, F, I, P, Q} end
+num_vertices_per_edge(e::AbstractVolume) = num_vertices(surface_element(surface_element(e)))
+num_vertices_per_face(e::AbstractVolume) = num_vertices(surface_element(e))
 
-abstract type AbstractHex{I, P, Q} <: AbstractVolume{I, P, Q} end
-num_edges(e::Type{<:AbstractHex}) = 12
-num_faces(e::Type{<:AbstractHex}) = 6
-num_interior_vertices(e::Type{<:AbstractHex}) = num_interior_vertices(surface_element_type(surface_element_type(e)))^3
-num_quadrature_points(e::Type{<:AbstractHex}) = num_quadrature_points(surface_element_type(surface_element_type(e)))^3
-num_vertices(e::Type{<:AbstractHex}) = num_vertices(surface_element_type(surface_element_type(e)))^3
-surface_element_type(::Type{<:AbstractHex{I, P, Q}}) where {I, P, Q} = AbstractQuad{I, P, Q}
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractHex{V, I, P, Q} <: AbstractVolume{V, 12, 6, I, P, Q} end
+num_interior_vertices(e::AbstractHex) = num_interior_vertices(surface_element(surface_element(e)))^3
+num_quadrature_points(e::AbstractHex) = num_quadrature_points(surface_element(surface_element(e)))^3
 
-abstract type AbstractTet{I, P, Q} <: AbstractVolume{I, P, Q} end
-num_edges(e::Type{<:AbstractTet}) = 6
-num_faces(e::Type{<:AbstractTet}) = 4
-function num_interior_vertices(e::AbstractTet{I, P, Q}) where {I, P, Q}
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractTet{V, I, P, Q} <: AbstractVolume{V, 6, 4, I, P, Q} end
+function num_interior_vertices(e::AbstractTet{V, I, P, Q}) where {V, I, P, Q}
   if P < 3
     return 0
   else
@@ -96,27 +171,28 @@ function num_interior_vertices(e::AbstractTet{I, P, Q}) where {I, P, Q}
     return num_vertices(e) - num_faces(e) * num_vertices_per_edge(e) + 4
   end
 end
-function num_quadrature_points(e::Type{<:AbstractTet})
-  n_q_edge = num_quadrature_points(surface_element_type(surface_element_type(e)))
+function num_quadrature_points(e::AbstractTet)
+  n_q_edge = num_quadrature_points(surface_element(surface_element(e)))
   return (n_q_edge + 1) * (n_q_edge + 2) * (n_q_edge + 3) ÷ 6
 end
-function num_vertices(e::Type{<:AbstractTet})
-  if polynomial_degree(e) == 0
-    return 4 
-  else
-    return (polynomial_degree(e) + 1) * (polynomial_degree(e) + 2) * (polynomial_degree(e) + 3) ÷ 6
-  end
-end
-surface_element_type(::Type{<:AbstractTet{I, P, Q}}) where {I, P, Q} = AbstractTri{I, P, Q} 
 
 # TODO add pyramid and wedge type
 
 # containers for interpolants
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractInterpolationType end
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractInterpolantsContainer{I} end
 
 # interpolants stuff
-function num_shape_functions(e::AbstractElementType{D, Lagrange, P, Q}) where {D, P, Q}
+"""
+$(TYPEDSIGNATURES)
+"""
+function num_shape_functions(e::AbstractElementType{D, V, E, F, Lagrange, P, Q}) where {D, V, E, F, P, Q}
   if P == 0
     return 1
   else

@@ -1,5 +1,5 @@
 # abstract methods
-surface_element(::AbstractHex{I, P, Q}) where {I, P, Q} = Quad{I, P, Q}()
+# surface_element(::AbstractHex{V, I, P, Q}) where {V, I, P, Q} = Quad{Int(cbrt(V)), I, P, Q}()
 
 function element_edge_nodes(e::AbstractHex, backend::ArrayBackend)
 
@@ -241,8 +241,12 @@ end
 # specific implementations
 
 # Constant hex
-struct Hex0{I, Q} <: AbstractHex{I, 0, Q}
+"""
+$(TYPEDEF)
+"""
+struct Hex0{I, Q} <: AbstractHex{8, I, 0, Q}
 end
+surface_element(::Hex0{I, Q}) where {I, Q} = Quad0{I, Q}()
 
 # Lagrange implementation
 function shape_function_value(e::Hex0{Lagrange}, X, ξ, backend::ArrayBackend)
@@ -275,8 +279,12 @@ function shape_function_hessian(e::Hex0{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # Linear hex
-struct Hex8{I, Q} <: AbstractHex{I, 1, Q}
+"""
+$(TYPEDEF)
+"""
+struct Hex8{I, Q} <: AbstractHex{8, I, 1, Q}
 end
+surface_element(::Hex8{I, Q}) where {I, Q} = Quad4{I, Q}()
 
 # Lagrange implementation
 function shape_function_value(e::Hex8{Lagrange}, X, ξ, backend::ArrayBackend)
@@ -359,10 +367,11 @@ function shape_function_hessian(e::Hex8{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # general higher order hex
-struct Hex{I, P, Q} <: AbstractHex{I, P, Q}
+struct Hex{V, I, P, Q} <: AbstractHex{V, I, P, Q}
 end
+surface_element(::Hex{V, I, P, Q}) where {V, I, P, Q} = Quad{V, I, P, Q}()
 
-function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_value(e::Hex{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_y = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_z = nodal_coordinates(surface_element(surface_element(e)), backend)
@@ -465,7 +474,7 @@ function shape_function_value(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   return convert_to_vector(e, backend, N...)
 end
 
-function shape_function_gradient(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_gradient(e::Hex{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_y = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_z = nodal_coordinates(surface_element(surface_element(e)), backend)
@@ -537,7 +546,7 @@ function shape_function_gradient(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
   return convert_to_matrix(e, backend, ∇N...)
 end
 
-function shape_function_hessian(e::Hex{Lagrange}, X, ξ, backend::ArrayBackend)
+function shape_function_hessian(e::Hex{V, Lagrange}, X, ξ, backend::ArrayBackend) where V
   coords_x = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_y = nodal_coordinates(surface_element(surface_element(e)), backend)
   coords_z = nodal_coordinates(surface_element(surface_element(e)), backend)

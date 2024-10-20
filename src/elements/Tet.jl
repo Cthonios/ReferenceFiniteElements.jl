@@ -1,5 +1,5 @@
 # abstract methods
-surface_element(::AbstractTet{I, P, Q}) where {I, P, Q} = Tri{I, P, Q}()
+# surface_element(::AbstractTet{V, I, P, Q}) where {V, I, P, Q} = Tri{3, I, P, Q}() # fix this! TODO
 
 # TODO
 function element_edge_nodes(e::AbstractTet, backend)
@@ -107,7 +107,8 @@ function nodal_coordinates(e::AbstractTet, backend::ArrayBackend)
 end
 
 function surface_nodal_coordinates(e::AbstractTet, backend::ArrayBackend)
-  coords = surface_nodal_coordinates(surface_element(e), backend)
+  # coords = surface_nodal_coordinates(, backend)
+  coords = nodal_coordinates(surface_element(e), backend)
   # edges = element_edge_nodes(e, backend)
   face_1_Xs = map(x-> vcat(x[1], 0., x[2]), coords)
   face_2_Xs = map(x-> vcat(x[1], 0., x[2]), coords)
@@ -155,8 +156,12 @@ end
 # Specific implementations
 
 # Constant tri
-struct Tet0{I, Q} <: AbstractTet{I, 0, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tet0{I, Q} <: AbstractTet{4, I, 0, Q}
 end
+surface_element(::Tet0{I, Q}) where {I, Q} = Tri0{I, Q}()
 
 # Lagrange implementation
 function shape_function_value(e::Tet0{Lagrange}, X, ξ, backend::ArrayBackend)
@@ -189,8 +194,12 @@ function shape_function_hessian(e::Tet0{Lagrange}, X, ξ, backend::ArrayBackend)
 end
 
 # Linear Tet
-struct Tet4{I, Q} <: AbstractTet{I, 1, Q}
+"""
+$(TYPEDEF)
+"""
+struct Tet4{I, Q} <: AbstractTet{4, I, 1, Q}
 end
+surface_element(::Tet4{I, Q}) where {I, Q} = Tri3{I, Q}()
 
 # Lagrange implementation
 function shape_function_value(e::Tet4{Lagrange}, X, ξ, backend::ArrayBackend)
@@ -243,9 +252,13 @@ function shape_function_hessian(e::Tet4{Lagrange}, X, ξ, backend::ArrayBackend)
   return Ns
 end
 
-# Linear Tet
-struct Tet10{I, Q} <: AbstractTet{I, 2, Q}
+# Quadratic Tet
+"""
+$(TYPEDEF)
+"""
+struct Tet10{I, Q} <: AbstractTet{10, I, 2, Q}
 end
+surface_element(::Tet10{I, Q}) where {I, Q} = Tri6{I, Q}()
 
 # Lagrange implementation
 function shape_function_value(e::Tet10{Lagrange}, X, ξ, backend::ArrayBackend)
