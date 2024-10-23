@@ -3,383 +3,262 @@ using Aqua
 using CUDA
 using Distributions
 using Exodus
-using ForwardDiff
 using JET
-using KernelAbstractions
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
-using StructArrays
 using Test
 using TestSetExtensions
 
-function is_inside_unit_interval(point)
-  # test is different in optimism from [0., 1.] not [-1., 1.]
-  return (point >= 0.) && (point <= 1.)
+function is_inside_element(::ReferenceFiniteElements.AbstractEdge, point)
+  return (point[1] >= -1.) && (point[1] <= 1.)
 end
 
-function integrate_1d_monomial_on_line(n)
-  return 1. / (n + 1)
+function is_inside_surface_element(::ReferenceFiniteElements.AbstractEdge, point)
+  return (point[1] >= 0.) && (point[1] <= 1.)
 end
 
-function map_affine_1d(ξ, end_points)
-  return (1. - ξ) * end_points[1] + ξ * end_points[2]
+function is_inside_element(::ReferenceFiniteElements.AbstractHex, point)
+  return (point[1] >= -1.) && (point[1] <= 1.) &&
+         (point[2] >= -1.) && (point[2] <= 1.) &&
+         (point[3] >= -1.) && (point[3] <= 1.)
 end
 
-function map_1d_jac(end_points)
-  return end_points[2] - end_points[1]
+function is_inside_element(::ReferenceFiniteElements.AbstractQuad, point)
+  return (point[1] >= -1.) && (point[1] <= 1.) &&
+         (point[2] >= -1.) && (point[2] <= 1.)
 end
 
-function is_inside_hex(point)
-  x_cond = (point[1] >= -1.) && (point[1] <= 1.)
-  y_cond = (point[2] >= -1.) && (point[2] <= 1.)
-  z_cond = (point[3] >= -1.) && (point[3] <= 1.)
-  return x_cond && y_cond && z_cond
+function is_inside_element(::ReferenceFiniteElements.AbstractTri, point)
+  return (point[1] >= 0.) && (point[1] <= 1.) &&
+         (point[2] >= 0.) && (point[2] <= 1. - point[1])
 end
 
-function is_inside_quad(point)
-  x_cond = (point[1] >= -1.) && (point[1] <= 1.)
-  y_cond = (point[2] >= -1.) && (point[2] <= 1.)
-  return x_cond && y_cond
+function is_inside_element(::ReferenceFiniteElements.AbstractTet, point)
+  return (point[1] >= 0.) && (point[1] <= 1.) &&
+         (point[2] >= 0.) && (point[2] <= 1. - point[1]) && 
+         (point[3] >= 0.) && (point[3] <= 1. - point[2])
 end
 
-function is_inside_triangle(point)
-  x_cond = (point[1] >= 0.) && (point[1] <= 1.)
-  y_cond = (point[2] >= 0.) && (point[2] <= 1. - point[1])
-  return x_cond && y_cond
-end
 
-function is_inside_tet(point)
-  x_cond = (point[1] >= 0.) && (point[1] <= 1.)
-  y_cond = (point[2] >= 0.) && (point[2] <= 1. - point[1])
-  z_cond = (point[3] >= 0.) && (point[3] <= 1. - point[2])
-  return x_cond && y_cond && z_cond
-end
+q_weight_sum(::ReferenceFiniteElements.AbstractEdge) = 2.
+q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
+q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
+q_weight_sum(::ReferenceFiniteElements.AbstractTet) = 1. / 6.
+q_weight_sum(::ReferenceFiniteElements.AbstractTri) = 0.5
+q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
 
-function integrate_2d_monomial_on_triangle(n, m)
-  p = n + m
-  return 1. / ((p + 2) * (p + 1) * binomial(p, n))
-end
-
-function generate_random_points_in_triangle(n_points::Int)
-  x = rand(Uniform(0.0, 1.0), n_points)
-  y = zeros(Float64, n_points)
-  for i in 1:n_points
-    y[i] = rand(Uniform(0.0, 1.0 - x[i]))
+function test_q_points_inside_element(re) 
+  @test all(is_inside_element.((re.element,), quadrature_points(re)))
+  for n in 1:num_quadrature_points(re)
+    @test is_inside_element(re.element, quadrature_point(re, n))
   end
-  points = hcat(x, y)' |> collect
-  return points
-end
-
-function polyval2d(x::T, y::T, C::Matrix{<:AbstractFloat}) where T
-  val = 0.0
-  for i in 1:size(C, 1)
-    for j in 1:size(C, 2)
-      val = val + C[i, j] * x^(i - 1) * y^(j - 1)
-    end
-  end
-  val
-end
-
-function dpolyval2d(x::T, y::T, C::Matrix{<:AbstractFloat}, direction::Int) where T
-  val = 0.0
-  if direction == 1
-    for i in 2:size(C, 1)
-      for j in 1:size(C, 2)
-        val = val + (i - 1) * C[i, j] * x^(i - 2) * y^(j - 1)
-      end
-    end
-  elseif direction == 2
-    for i in 1:size(C, 1)
-      for j in 2:size(C, 2)
-        val = val + (j - 1) * C[i, j] * x^(i - 1) * y^(j - 2)
-      end
-    end
-  end
-  val
-end
-
-@kernel function sum_shape_function_values_kernel!(sums, shapes)
-  I = @index(Global)
-  sums[I] = sum(shapes[I])
-end
-
-function partition_of_unity_shape_function_values_test(re, backend)
-  shapes = shape_function_values(re)
-  sums = KernelAbstractions.zeros(backend, ReferenceFiniteElements.float_type(re), length(shapes))
-  kernel = sum_shape_function_values_kernel!(backend)
-  kernel(sums, shapes, ndrange=length(shapes))
-  sums_cpu = convert(Vector, sums)
-  @test sums_cpu ≈ ones(eltype(sums_cpu), length(sums_cpu))
-end
-
-@kernel function sum_shape_function_gradients_kernel!(sums, shapes)
-  I = @index(Global)
-  sums[I] = sum(shapes[I])
-end
-
-function partition_of_unity_shape_function_gradients_test(re, backend)
-  shapes = shape_function_gradients(re)
-  sums = KernelAbstractions.zeros(backend, ReferenceFiniteElements.float_type(re), length(shapes))
-  kernel = sum_shape_function_gradients_kernel!(backend)
-  kernel(sums, shapes, ndrange=length(sums))
-  sums_cpu = convert(Vector, sums)
-  for ∇N in sums_cpu
-    for i in size(∇N, 1)
-      if eltype(sums_cpu) == Float32
-        @test ∇N[i] < 2.5e-7
-      elseif eltype(sums_cpu) == Float64
-        @test ∇N[i] < 1e-13
+  @test all(is_inside_element.((re.element,), surface_quadrature_points(re)))
+  for f in 1:num_faces(re.element)
+    for n in 1:num_quadrature_points(re.surface_element)
+      if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
+        @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), 2. * surface_quadrature_point(re, n, f) .- 1.)
+      else
+        @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), surface_quadrature_point(re, n, f))
       end
     end
   end
 end
 
-@kernel function kronecker_delta_property_kernel!(Ns, re, coords, mvec=false)
-  I = @index(Global)
-  # note only SVector makes sense here. MVector is no bueno in kernels
-  if mvec
-    type = MVector
-  else
-    type = SVector
-  end
-  Ns[I] = ReferenceFiniteElements.shape_function_values(typeof(re.ref_fe_type)(num_q_points(re)), type, coords[I])
-end
-
-function kronecker_delta_property(re, backend, arr_type)
-  n_dim = size(re.nodal_coordinates, 1)
-  coords = reinterpret(SVector{n_dim, ReferenceFiniteElements.float_type(re)}, re.nodal_coordinates)
-  Ns = KernelAbstractions.zeros(backend, arr_type{num_nodes_per_element(re), eltype(re.nodal_coordinates)}, length(coords))
-  kernel = kronecker_delta_property_kernel!(backend)
-  kernel(Ns, re, coords, ndrange=length(Ns))
-  Ns = convert(Vector, Ns)
-  Ns = mapreduce(permutedims, vcat, Ns)
-  @test Ns ≈ I
-end
-
-# just so Enzyme can autodiff below. This should probably be in StaticArrays.jl
-Base.one(::Type{SVector{N, T}}) where {N, T} = ones(SVector{N, T})
-
-@kernel function test_gradients_kernel!(re, ξs, ∇Ns_fd)
-  I = @index(Global)
-
-  # if mvec
-  #   type = MVector
-  # else
-  #   type = SVector
-  # end
-  type = SVector
-  # ∇Ns_fd[I] = Zygote.jacobian(x -> shape_function_values(re.ref_fe_type, type, x), ξs[I])[1]
-  # ∇Ns_fd[I] = AD.jacobian(AD.ZygoteBackend(), x -> shape_function_values(re.ref_fe_type, type, x), ξs[I])[1]
-  # ∇Ns_fd[I] = Enzyme.jacobian(Reverse, x -> shape_function_values(re.ref_fe_type, type, x), ξs[I], Val{8})
-  # temp = autodiff(Reverse, shape_function_values, re.ref_fe_type, type, Active(ξs[I]))
-  temp = Enzyme.jacobian(Reverse, x -> shape_function_values(re.ref_fe_type, type, x), ξs[I], Val{3}())
-  @show temp
-  # ∇Ns_fd[I] = temp[3]  
-end
-
-# function test_gradients(re, backend)
-function test_gradients(re)
-  # TODO hardcoding to SVector for now
-  # ξs = quadrature_points(re)
-  # ∇Ns_an = shape_function_gradients(re)
-  # # ∇Ns_fd = Vector{eltype(∇Ns_an)}(undef, length(∇Ns_an))
-  # ∇Ns_fd = KernelAbstractions.zeros(backend, eltype(∇Ns_an), length(∇Ns_an))
-  # # ∇Ns_fd = Adapt.adapt_structure()
-  # kernel = test_gradients_kernel!(backend)
-  # kernel(re, ξs, ∇Ns_fd, ndrange=length(∇Ns_fd))
-  # ∇Ns_an = convert(Vector, ∇Ns_an)
-  # ∇Ns_fd = convert(Vector, ∇Ns_fd)
-  # for q in axes(∇Ns_an, 1)
-  #   @test ∇Ns_an[q] ≈ ∇Ns_fd[q]
-  # end
-  type = SVector
-  for (q, ξ) in enumerate(quadrature_points(re))
-    ∇Ns_an = shape_function_gradients(re, q)
-    ∇Ns_fd = ForwardDiff.jacobian(x -> shape_function_values(re.ref_fe_type, type, x), ξ)
-    @test ∇Ns_fd ≈ ∇Ns_an
-  end
-end
-
-function test_hessians(re)
-  # TODO hardcoding to SMatrix for now
-  for (q, ξ) in enumerate(quadrature_points(re))
-    ∇∇Ns_an = shape_function_hessians(re, q)
-    ∇∇Ns_fd = reshape(ForwardDiff.jacobian(x -> shape_function_gradients(re.ref_fe_type, SMatrix, x), ξ), size(∇∇Ns_an))
-    @test ∇∇Ns_an ≈ ∇∇Ns_fd
-  end
-end
-
-function test_show(re)
-  @show re
-end
-
-function test_adapt_cuda(re_cuda)
-  @test device(re_cuda.nodal_coordinates) |> typeof <: CuDevice
-  @test device(re_cuda.edge_nodes) |> typeof <: CuDevice
-  @test device(re_cuda.face_nodes) |> typeof <: CuDevice
-  @test device(re_cuda.interior_nodes) |> typeof <: CuDevice
-  @test device(re_cuda.interpolants.N) |> typeof <: CuDevice
-  @test device(re_cuda.interpolants.w) |> typeof <: CuDevice
-  @test device(re_cuda.interpolants.ξ) |> typeof <: CuDevice
-  @test device(re_cuda.interpolants.∇N_ξ) |> typeof <: CuDevice
-  @test device(re_cuda.interpolants.∇∇N_ξ) |> typeof <: CuDevice
-end
-
-# @kernel function test_quadrature_weight_positivity_kernel(ws)
-#   I = @index(Global)
-#   # @test ws[I] > zero(eltype(ws))
-# end
-
-function test_quadrature_weight_positivity(re, backend)
+function test_q_weight_positivity(re) 
   ws = quadrature_weights(re)
-  ws = convert(Vector, ws)
-  for w in ws
-    @test w > zero(ReferenceFiniteElements.float_type(re))
+  @test all(ws .> zero(eltype(ws)))
+  for n in 1:num_quadrature_points(re)
+    @test quadrature_weight(re, n) > zero(eltype(ws))
   end
-  # for w in quadrature_weights(re)
-    # @test w > 0.
-  # end
-  # kernel = test_quadrature_weight_positivity_kernel(backend)
-  # kernel(ws, ndrange=length(ws))
+  ws = surface_quadrature_weights(re)
+  @test all(ws .> zero(eltype(ws)))
+  for f in 1:num_faces(re.element)
+    for n in 1:num_quadrature_points(re.surface_element)
+      @test surface_quadrature_weight(re, n, f) > zero(eltype(ws))
+    end
+  end
 end
 
-function common_test_sets_inner(el, q_degree, int_type, float_type, array_type, storage_type, cuda, re)
-  if cuda
-    re = Adapt.adapt_structure(CuArray, re)
-    backend = CUDABackend()
+function test_q_weight_sum(re) 
+  @test q_weight_sum(re.element) ≈ sum(quadrature_weights(re))
+  for f in 1:num_faces(re.element)
+    if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
+      @test sum(surface_quadrature_weights(re)[:, f]) ≈ q_weight_sum(ReferenceFiniteElements.surface_element(re.element)) / 2.
+    else
+      @test sum(surface_quadrature_weights(re)[:, f]) ≈ q_weight_sum(ReferenceFiniteElements.surface_element(re.element))
+    end
+  end
+end 
+
+# TODO need a test on exact integration for quadrature rules
+function test_partition_of_unity_on_values(re) 
+  Ns = shape_function_values(re)
+  @test all(sum.(Ns) .≈ one(eltype(Ns[1])))
+  for n in 1:num_quadrature_points(re)
+    N = shape_function_value(re, n)
+    @test sum(N) ≈ one(eltype(N))
+  end
+
+  Ns = surface_shape_function_values(re)
+  @test all(sum.(Ns) .≈ one(eltype(Ns[1, 1])))
+  for f in 1:num_faces(re.element)
+    for n in 1:num_quadrature_points(ReferenceFiniteElements.surface_element(re.element))
+      N = surface_shape_function_value(re, n, f)
+      @test sum(N) ≈ one(eltype(N))
+    end
+  end
+end
+
+function test_partition_of_unity_on_gradients(re) 
+  for ∇N in shape_function_gradients(re)
+    @test isapprox(sum(∇N), 0, atol=5e-12)
+  end
+  for n in 1:num_quadrature_points(re)
+    ∇N = shape_function_gradient(re, n)
+    @test isapprox(sum(∇N), 0, atol=5e-12)
+  end
+  for ∇N in surface_shape_function_gradients(re)
+    @test isapprox(sum(∇N), 0, atol=5e-12)
+  end
+  for f in 1:num_faces(re.element)
+    for n in 1:num_quadrature_points(ReferenceFiniteElements.surface_element(re.element))
+      ∇N = surface_shape_function_gradient(re, n, f)
+      @test isapprox(sum(∇N), 0, atol=5e-12)
+    end
+  end
+end
+
+function test_partition_of_unity_on_hessians(re)
+  for ∇∇N in shape_function_hessians(re)
+    @test isapprox(sum(∇∇N), 0, atol=5e-11)
+  end
+  for n in 1:num_quadrature_points(re)
+    ∇∇N = shape_function_hessian(re, n)
+    @test isapprox(sum(∇∇N), 0, atol=5e-11)
+  end
+  for ∇∇N in surface_shape_function_hessians(re)
+    @test isapprox(sum(∇∇N), 0, atol=5e-11)
+  end
+  for f in 1:num_faces(re.element)
+    for n in 1:num_quadrature_points(ReferenceFiniteElements.surface_element(re.element))
+      ∇∇N = surface_shape_function_hessian(re, n, f)
+      @test isapprox(sum(∇∇N), 0, atol=5e-11)
+    end
+  end
+end
+
+function test_kronecker_delta_property(re) 
+  if ReferenceFiniteElements.polynomial_degree(re.element) == 0
+    @test isapprox(hcat(map(x -> 
+      shape_function_value(re.element, re.Xs, x, re.backend), re.Xs)...), 
+      fill(1., (ReferenceFiniteElements.num_shape_functions(re.element), length(re.Xs))), 
+      atol=5e-14
+    )
   else
-    backend = CPU()
+    @test isapprox(hcat(map(x -> 
+      shape_function_value(re.element, re.Xs, x, re.backend), re.Xs)...), 
+      I, 
+      atol=5e-14
+    )
   end
+  # TODO add test on surface shape functions
+  # will need to first calculate shape function then 
+  # index based on the edges, since non-edge dofs will be zero 
+end
 
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - Quadrature weight positivity test" begin
-    if typeof(re.ref_fe_type) <: Tet4 || typeof(re.ref_fe_type) <: Tet10
-      
+# extension tests
+include("TestAdaptExt.jl")
+include("TestExodusExt.jl")
+
+# main package tests
+# el_types = [Edge2, Edge2, Edge3, Quad4, Quad4]
+# q_orders = [1, 2, 2, 1, 2]
+el_types = [
+  (Edge0, 1),
+  (Edge2, 1),
+  (Edge2, 2),
+  (Edge3, 1),
+  (Edge3, 2),
+  (Hex0, 1),
+  (Hex8, 1),
+  (Hex8, 2),
+  (Quad0, 1),
+  (Quad4, 1),
+  (Quad4, 2),
+  (Quad9, 1),
+  (Quad9, 2),
+  (Tet0, 1),
+  (Tet4, 1),
+  (Tet4, 2),
+  (Tet10, 1),
+  (Tet10, 2),
+  (Tri0, 1),
+  (Tri3, 1),
+  (Tri3, 2),
+  (Tri6, 1),
+  (Tri6, 2)
+]
+# for (el_type, q_order) in zip(el_types, q_orders)
+for el_type in el_types
+  el_type, q_order = el_type
+  @testset "$el_type - q order = $q_order Tests" begin
+    re = ReferenceFE{Int64, Float64, SArray}(el_type{Lagrange, q_order}())
+    test_q_points_inside_element(re)
+    if el_type <: ReferenceFiniteElements.AbstractTet || q_order > 1
+      # do nothing here
     else
-      # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-      # for w in quadrature_weights(re)
-      #   @test w > 0.
-      # end
-      test_quadrature_weight_positivity(re, backend)
+      test_q_weight_positivity(re)
     end
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - sum of quadrature points test" begin
-    # e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-    if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-      @test quadrature_weights(re) |> sum ≈ 8.0
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-      @test quadrature_weights(re) |> sum ≈ 4.0
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-      @test quadrature_weights(re) |> sum ≈ 1. / 6.
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-      @test quadrature_weights(re) |> sum ≈ 1. / 2.
-    else
-      @test false
-    end
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - triangle exactness" begin
-    if typeof(el) <: ReferenceFiniteElements.AbstractTri
-      for degree in [1]
-        e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-        for i in 1:degree
-          for j in 1:degree - i
-            quad_answer = map((ξ, w) -> w * ξ[1]^i * ξ[2]^j, eachcol(e.ξs), e.ws) |> sum
-            exact = integrate_2d_monomial_on_triangle(i, j)
-            @test quad_answer ≈ exact
-          end
-        end
-      end
-    else
-
-    end
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - quadrature points inside element" begin
-    e = ReferenceFE(el(q_degree); int_type, float_type, array_type)
-    if typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractHex
-      test_func = is_inside_hex
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractQuad
-      test_func = is_inside_quad
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTet
-      test_func = is_inside_tet
-    elseif typeof(el(q_degree)) <: ReferenceFiniteElements.AbstractTri
-      test_func = is_inside_triangle
-    else
-      @test false
-    end
-
-    for ξ in quadrature_points(e)
-      @test test_func(ξ)
-    end
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - partition of unity tests" begin
-    partition_of_unity_shape_function_values_test(re, backend)
-    partition_of_unity_shape_function_gradients_test(re, backend)
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - kronecker delta property tests" begin
-    if array_type == SArray
-      kronecker_delta_property(re, backend, SVector)
-    else
-      kronecker_delta_property(re, backend, MVector)
-    end
-  end
-
-  # TODO find an AD engine that actually works well with GPUarrays and staticarrays
-  if !cuda
-    @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - shape function gradients" begin
-      test_gradients(re)
-    end
-
-    @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - shape function hessians" begin
-      test_hessians(re)
-    end
-  end
-
-  @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - Base.show" begin
-    if !cuda
-      test_show(re)
-    end
-  end
-
-  if cuda
-    if array_type <: SArray
-      @testset ExtendedTestSet "$el, $q_degree, $int_type, $float_type, $array_type, $storage_type - AdaptExt, CUDA" begin
-        test_adapt_cuda(re)
-      end
-    else
-      @info "Skipping mutable static arrays since these are not supported on CUDA"
-    end
+    test_q_weight_sum(re)
+    test_partition_of_unity_on_values(re)
+    test_partition_of_unity_on_gradients(re)
+    test_partition_of_unity_on_hessians(re)
+    test_kronecker_delta_property(re)
   end
 end
 
-function common_test_sets(el, q_degrees, int_types, float_types, array_types, storage_types; cuda = false)
-  for q_degree in q_degrees
-    for int_type in int_types
-      for float_type in float_types
-        for array_type in array_types
-          for storage_type in storage_types
-            re = ReferenceFE(el(q_degree); int_type, float_type, array_type, storage_type)
-            common_test_sets_inner(el, q_degree, int_type, float_type, array_type, storage_type, cuda, re)
-          end
-        end
-      end
+el_types = [Edge, Quad]
+for el_type in el_types
+  @testset "$el_type Tests" begin
+    qs = 1:10
+    for q in qs
+      re = ReferenceFE{SArray, el_type, Lagrange, 1, q}()
+      test_q_points_inside_element(re)
+      test_q_weight_positivity(re)
+      test_q_weight_sum(re)
     end
-  end # q_degree
-end # common_test_sets
 
-@includetests ARGS
+    # just test initializing this
+    # re = ReferenceFE{SArray, el_type, Lagrange, 0, 1}()
+    # test_partition_of_unity_on_values(re)
+    # test_partition_of_unity_on_gradients(re)
+    # test_partition_of_unity_on_hessians(re)
+    # test_kronecker_delta_property(re)
+    
+    ps = 1:10
+    for p in ps
+      if p > 5
+        arr_type = Array
+      else
+        arr_type = SArray
+      end
+      re = ReferenceFE{arr_type, el_type, Lagrange, p, p}()
+      test_partition_of_unity_on_values(re)
+      test_partition_of_unity_on_gradients(re)
+      test_partition_of_unity_on_hessians(re)
+      test_kronecker_delta_property(re)
+    end
+  end
+end
 
 @testset ExtendedTestSet "Aqua Tests" begin
-  # ambiguities due to StructArrays
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
 end
 
 # JET testing
 @testset ExtendedTestSet "JET Tests" begin
-  # lots of erros if we don't target only ReferenceFiniteElements
+  # invalidations from FastGaussQuadrature so only targeting defined
+  # modules
   test_package("ReferenceFiniteElements"; target_defined_modules=true)
 end

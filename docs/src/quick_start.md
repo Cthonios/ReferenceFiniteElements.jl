@@ -1,4 +1,4 @@
-```@meta
+<!-- ```@meta
 CurrentModule = ReferenceFiniteElements
 ```
 
@@ -215,4 +215,4 @@ For shape function hessians, the method calls are as follows
   0.0528312   0.0528312  0.0
  -0.0528312   0.197169   0.0
 
-```
+``` -->

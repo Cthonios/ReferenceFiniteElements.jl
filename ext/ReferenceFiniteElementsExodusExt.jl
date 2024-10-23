@@ -4,7 +4,7 @@ using Exodus
 using ReferenceFiniteElements
 using StaticArrays
 
-name_to_type = Dict{String, Type{<:ReferenceFiniteElements.ReferenceFEType}}(
+name_to_type = Dict{String, Type{<:ReferenceFiniteElements.AbstractElementType}}(
   "HEX8"    => Hex8,
   "TETRA4"  => Tet4,
   "TETRA10" => Tet10,
@@ -15,15 +15,15 @@ name_to_type = Dict{String, Type{<:ReferenceFiniteElements.ReferenceFEType}}(
 )
 
 function ReferenceFiniteElements.ReferenceFE(
-  block::B, q_order::Int;
-  int_type   = Int64,
-  float_type = Float64,
-  array_type = SArray
+  block::B, q_order::Int
+  # int_type   = Int64,
+  # float_type = Float64,
+  # array_type = SArray
 ) where B <: Exodus.Block
   return ReferenceFiniteElements.ReferenceFE(
-    name_to_type[block.elem_type](Val(q_order));
-    int_type=int_type, float_type=float_type,
-    array_type=array_type
+    name_to_type[block.elem_type]{Lagrange, q_order}()
+    # int_type=int_type, float_type=float_type,
+    # array_type=array_type
   )
 end
 

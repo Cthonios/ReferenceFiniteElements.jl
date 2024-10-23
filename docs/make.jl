@@ -22,10 +22,12 @@ makedocs(;
     pages=[
         "Home"       => [
             "Installation"  => "installation.md",
-            "Quick start"   => "quick_start.md",
-            "Storage types" => "storage_types.md"
+            # "Quick start"   => "quick_start.md",
+            # "Storage types" => "storage_types.md"
         ],
-        "Extensions" => "extensions.md",
+        # "Extensions" => "extensions.md",
+        "Abstract Types" => "abstract_types.md",
+        "Element Types" => "element_types.md",
         "Developer"  => "developer.md",
         "Index"      => "index.md"
     ],
