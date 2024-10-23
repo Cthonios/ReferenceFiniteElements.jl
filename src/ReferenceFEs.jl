@@ -69,9 +69,9 @@ float_type(::ReferenceFE{I, F}) where {I, F} = F
 dimension(e::ReferenceFE) = dimension(e.element)
 element_type(::ReferenceFE{Itype, Ftype, Etype}) where {Itype, Ftype, Etype} = Etype
 interpolation_type(e::ReferenceFE) = interpolation_type(e::ReferenceFE)
-num_nodes(e::ReferenceFE) = num_nodes(e.element)
 num_shape_functions(e::ReferenceFE) = num_shape_functions(e.element)
 num_quadrature_points(e::ReferenceFE) = length(e.cell_interps.vals.w)
+num_vertices(e::ReferenceFE) = num_vertices(e.element)
 polynomial_degree(e::ReferenceFE) = polynomial_degree(e.element)
 quadrature_degree(e::ReferenceFE) = quadrature_degree(e.element)
 
