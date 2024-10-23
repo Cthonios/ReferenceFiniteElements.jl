@@ -5,6 +5,6 @@ CurrentModule = ReferenceFiniteElements
 ```@index
 ```
 
-```@autodocs
+<!-- ```@autodocs
 Modules = [ReferenceFiniteElements]
-```
+``` -->
