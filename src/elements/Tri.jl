@@ -27,7 +27,7 @@ function element_edge_vertices(e::AbstractTri, backend)
   return map(x -> convert_to(backend, x...), eachcol(edges))
 end
 
-function element_face_nodes(e::AbstractTri, backend::ArrayBackend)
+function element_face_vertices(e::AbstractTri, backend::ArrayBackend)
   temp = convert_to(backend, zeros(Int, 0)...)
   face_nodes = [temp]
   return face_nodes

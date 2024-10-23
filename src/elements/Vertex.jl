@@ -16,7 +16,7 @@ function element_edge_vertices(::Vertex, backend::ArrayBackend)
   return map(x -> convert_to(x, backend), Vertex_nodes)
 end
 
-function element_face_nodes(::Vertex, backend::ArrayBackend)
+function element_face_vertices(::Vertex, backend::ArrayBackend)
   face_nodes = Vector{Vector{Int}}(undef, 0)
   return map(x -> convert_to(x, backend), face_nodes)
 end

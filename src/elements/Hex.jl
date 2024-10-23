@@ -5,7 +5,7 @@ function element_edge_vertices(e::AbstractHex, backend::ArrayBackend)
 
 end
 
-function element_face_nodes(e::AbstractHex, backend::ArrayBackend)
+function element_face_vertices(e::AbstractHex, backend::ArrayBackend)
   faces = Matrix{Int64}(undef, num_vertices_per_face(e), 6)
   edge_nodes = 1:polynomial_degree(e) + 1
 
