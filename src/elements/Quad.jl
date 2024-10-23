@@ -2,7 +2,7 @@
 surface_element(::AbstractQuad{V, I, P, Q}) where {V, I, P, Q} = Edge{I, P, Q}()
 
 # TODO
-function element_edge_nodes(e::AbstractQuad, backend::ArrayBackend)
+function element_edge_vertices(e::AbstractQuad, backend::ArrayBackend)
   edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 4)
   edge_nodes = 1:polynomial_degree(e) + 1
 
@@ -90,7 +90,7 @@ end
 
 function surface_nodal_coordinates(e::AbstractQuad{P, Q, I}, backend::ArrayBackend) where {P, Q, I}
   coords = nodal_coordinates(e, backend)
-  edges = element_edge_nodes(e, backend)
+  edges = element_edge_vertices(e, backend)
   # surf_coords = map(x -> coords[x] |> collect, edges)
   surf_coords = mapreduce(x -> coords[x] |> collect, hcat, edges)
   return surf_coords

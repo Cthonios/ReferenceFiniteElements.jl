@@ -2,7 +2,7 @@
 # surface_element(::AbstractTet{V, I, P, Q}) where {V, I, P, Q} = Tri{3, I, P, Q}() # fix this! TODO
 
 # TODO
-function element_edge_nodes(e::AbstractTet, backend)
+function element_edge_vertices(e::AbstractTet, backend)
   edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 6)
   edge_nodes = 1:polynomial_degree(e) + 1
   # TODO finish this
@@ -109,7 +109,7 @@ end
 function surface_nodal_coordinates(e::AbstractTet, backend::ArrayBackend)
   # coords = surface_nodal_coordinates(, backend)
   coords = nodal_coordinates(surface_element(e), backend)
-  # edges = element_edge_nodes(e, backend)
+  # edges = element_edge_vertices(e, backend)
   face_1_Xs = map(x-> vcat(x[1], 0., x[2]), coords)
   face_2_Xs = map(x-> vcat(x[1], 0., x[2]), coords)
   face_3_Xs = map(x-> vcat(x[1], 0., x[2]), coords)

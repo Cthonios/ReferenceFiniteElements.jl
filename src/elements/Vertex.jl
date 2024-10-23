@@ -11,7 +11,7 @@ end
 # num_quadrature_points(e::AbstractVertex) = 0
 # surface_element(::AbstractVertex) = nothing
 
-function element_edge_nodes(::Vertex, backend::ArrayBackend)
+function element_edge_vertices(::Vertex, backend::ArrayBackend)
   Vertex_nodes = Vector{Vector{Int}}(undef, 0)
   return map(x -> convert_to(x, backend), Vertex_nodes)
 end

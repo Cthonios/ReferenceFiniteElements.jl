@@ -1,7 +1,7 @@
 # abstract methods
 # surface_element(::AbstractHex{V, I, P, Q}) where {V, I, P, Q} = Quad{Int(cbrt(V)), I, P, Q}()
 
-function element_edge_nodes(e::AbstractHex, backend::ArrayBackend)
+function element_edge_vertices(e::AbstractHex, backend::ArrayBackend)
 
 end
 

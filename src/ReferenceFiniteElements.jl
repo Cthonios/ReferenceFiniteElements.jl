@@ -43,9 +43,9 @@ export ReferenceFE
 
 # methods
 export num_faces,
-       num_nodes,
        num_quadrature_points,
        num_shape_functions,
+       num_vertices,
        surface_element
 
 export quadrature_point,

@@ -1,5 +1,8 @@
+using Adapt
 using Aqua
+using CUDA
 using Distributions
+using Exodus
 using JET
 using LinearAlgebra
 using ReferenceFiniteElements
@@ -164,6 +167,11 @@ function test_kronecker_delta_property(re)
   # index based on the edges, since non-edge dofs will be zero 
 end
 
+# extension tests
+include("TestAdaptExt.jl")
+include("TestExodusExt.jl")
+
+# main package tests
 # el_types = [Edge2, Edge2, Edge3, Quad4, Quad4]
 # q_orders = [1, 2, 2, 1, 2]
 el_types = [

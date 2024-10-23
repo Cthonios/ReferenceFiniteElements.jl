@@ -1,7 +1,7 @@
 # abstract methods
 surface_element(::AbstractTri{V, I, P, Q}) where {V, I, P, Q} = Edge{I, P, Q}()
 
-function element_edge_nodes(e::AbstractTri, backend)
+function element_edge_vertices(e::AbstractTri, backend)
   edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 3)
   edge_nodes = 1:polynomial_degree(e) + 1
 
@@ -90,7 +90,7 @@ end
 function surface_nodal_coordinates(e::AbstractTri, backend)
   coords = nodal_coordinates(e, backend)
   coords = map(x -> 0.5 * (x .+ 1), coords)
-  edges = element_edge_nodes(e, backend)
+  edges = element_edge_vertices(e, backend)
   surf_coords = map(x -> coords[x] |> collect, edges)
   return surf_coords
 end

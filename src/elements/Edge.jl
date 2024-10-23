@@ -1,7 +1,7 @@
 # abstract methods
 surface_element(::AbstractEdge{I, P, Q}) where {I, P, Q} = Vertex{I, P, Q}()
 
-function element_edge_nodes(::AbstractEdge, backend::ArrayBackend)
+function element_edge_vertices(::AbstractEdge, backend::ArrayBackend)
   edge_nodes = Vector{Vector{Int}}(undef, 0)
   return map(x -> convert_to(x, backend), edge_nodes)
 end

@@ -19,7 +19,7 @@ end
 function ReferenceFE{Itype, Ftype, T}(e::AbstractElementType) where {Itype, Ftype, T}
   surf_e = surface_element(e)
   backend = ArrayBackend{T}()
-  edge_nodes = element_edge_nodes(e, backend)
+  edge_nodes = element_edge_vertices(e, backend)
   face_nodes = element_face_nodes(e, backend)
   interior_nodes = element_interior_nodes(e, backend)
   Xs = nodal_coordinates(e, backend)
