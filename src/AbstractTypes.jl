@@ -58,6 +58,22 @@ $(TYPEDSIGNATURES)
 Return the quadrature degree ``Q``
 """
 quadrature_degree(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = Q
+"""
+$(TYPEDSIGNATURES)
+"""
+function num_interior_vertices end
+"""
+$(TYPEDSIGNATURES)
+"""
+function num_quadrature_points end
+"""
+$(TYPEDSIGNATURES)
+"""
+function num_vertices_per_edge end
+"""
+$(TYPEDSIGNATURES)
+"""
+function num_vertices_per_face end
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of edges in the element topology.

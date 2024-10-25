@@ -17,10 +17,10 @@ First, let's pretend ```AbstractTri``` doesn't exist yet. The first thing we nee
 ```jldoctest developer_example
 julia> using ReferenceFiniteElements
 
-julia> abstract type AbstractTri{I, P, Q} <: ReferenceFiniteElements.AbstractFace{I, P, Q} end
+julia> abstract type AbstractTri{V, I, P, Q} <: ReferenceFiniteElements.AbstractFace{V, 3, I, P, Q} end
 
 ```
-The three parameters ```I```, ```P```, and ```Q``` are the interpolation type, the polynomial degree, and the number of quadrature degree for an element implementation. The dimension is fixed at ```2``` for the ```D``` parameter in the abstrac type. For a given element topology, such as a three noded triangle in this example, ```P``` will be fixed parameters while we allow for ```I``` and ```Q``` to be variable, i.e. have potentially different interpolation and quadrature rules on a 3 noded element. 
+The four parameters ```V```, ```I```, ```P```, and ```Q``` are the number of vertices, interpolation type, the polynomial degree, and the number of quadrature degree for an element implementation. The dimension is fixed at ```2``` for the ```D``` parameter in the abstrac type. For a given element topology, such as a three noded triangle in this example, ```P``` will be fixed parameters while we allow for ```I``` and ```Q``` to be variable, i.e. have potentially different interpolation and quadrature rules on a 3 noded element. 
 
 We now need to define some methods for basiscs about the element toplogy such
 as number of vertices, edges, faces, etc.
@@ -54,7 +54,7 @@ The complete list of methods that need to be defined for a new abstract topology
 
 Now we define a struct for specific implementations. Here we'll define the Tri3 struct.
 ```jldoctest developer_example
-julia> struct Tri3{I, Q} <: AbstractTri{I, 1, Q} end
+julia> struct Tri3{I, Q} <: AbstractTri{3, I, 1, Q} end
 
 julia> e = Tri3{Lagrange, 1}()
 Tri3{Lagrange, 1}()
