@@ -1,4 +1,4 @@
-```@meta
+<!-- ```@meta
 CurrentModule = ReferenceFiniteElements
 ```
 
@@ -31,4 +31,4 @@ ReferenceFE
   Interpolants type           = Interpolants{MArray, MArray, MArray}
 
 ```
-The example above now uses mutable `MArray`s rather than the default of `SArray`. The storage type is also now a `Vector` of `MArray`s rather than a `StructArray` of `MArray`s. The currently supported internal array types are `Array`, `MArray`, and `SArray`. The currently supported storage types are `Array` and `StructArray`.
+The example above now uses mutable `MArray`s rather than the default of `SArray`. The storage type is also now a `Vector` of `MArray`s rather than a `StructArray` of `MArray`s. The currently supported internal array types are `Array`, `MArray`, and `SArray`. The currently supported storage types are `Array` and `StructArray`. -->

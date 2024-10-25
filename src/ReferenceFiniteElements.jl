@@ -1,77 +1,79 @@
 module ReferenceFiniteElements
 
-# element types
-# export Edge
-export Hex8,
-       Quad4, Quad9,
-       SimplexTri,
-       Tet4, Tet10,
-       Tri3, Tri6
+using DocStringExtensions
+using FastGaussQuadrature
+using LinearAlgebra
+using Polynomials
+using SpecialPolynomials
+using StaticArrays
+using StructArrays
 
-# types
-export ReferenceFE
-
-# methods.
-export element_type,
-       num_dimensions,
-       num_nodes_per_element,
-       num_q_points,
-       quadrature_points,
-       quadrature_weights,
-       shape_function_gradients,
-       shape_function_hessians,
-       shape_function_values,
-       surface_quadrature_points,
-       surface_quadrature_weights,
-       surface_shape_function_gradients,
-       surface_shape_function_hessians,
-       surface_shape_function_values,
-       vertex_nodes
-
-# dependencies
-using DocStringExtensions,
-      FastGaussQuadrature,
-      LinearAlgebra,
-      Polynomials,
-      SpecialPolynomials,
-      StaticArrays,
-      StructArrays
-
-# for docs
-@template (FUNCTIONS, METHODS, MACROS) =
-"""
-$(TYPEDSIGNATURES)
-$(DOCSTRING)
-$(METHODLIST)
-"""
-
-@template (TYPES) =
-"""
-$(TYPEDFIELDS)
-$(DOCSTRING)
-"""
-
-# Types
-include("ReferenceFETypes.jl")
+include("AbstractTypes.jl")
+include("ArrayBackends.jl")
 include("Interpolants.jl")
 include("ReferenceFEs.jl")
-# include("Utils.jl")
 
-# implementations of things common across multiple element types
-include("implementations/HexCommon.jl")
-include("implementations/QuadCommon.jl")
-include("implementations/TetCommon.jl")
-include("implementations/TriCommon.jl")
+# 0-d elements
+include("elements/Vertex.jl")
 
-# implementations of things specific to element types
-include("implementations/Edge.jl")
-include("implementations/Hex8.jl")
-include("implementations/Quad4.jl")
-include("implementations/Quad9.jl")
-include("implementations/SimplexTri.jl")
-include("implementations/Tet4.jl")
-include("implementations/Tet10.jl")
-include("implementations/Tri3.jl")
-include("implementations/Tri6.jl")
+# 1-d elements
+include("elements/Edge.jl")
 
-end # module ReferenceFEs
+# 2-d elements
+include("elements/Quad.jl")
+include("elements/Tri.jl")
+
+# 3-d elements
+include("elements/Hex.jl")
+include("elements/Tet.jl")
+
+# elements
+export Edge0, Edge2, Edge3, Edge
+export Hex0, Hex8, Hex
+export Quad0, Quad4, Quad9, Quad
+export Tet0, Tet4, Tet10
+export Tri0, Tri3, Tri6, Tri
+export Vertex
+
+# interpolations
+export Lagrange
+
+# main type
+export ReferenceFE
+
+# methods
+export num_faces,
+       num_quadrature_points,
+       num_shape_functions,
+       num_vertices,
+       surface_element
+
+export quadrature_point,
+       quadrature_points,
+       quadrature_weight,
+       quadrature_weights,
+       shape_function_gradient,
+       shape_function_gradients,
+       shape_function_hessian,
+       shape_function_hessians,
+       shape_function_value,
+       shape_function_values,
+       surface_normal,
+       surface_normals,
+       surface_quadrature_point,
+       surface_quadrature_points,
+       surface_quadrature_weight,
+       surface_quadrature_weights,
+       surface_shape_function_gradient,
+       surface_shape_function_gradients,
+       surface_shape_function_hessian,
+       surface_shape_function_hessians,
+       surface_shape_function_value,
+       surface_shape_function_values
+
+export calculate_JxW,
+       integrate,
+       map_shape_function_gradient,
+       mapping_jacobian
+
+end # module ReferenceFiniteElements
