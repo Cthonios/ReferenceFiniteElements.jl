@@ -3,7 +3,6 @@ using Exodus
 using LaTeXStrings
 using RecipesBase
 using ReferenceFiniteElements
-using Symbolics
 using Documenter
 
 DocMeta.setdocmeta!(ReferenceFiniteElements, :DocTestSetup, :(using ReferenceFiniteElements); recursive=true)
