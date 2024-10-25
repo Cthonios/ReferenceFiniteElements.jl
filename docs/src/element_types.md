@@ -1,3 +1,9 @@
+# Element types
+Below is the currently implemented set of elements organized
+by vertices, edges, faces, and volumes respectively. If you would
+like to see an additional element type supported, please file and issue
+or open a PR.
+
 # 0-Dimensional Elements
 ```@docs
 Vertex

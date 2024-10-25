@@ -10,7 +10,7 @@ general meaning.
 
 ``E`` - Number of edges
 
-``F`` - Number of faces``
+``F`` - Number of faces
 
 ``I`` - Interpolation type
 
