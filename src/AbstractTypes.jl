@@ -19,45 +19,45 @@ general meaning.
 ``Q`` - quadrature degree
 
 """
-abstract type AbstractElementType{D, V, E, F, I, P, Q} end
+abstract type AbstractElementTopology{D, V, E, F, I, P, Q} end
 
 """
 $(TYPEDSIGNATURES)
 Returns dimension D.
 """
-dimension(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = D
+dimension(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = D
 """
 $(TYPEDSIGNATURES)
 """
-num_vertices(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = V
+num_vertices(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = V
 """
 $(TYPEDSIGNATURES)
 """
-num_edges(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = E
+num_edges(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = E
 """
 $(TYPEDSIGNATURES)
 """
-num_faces(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = F
+num_faces(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = F
 """
 $(TYPEDSIGNATURES)
 Returns the interpolation type ``I``.
 """
-interpolation_type(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = I
+interpolation_type(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = I
 """
 $(TYPEDSIGNATURES)
 Returns the interpolation polynomial degree ``P``.
 """
-polynomial_degree(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = P
+polynomial_degree(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = P
 """
 $(TYPEDSIGNATURES)
 Returns the interpolation polynomial degree ``P``.
 """
-polynomial_degree(::Type{<:AbstractElementType{D, V, E, F, I, P, Q}}) where {D, V, E, F, I, P, Q} = P
+polynomial_degree(::Type{<:AbstractElementTopology{D, V, E, F, I, P, Q}}) where {D, V, E, F, I, P, Q} = P
 """
 $(TYPEDSIGNATURES)
 Return the quadrature degree ``Q``
 """
-quadrature_degree(::AbstractElementType{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = Q
+quadrature_degree(::AbstractElementTopology{D, V, E, F, I, P, Q}) where {D, V, E, F, I, P, Q} = Q
 """
 $(TYPEDSIGNATURES)
 """
@@ -78,45 +78,45 @@ function num_vertices_per_face end
 # $(TYPEDSIGNATURES)
 # Returns the number of edges in the element topology.
 # """
-# num_edges(e::AbstractElementType) = num_edges(typeof(e))
+# num_edges(e::AbstractElementTopology) = num_edges(typeof(e))
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of faces in the element topology.
 # """
-# num_faces(e::AbstractElementType) = num_faces(typeof(e))
+# num_faces(e::AbstractElementTopology) = num_faces(typeof(e))
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of interior vertices in the element topology.
 # """
-# num_interior_vertices(e::AbstractElementType) = num_interior_vertices(typeof(e))
+# num_interior_vertices(e::AbstractElementTopology) = num_interior_vertices(typeof(e))
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of quadrature points.
 # """
-# num_quadrature_points(e::AbstractElementType) = num_quadrature_points(typeof(e))
+# num_quadrature_points(e::AbstractElementTopology) = num_quadrature_points(typeof(e))
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of vertices in the element topology.
 # """
-# num_vertices(e::AbstractElementType) = num_vertices(typeof(e))
+# num_vertices(e::AbstractElementTopology) = num_vertices(typeof(e))
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of vertices per edge in the element topology.
 # TODO this may not generalize well to arbitrary elements
 # """
-# num_vertices_per_edge(e::AbstractElementType) = num_vertices_per_edge(e)
+# num_vertices_per_edge(e::AbstractElementTopology) = num_vertices_per_edge(e)
 # """
 # $(TYPEDSIGNATURES)
 # Returns the number of vertices per face in the element topology.
 # TODO this may not generalize well to arbitrary elements
 # """
-# num_vertices_per_face(e::AbstractElementType) = num_vertices_per_face(e)
+# num_vertices_per_face(e::AbstractElementTopology) = num_vertices_per_face(e)
 
 # 0d elements
 """
 $(TYPEDEF)
 """
-abstract type AbstractVertex{I, P, Q} <: AbstractElementType{0, 1, 0, 0, I, P, Q} end
+abstract type AbstractVertex{I, P, Q} <: AbstractElementTopology{0, 1, 0, 0, I, P, Q} end
 num_interior_vertices(::AbstractVertex) = 0
 num_quadrature_points(::AbstractVertex) = 1
 num_vertices_per_edge(::AbstractVertex) = 0
@@ -126,7 +126,7 @@ num_vertices_per_face(e::AbstractVertex) = 0
 """
 $(TYPEDEF)
 """
-abstract type AbstractEdge{V, I, P, Q} <: AbstractElementType{1, V, 1, 0, I, P, Q} end
+abstract type AbstractEdge{V, I, P, Q} <: AbstractElementTopology{1, V, 1, 0, I, P, Q} end
 function num_interior_vertices(e::AbstractEdge{V, I, P, Q}) where {V, I, P, Q}
   if P < 2
     return 0
@@ -142,7 +142,7 @@ num_vertices_per_face(e::AbstractEdge) = 0
 """
 $(TYPEDEF)
 """
-abstract type AbstractFace{V, E, I, P, Q} <: AbstractElementType{2, V, E, 1, I, P, Q} end
+abstract type AbstractFace{V, E, I, P, Q} <: AbstractElementTopology{2, V, E, 1, I, P, Q} end
 num_vertices_per_edge(e::AbstractFace) = num_vertices(surface_element(e))
 num_vertices_per_face(e::AbstractFace) = num_vertices(e)
 
@@ -164,7 +164,7 @@ num_quadrature_points(e::AbstractTri) = num_quadrature_points(surface_element(e)
 """
 $(TYPEDEF)
 """
-abstract type AbstractVolume{V, E, F, I, P, Q} <: AbstractElementType{3, V, E, F, I, P, Q} end
+abstract type AbstractVolume{V, E, F, I, P, Q} <: AbstractElementTopology{3, V, E, F, I, P, Q} end
 num_vertices_per_edge(e::AbstractVolume) = num_vertices(surface_element(surface_element(e)))
 num_vertices_per_face(e::AbstractVolume) = num_vertices(surface_element(e))
 
@@ -208,7 +208,7 @@ abstract type AbstractInterpolantsContainer{I} end
 """
 $(TYPEDSIGNATURES)
 """
-function num_shape_functions(e::AbstractElementType{D, V, E, F, Lagrange, P, Q}) where {D, V, E, F, P, Q}
+function num_shape_functions(e::AbstractElementTopology{D, V, E, F, Lagrange, P, Q}) where {D, V, E, F, P, Q}
   if P == 0
     return 1
   else

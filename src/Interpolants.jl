@@ -23,7 +23,7 @@ struct SurfaceInterpolants{I} <: AbstractInterpolantsContainer{I}
   vals::I
 end
 
-function CellInterpolants(e::AbstractElementType, Xs, backend::ArrayBackend)
+function CellInterpolants(e::AbstractElementTopology, Xs, backend::ArrayBackend)
   ξs, ws = quadrature_points_and_weights(e, backend)
   Ns = map(x -> shape_function_value(e, Xs, x, backend), ξs)
   ∇N_ξs = map(x -> shape_function_gradient(e, Xs, x, backend), ξs)
@@ -32,7 +32,7 @@ function CellInterpolants(e::AbstractElementType, Xs, backend::ArrayBackend)
   return CellInterpolants(vals)
 end
 
-function SurfaceInterpolants(e::AbstractElementType, Xs, backend::ArrayBackend)
+function SurfaceInterpolants(e::AbstractElementTopology, Xs, backend::ArrayBackend)
   ξs, ws = surface_quadrature_points_and_weights(e, backend)
   ξs = mapreduce(x -> x, hcat, ξs)
   ws = mapreduce(x -> x, hcat, ws)

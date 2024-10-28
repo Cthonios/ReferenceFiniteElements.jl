@@ -4,7 +4,7 @@ using Exodus
 using ReferenceFiniteElements
 using StaticArrays
 
-name_to_type = Dict{String, Type{<:ReferenceFiniteElements.AbstractElementType}}(
+name_to_type = Dict{String, Type{<:ReferenceFiniteElements.AbstractElementTopology}}(
   "HEX8"    => Hex8,
   "TETRA4"  => Tet4,
   "TETRA10" => Tet10,

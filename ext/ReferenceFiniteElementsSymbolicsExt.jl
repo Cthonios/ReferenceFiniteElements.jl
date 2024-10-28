@@ -5,13 +5,13 @@ using StaticArrays
 using StructArrays
 using Symbolics
 
-function symbolic_shape_function_gradients(e::ReferenceFiniteElements.AbstractElementType, X, ξ, backend)
+function symbolic_shape_function_gradients(e::ReferenceFiniteElements.AbstractElementTopology, X, ξ, backend)
   Ns = symbolic_shape_function_values(e, X, ξ, backend)
   Ns = Symbolics.jacobian(Ns, ξ)
   return ReferenceFiniteElements.convert_to_matrix(e, backend, Ns...)
 end
 
-function symbolic_shape_function_hessians(e::ReferenceFiniteElements.AbstractElementType, X, ξ, backend)
+function symbolic_shape_function_hessians(e::ReferenceFiniteElements.AbstractElementTopology, X, ξ, backend)
   Ns = symbolic_shape_function_values(e, X, ξ, backend)
   Ns = Symbolics.jacobian(Symbolics.jacobian(Ns, ξ), ξ)
   return ReferenceFiniteElements.convert_to_3d_array(e, backend, Ns...)
@@ -64,7 +64,7 @@ function symbolic_shape_function_values(e::Quad{Lagrange, P, Q}, X, ξ, backend)
   return ReferenceFiniteElements.convert_to_vector(e, backend, N...)
 end
 
-function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementTopology, Xs, backend)
   ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))
   ξs, ws = ReferenceFiniteElements.quadrature_points_and_weights(e, backend)
   Ns = symbolic_shape_function_values(e, Xs, ξ, backend)
@@ -77,7 +77,7 @@ function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElement
   return ReferenceFiniteElements.CellInterpolants(vals)
 end
 
-function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementTopology, Xs, backend)
   ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))  
   ξs, ws = ReferenceFiniteElements.surface_quadrature_points_and_weights(e, backend)
   ξs = mapreduce(x -> x, hcat, ξs)

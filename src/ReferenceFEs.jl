@@ -16,7 +16,7 @@ struct ReferenceFE{
   surface_interps::SurfaceInterps
 end
 
-function ReferenceFE{Itype, Ftype, T}(e::AbstractElementType) where {Itype, Ftype, T}
+function ReferenceFE{Itype, Ftype, T}(e::AbstractElementTopology) where {Itype, Ftype, T}
   surf_e = surface_element(e)
   backend = ArrayBackend{T}()
   edge_nodes = element_edge_vertices(e, backend)
@@ -40,7 +40,7 @@ function ReferenceFE{Itype, Ftype, T}(e::AbstractElementType) where {Itype, Ftyp
   )
 end
 
-ReferenceFE(e::AbstractElementType) = ReferenceFE{Int64, Float64, SArray}(e)
+ReferenceFE(e::AbstractElementTopology) = ReferenceFE{Int64, Float64, SArray}(e)
 ReferenceFE{E, I, P, Q}() where {E, I, P, Q} = ReferenceFE{Int64, Float64, SArray}(E{I, P, Q}())
 ReferenceFE{T, E, I, P, Q}() where {T, E, I, P, Q} = ReferenceFE{Int64, Float64, T}(E{I, P, Q}())
 ReferenceFE{T1, T2, T3, E, I, P, Q}() where {T1, T2, T3, E, I, P, Q} = ReferenceFE{T1, T2, T3}(E{I, P, Q}())
