@@ -39,7 +39,9 @@ export Vertex
 export Lagrange
 
 # main type
-export ReferenceFE
+export ReferenceFE,
+       MappedInterpolants,
+       MappedSurfaceInterpolants
 
 # methods
 export num_faces,

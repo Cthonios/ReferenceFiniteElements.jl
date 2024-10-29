@@ -40,5 +40,5 @@ function SurfaceInterpolants(e::AbstractElementType, Xs, backend::ArrayBackend)
   ∇N_ξs = shape_function_gradient.((e,), (Xs,), ξs, (backend,))
   ∇∇N_ξs = shape_function_hessian.((e,), (Xs,), ξs, (backend,))
   vals = StructArray{Interpolants}((ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs))
-  return CellInterpolants(vals)
+  return SurfaceInterpolants(vals)
 end
