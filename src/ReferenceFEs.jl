@@ -137,18 +137,26 @@ function MappedInterpolants(e::ReferenceFE, X, q)
   return MappedInterpolants(X_q, N, ∇N_X, JxW)
 end
 
-struct MappedSurfaceInterpolants{A, B, C, D}
+struct MappedSurfaceInterpolants{
+  A <: AbstractArray, 
+  B <: AbstractArray, 
+  C <: AbstractArray,
+  D <: Number,
+  E <: AbstractArray
+}
   X_q::A
   N::B
-  JxW::C
-  n::D
+  N_reduced::C
+  JxW::D
+  n::E
 end
 
 # specialize for surface shape functions
-function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Int, f::Int) where {I, F, E <: AbstractTri}
+function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::Integer) where {I, F, E <: AbstractTri}
   # unpacks
   w = surface_quadrature_weight(e, q, f)
-  N = surface_shape_function_value(e, q, f)[e.edge_nodes[f]]
+  N = surface_shape_function_value(e, q, f)
+  N_reduced = N[e.edge_nodes[f]]
   # ∇N_ξ = surface_shape_function_gradient(e, q, f)[e.edge_nodes[f], :]
   n = surface_normal(e, q, f)
 
@@ -156,13 +164,14 @@ function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Int, f::Int) w
   # like tractions maybe?
 
   # unpack coordinates correctly
-  X_temp = X[:, e.edge_nodes[f]]
+  # X_temp = X[:, e.edge_nodes[f]]
+  X_temp = X
   X_diff = X_temp[:, 2] - X_temp[:, 1]
 
   det_J = norm(X_diff)
 
   # interpolate coordinates
-  X_q = X_temp * N
+  X_q = X_temp * N[e.edge_nodes[f]]
 
   # # map shape function gradients
   # J = (X_temp * ∇N_ξ)'
@@ -174,8 +183,8 @@ function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Int, f::Int) w
 
   # TODO below incorrect. Not giving correct gradient
   # or normal
-  @show N
-  return MappedSurfaceInterpolants(X_q, N, JxW, n)
+  # @show N
+  return MappedSurfaceInterpolants(X_q, N, N_reduced, JxW, n)
 end
 
 
