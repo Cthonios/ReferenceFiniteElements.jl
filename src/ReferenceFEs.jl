@@ -137,6 +137,23 @@ function MappedInterpolants(e::ReferenceFE, X, q)
   return MappedInterpolants(X_q, N, ∇N_X, JxW)
 end
 
+function MappedInterpolants(interps::Interpolants, X)
+  w, N, ∇N_ξ = interps.w, interps.N, interps.∇N_ξ
+
+  # interpolate coordinates
+  X_q = X * N
+
+  # map shape function gradients
+  J = (X * ∇N_ξ)'
+  J_inv = inv(J)
+  ∇N_X = (J_inv * ∇N_ξ')'
+
+  # JxW
+  JxW = det(J) * w
+
+  return MappedInterpolants(X_q, N, ∇N_X, JxW)
+end
+
 struct MappedSurfaceInterpolants{
   A <: AbstractArray, 
   B <: AbstractArray, 
@@ -187,6 +204,26 @@ function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::In
   return MappedSurfaceInterpolants(X_q, N, N_reduced, JxW, n)
 end
 
+# function MappedSurfaceInterpolants(interps::SurfaceInterpolants, X)
+#   # TODO need to refactor all this surface stuff
+#   w, N, ∇N_ξ = interps.w, interps.N, interps.∇N_ξ
+#   n = interps.ξ
+
+#   # unpack coordinates correctly
+#   # X_temp = X[:, e.edge_nodes[f]]
+#   X_temp = X
+#   X_diff = X_temp[:, 2] - X_temp[:, 1]
+
+#   det_J = norm(X_diff)
+
+#   # interpolate coordinates
+#   X_q = X_temp * N[e.edge_nodes[f]]
+
+#   # JxW
+#   JxW = det_J * w
+
+#   return MappedSurfaceInterpolants(X_q, N, )
+# end
 
 # deprecate below
 # other methods for working in physical space
