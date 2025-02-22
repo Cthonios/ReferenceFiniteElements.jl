@@ -18,6 +18,11 @@ end
 
 function ReferenceFE{Itype, Ftype, T}(e::AbstractElementType) where {Itype, Ftype, T}
   surf_e = surface_element(e)
+
+  # DO NOT COMMIT THIS
+  # surf_e = Edge2{Lagrange, 2}()
+  # DO NOT COMMIT THIS
+
   backend = ArrayBackend{T}()
   edge_nodes = element_edge_vertices(e, backend)
   face_nodes = element_face_vertices(e, backend)
@@ -169,7 +174,7 @@ struct MappedSurfaceInterpolants{
 end
 
 # specialize for surface shape functions
-function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::Integer) where {I, F, E <: AbstractTri}
+function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::Integer) where {I, F, E <: AbstractFace}
   # unpacks
   w = surface_quadrature_weight(e, q, f)
   N = surface_shape_function_value(e, q, f)
@@ -182,8 +187,11 @@ function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::In
 
   # unpack coordinates correctly
   # X_temp = X[:, e.edge_nodes[f]]
+  # display(X)
+  # @assert false
   X_temp = X
   X_diff = X_temp[:, 2] - X_temp[:, 1]
+  # X_diff = X_temp[:, end] - X_temp[:, 1]
 
   det_J = norm(X_diff)
 
@@ -201,6 +209,36 @@ function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::In
   # TODO below incorrect. Not giving correct gradient
   # or normal
   # @show N
+  return MappedSurfaceInterpolants(X_q, N, N_reduced, JxW, n)
+end
+
+function MappedSurfaceInterpolants(e::ReferenceFE{I, F, E}, X, q::Integer, f::Integer) where {I, F, E <: AbstractVolume}
+  # unpacks
+  w = surface_quadrature_weight(e, q, f)
+  N = surface_shape_function_value(e, q, f)
+  # @show e.edge_nodes
+  # @show e.face_nodes
+  N_reduced = N[e.face_nodes[f]]
+  # ∇N_ξ = surface_shape_function_gradient(e, q, f)[e.edge_nodes[f], :]
+  n = surface_normal(e, q, f)
+
+  # X_temp = X[:, e.face_nodes[f]]
+  X_temp = X
+  X_1 = SVector{3, eltype(X_temp)}(X_temp[:, 2] - X_temp[:, 1])
+  X_2 = SVector{3, eltype(X_temp)}(X_temp[:, 3] - X_temp[:, 2])
+  # X_1 = X[2, :] - X[1, :]
+  # X_2 = X[3, :] - X[2, :]
+  # X_1 = X[]
+  # @show X_1
+  # @show X_2
+  det_J = norm(cross(X_1, X_2))
+
+  # interpolate coordinates
+  X_q = X_temp * N[e.face_nodes[f]]
+
+  # JxW
+  JxW = det_J * w
+
   return MappedSurfaceInterpolants(X_q, N, N_reduced, JxW, n)
 end
 
