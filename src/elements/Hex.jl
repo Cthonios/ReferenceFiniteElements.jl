@@ -7,11 +7,42 @@ end
 
 function element_face_vertices(e::AbstractHex, backend::ArrayBackend)
   faces = Matrix{Int64}(undef, num_vertices_per_face(e), 6)
-  edge_nodes = 1:polynomial_degree(e) + 1
+  # edge_nodes = 1:polynomial_degree(e) + 1
 
   # corners
   # faces[1, 1] = 1
-  return faces
+  # faces[:, 1] = [1, 2, 6, 5]
+  faces[1, 1] = 1
+  faces[2, 1] = 2
+  faces[3, 1] = 6
+  faces[4, 1] = 5
+  # faces[:, 2] = [2, 3, 7, 6]
+  faces[1, 2] = 2
+  faces[2, 2] = 3
+  faces[3, 2] = 7
+  faces[4, 2] = 6
+  # faces[:, 3] = [3, 4, 8, 7]
+  faces[1, 3] = 3
+  faces[2, 3] = 4
+  faces[3, 3] = 8
+  faces[4, 3] = 7
+  # faces[:, 4] = [1, 5, 8, 4]
+  faces[1, 4] = 1
+  faces[2, 4] = 5
+  faces[3, 4] = 8
+  faces[4, 4] = 4
+  # faces[:, 5] = [1, 4, 3, 2]
+  faces[1, 5] = 1
+  faces[2, 5] = 4
+  faces[3, 5] = 3
+  faces[4, 5] = 2
+  # faces[:, 6] = [5, 6, 7, 8]
+  faces[1, 6] = 5
+  faces[2, 6] = 6
+  faces[3, 6] = 7
+  faces[4, 6] = 8
+
+  return map(x -> convert_to(backend, x...), eachcol(faces))
 end
 
 function element_interior_nodes(e::AbstractHex, backend::ArrayBackend)

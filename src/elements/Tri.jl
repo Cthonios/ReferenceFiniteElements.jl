@@ -7,16 +7,17 @@ function element_edge_vertices(e::AbstractTri, backend)
 
   # corners
   edges[1, 1] = 1
-  edges[end, 1] = 2
+  edges[2, 1] = 2
   edges[1, 2] = 2
-  edges[end, 2] = 3
+  edges[2, 2] = 3
   edges[1, 3] = 3
-  edges[end, 3] = 1
+  edges[2, 3] = 1
 
   # middle edge guys
   curr_node = 4
   if length(edge_nodes) > 2
-    for n in 2:length(edge_nodes) - 1
+    # for n in 2:length(edge_nodes) - 1
+    for n in 3:length(edge_nodes)
       for m in 1:3
         edges[n, m] = curr_node
         curr_node = curr_node + 1
