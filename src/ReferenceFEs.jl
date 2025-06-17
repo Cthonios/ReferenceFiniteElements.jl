@@ -16,21 +16,28 @@ struct ReferenceFE{
   surface_interps::SurfaceInterps
 end
 
+# function ReferenceFE
+
 function ReferenceFE{Itype, Ftype, T}(e::AbstractElementType) where {Itype, Ftype, T}
+  backend = ArrayBackend{T}()
+  return ReferenceFE{Itype, Ftype}(e, backend)
+end
+
+function ReferenceFE{Itype, Ftype}(e::AbstractElementType, backend::ArrayBackend) where {Itype, Ftype}
   surf_e = surface_element(e)
 
   # DO NOT COMMIT THIS
   # surf_e = Edge2{Lagrange, 2}()
   # DO NOT COMMIT THIS
 
-  backend = ArrayBackend{T}()
+  # backend = ArrayBackend{T}()
   edge_nodes = element_edge_vertices(e, backend)
   face_nodes = element_face_vertices(e, backend)
   interior_nodes = element_interior_nodes(e, backend)
   Xs = nodal_coordinates(e, backend)
-  interps = CellInterpolants(e, Xs, backend)
+  interps = CellInterpolants(e, Xs, backend, Ftype)
   surface_Xs = surface_nodal_coordinates(e, backend)
-  surface_interps = SurfaceInterpolants(e, Xs, backend)
+  surface_interps = SurfaceInterpolants(e, Xs, backend, Ftype)
 
   return ReferenceFE{
     Itype, Ftype, typeof(e), typeof(surf_e), typeof(backend),

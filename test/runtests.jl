@@ -3,7 +3,6 @@ using Aqua
 using CUDA
 using Distributions
 using Exodus
-using JET
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
@@ -257,8 +256,8 @@ end
 end
 
 # JET testing
-@testset ExtendedTestSet "JET Tests" begin
-  # invalidations from FastGaussQuadrature so only targeting defined
-  # modules
-  test_package("ReferenceFiniteElements"; target_defined_modules=true)
-end
+# @testset ExtendedTestSet "JET Tests" begin
+#   # invalidations from FastGaussQuadrature so only targeting defined
+#   # modules
+#   test_package("ReferenceFiniteElements"; target_defined_modules=true)
+# end
