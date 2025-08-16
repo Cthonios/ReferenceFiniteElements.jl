@@ -92,7 +92,7 @@ function surface_nodal_coordinates(e::AbstractTri, backend)
   coords = nodal_coordinates(e, backend)
   coords = map(x -> 0.5 * (x .+ 1), coords)
   edges = element_edge_vertices(e, backend)
-  surf_coords = map(x -> coords[x] |> collect, edges)
+  surf_coords = mapreduce(x -> coords[x] |> collect, hcat, edges)
   return surf_coords
 end
 
