@@ -91,7 +91,6 @@ end
 function surface_nodal_coordinates(e::AbstractQuad{P, Q, I}, backend::ArrayBackend) where {P, Q, I}
   coords = nodal_coordinates(e, backend)
   edges = element_edge_vertices(e, backend)
-  # surf_coords = map(x -> coords[x] |> collect, edges)
   surf_coords = mapreduce(x -> coords[x] |> collect, hcat, edges)
   return surf_coords
 end
