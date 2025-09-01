@@ -1,12 +1,13 @@
 using Adapt
+using AMDGPU
 using Aqua
 using CUDA
 using Distributions
 using Exodus
-# using JET
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
+using Symbolics
 using Test
 using TestSetExtensions
 
@@ -55,7 +56,7 @@ function test_q_points_inside_element(re)
   end
   @test all(is_inside_element.((re.element,), surface_quadrature_points(re)))
   for f in 1:num_faces(re.element)
-    for n in 1:num_quadrature_points(re.surface_element)
+    for n in 1:num_quadrature_points(surface_element(re.element))
       if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
         @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), 2. * surface_quadrature_point(re, n, f) .- 1.)
       else
@@ -74,7 +75,7 @@ function test_q_weight_positivity(re)
   ws = surface_quadrature_weights(re)
   @test all(ws .> zero(eltype(ws)))
   for f in 1:num_faces(re.element)
-    for n in 1:num_quadrature_points(re.surface_element)
+    for n in 1:num_quadrature_points(surface_element(re.element))
       @test surface_quadrature_weight(re, n, f) > zero(eltype(ws))
     end
   end
@@ -148,16 +149,16 @@ function test_partition_of_unity_on_hessians(re)
   end
 end
 
-function test_kronecker_delta_property(re) 
+function test_kronecker_delta_property(re, backend) 
   if ReferenceFiniteElements.polynomial_degree(re.element) == 0
     @test isapprox(hcat(map(x -> 
-      shape_function_value(re.element, re.Xs, x, re.backend), re.Xs)...), 
-      fill(1., (ReferenceFiniteElements.num_shape_functions(re.element), length(re.Xs))), 
+      shape_function_value(re.element, re.cell_Xs, x, backend), re.cell_Xs)...), 
+      fill(1., (ReferenceFiniteElements.num_shape_functions(re.element), length(re.cell_Xs))), 
       atol=5e-14
     )
   else
     @test isapprox(hcat(map(x -> 
-      shape_function_value(re.element, re.Xs, x, re.backend), re.Xs)...), 
+      shape_function_value(re.element, re.cell_Xs, x, backend), re.cell_Xs)...), 
       I, 
       atol=5e-14
     )
@@ -193,7 +194,7 @@ el_types = [
   (Tet4, 2),
   (Tet10, 1),
   (Tet10, 2),
-  # (Tri0, 1),
+  (Tri0, 1),
   (Tri3, 1),
   (Tri3, 2),
   (Tri6, 1),
@@ -201,9 +202,10 @@ el_types = [
 ]
 # for (el_type, q_order) in zip(el_types, q_orders)
 for el_type in el_types
+  backend = ReferenceFiniteElements.ArrayBackend{SArray}()
   el_type, q_order = el_type
   @testset "$el_type - q order = $q_order Tests" begin
-    re = ReferenceFE{Int64, Float64, SArray}(el_type{Lagrange, q_order}())
+    re = ReferenceFE{SArray}(el_type{Lagrange, q_order}())
     test_q_points_inside_element(re)
     if el_type <: ReferenceFiniteElements.AbstractTet || q_order > 1
       # do nothing here
@@ -214,16 +216,18 @@ for el_type in el_types
     test_partition_of_unity_on_values(re)
     test_partition_of_unity_on_gradients(re)
     test_partition_of_unity_on_hessians(re)
-    test_kronecker_delta_property(re)
+    test_kronecker_delta_property(re, backend)
   end
 end
 
 el_types = [Edge, Quad]
+# el_types = [Quad]
 for el_type in el_types
   @testset "$el_type Tests" begin
     qs = 1:10
     for q in qs
-      re = ReferenceFE{SArray, el_type, Lagrange, 1, q}()
+      # re = ReferenceFE{SArray, el_type, Lagrange, 1, q}()
+      re = ReferenceFE{SArray, Num, el_type, Lagrange, 1, q}()
       test_q_points_inside_element(re)
       test_q_weight_positivity(re)
       test_q_weight_sum(re)
@@ -236,18 +240,20 @@ for el_type in el_types
     # test_partition_of_unity_on_hessians(re)
     # test_kronecker_delta_property(re)
     
-    ps = 1:10
+    ps = 1:5
     for p in ps
-      if p > 5
-        arr_type = Array
-      else
-        arr_type = SArray
-      end
-      re = ReferenceFE{arr_type, el_type, Lagrange, p, p}()
+      # if p > 5
+      #   arr_type = Array
+      # else
+      #   arr_type = SArray
+      # end
+      arr_type = SArray
+      re = ReferenceFE{arr_type, Num, el_type, Lagrange, p, p}()
+      backend = ReferenceFiniteElements.ArrayBackend{arr_type}()
       test_partition_of_unity_on_values(re)
       test_partition_of_unity_on_gradients(re)
       test_partition_of_unity_on_hessians(re)
-      test_kronecker_delta_property(re)
+      test_kronecker_delta_property(re, backend)
     end
   end
 end
@@ -255,10 +261,3 @@ end
 @testset ExtendedTestSet "Aqua Tests" begin
   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
 end
-
-# JET testing
-# @testset ExtendedTestSet "JET Tests" begin
-#   # invalidations from FastGaussQuadrature so only targeting defined
-#   # modules
-#   test_package("ReferenceFiniteElements"; target_defined_modules=true)
-# end

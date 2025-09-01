@@ -2,7 +2,6 @@ module ReferenceFiniteElementsSymbolicsExt
 
 using ReferenceFiniteElements
 using StaticArrays
-using StructArrays
 using Symbolics
 
 function symbolic_shape_function_gradients(e::ReferenceFiniteElements.AbstractElementType, X, ξ, backend)
@@ -64,7 +63,8 @@ function symbolic_shape_function_values(e::Quad{Lagrange, P, Q}, X, ξ, backend)
   return ReferenceFiniteElements.convert_to_vector(e, backend, N...)
 end
 
-function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+# function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+function _setup_symbolic_cell_interpolants(e, Xs, backend)
   ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))
   ξs, ws = ReferenceFiniteElements.quadrature_points_and_weights(e, backend)
   Ns = symbolic_shape_function_values(e, Xs, ξ, backend)
@@ -73,11 +73,20 @@ function ReferenceFiniteElements.CellInterpolants{Num}(e::ReferenceFiniteElement
   ∇N_ξs = fill(∇N_ξs, num_quadrature_points(e))
   ∇∇N_ξs = symbolic_shape_function_hessians(e, Xs, ξ, backend)
   ∇∇N_ξs = fill(∇∇N_ξs, num_quadrature_points(e))
-  vals = StructArray{ReferenceFiniteElements.Interpolants}((ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs))
-  return ReferenceFiniteElements.CellInterpolants(vals)
+  # vals = StructArray{ReferenceFiniteElements.Interpolants}((ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs))
+  # return ReferenceFiniteElements.CellInterpolants(vals)
+
+  RT = eltype(ws)
+  ND = dimension(e)
+  NI = length(Ns[1])
+  type = SInterpolants{RT, ND, NI, NI * ND, NI * ND * ND}
+
+  vals = map((a, b, c, d, e) -> type(a, b, c, d, e), ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs)
+  return vals
 end
 
-function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+# function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElements.AbstractElementType, Xs, backend)
+function _setup_symbolic_surface_interpolants(e, Xs, backend)
   ξ = Symbolics.variables(:ξ, 1:ReferenceFiniteElements.dimension(e))  
   ξs, ws = ReferenceFiniteElements.surface_quadrature_points_and_weights(e, backend)
   ξs = mapreduce(x -> x, hcat, ξs)
@@ -88,34 +97,48 @@ function ReferenceFiniteElements.SurfaceInterpolants{Num}(e::ReferenceFiniteElem
   ∇N_ξs = fill(∇N_ξs, size(ξs))
   ∇∇N_ξs = symbolic_shape_function_hessians(e, Xs, ξ, backend)
   ∇∇N_ξs = fill(∇∇N_ξs, size(ξs))
-  vals = StructArray{ReferenceFiniteElements.Interpolants}((ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs))
-  return ReferenceFiniteElements.SurfaceInterpolants(vals)
+  # vals = StructArray{ReferenceFiniteElements.Interpolants}((ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs))
+
+  RT = eltype(ws)
+  ND = dimension(e)
+  NI = length(Ns[1])
+  type = SInterpolants{RT, ND, NI, NI * ND, NI * ND * ND}
+
+  vals = map((a, b, c, d, e) -> type(a, b, c, d, e), ξs, ws, Ns, ∇N_ξs, ∇∇N_ξs)
+  return vals
 end
 
-function ReferenceFiniteElements.ReferenceFE{Itype, Ftype, T, Num}(e) where {Itype, Ftype, T, Num}
+# function ReferenceFiniteElements.ReferenceFE{Itype, Ftype, T, Num}(e) where {Itype, Ftype, T, Num}
+function ReferenceFiniteElements.ReferenceFE{T, Num}(e) where {T, Num}
   surf_e = ReferenceFiniteElements.surface_element(e)
   backend = ReferenceFiniteElements.ArrayBackend{T}()
-  edge_nodes = ReferenceFiniteElements.element_edge_nodes(e, backend)
-  face_nodes = ReferenceFiniteElements.element_face_nodes(e, backend)
+  edge_nodes = ReferenceFiniteElements.element_edge_vertices(e, backend)
+  face_nodes = ReferenceFiniteElements.element_face_vertices(e, backend)
   interior_nodes = ReferenceFiniteElements.element_interior_nodes(e, backend)
-  Xs = ReferenceFiniteElements.nodal_coordinates(e, backend)
-  interps = ReferenceFiniteElements.CellInterpolants{Num}(e, Xs, backend)
+  cell_Xs = ReferenceFiniteElements.nodal_coordinates(e, backend)
+  # interps = ReferenceFiniteElements.CellInterpolants{Num}(e, Xs, backend)
+  cell_interps = ReferenceFiniteElements._setup_cell_interpolants(e, cell_Xs, backend)
   surface_Xs = ReferenceFiniteElements.surface_nodal_coordinates(e, backend)
-  surface_interps = ReferenceFiniteElements.SurfaceInterpolants{Num}(e, Xs, backend)
+  # surface_interps = ReferenceFiniteElements.SurfaceInterpolants{Num}(e, Xs, backend)
+  surface_interps = ReferenceFiniteElements._setup_surface_interpolants(e, cell_Xs, backend)
   return ReferenceFE{
-    Itype, Ftype, typeof(e), typeof(surf_e), typeof(backend),
+    # Itype, Ftype, typeof(e), typeof(surf_e), typeof(backend),
+    typeof(e), #typeof(surf_e),
     typeof(edge_nodes), typeof(face_nodes), typeof(interior_nodes),
-    typeof(Xs), typeof(interps),
+    typeof(cell_Xs), typeof(cell_interps),
     typeof(surface_Xs), typeof(surface_interps)
   }(
-    e, surf_e, backend, 
+    # e, surf_e, backend, 
+    e, #surf_e,
     edge_nodes, face_nodes, interior_nodes, 
-    Xs, interps,
+    cell_Xs, cell_interps,
     surface_Xs, surface_interps
   )
 end
 
-ReferenceFiniteElements.ReferenceFE{E, I, P, Q, Num}() where {E, I, P, Q} = 
-ReferenceFE{Int64, Float64, SArray, Num}(E{I, P, Q}())
+# ReferenceFiniteElements.ReferenceFE{E, I, P, Q, Num}() where {E, I, P, Q} = 
+# ReferenceFE{Int64, Float64, SArray, Num}(E{I, P, Q}())
+ReferenceFiniteElements.ReferenceFE{ArrT, Num, E, I, P, Q}() where {ArrT, Num, E, I, P, Q} =
+ReferenceFE{ArrT, Num}(E{I, P, Q}())
 
 end # module
