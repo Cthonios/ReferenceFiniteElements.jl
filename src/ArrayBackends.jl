@@ -90,5 +90,9 @@ function convert_to_vector_coords(::AbstractElementType{D, I, P, Q}, ::ArrayBack
 end
 
 function convert_to_vector_coords(::AbstractElementType{D, I, P, Q}, ::ArrayBackend{SArray}, vals...) where {D, I, P, Q}
-  return SVector{D, eltype(vals)}(vals...)
+  # if length(vals) == 1
+  #   return SVector{1, eltype(vals)}(vals)
+  # else
+    return SVector{D, eltype(vals)}(vals...)
+  # end
 end

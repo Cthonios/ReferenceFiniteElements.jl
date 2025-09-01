@@ -32,11 +32,29 @@ end
 # TODO need to specialize normals and quadrature for 
 # different quadrature rules
 function surface_nodal_coordinates(e::AbstractEdge, backend::ArrayBackend)
-  surface_coordinates = [
-    -1.;;
-    1.
-  ]
-  return map(x -> convert_to_vector_coords(e, backend, x...), surface_coordinates)
+  # surface_coordinates = [
+  #   [-1.];
+  #   [1.]
+  # ]
+  # surface_coordinates = Matrix{Vector{Float64}}(undef, )
+  # @show typeof(surface_coordinates)
+  # surface_coordinates = Vector{Float64}[[-1.]; [1.]]
+  # @show typeof(surface_coordinates)
+  # return map(x -> convert_to_vector_coords(e, backend, x...), surface_coordinates)
+  # surface_coordinates = SVector{1, Float64}[
+  #   SVector{1, Float64}(-1.);
+  #   SVector{1, Float64}(1.)
+  # ]
+  # surface_coordinates = Vector{SVector{1, Float64}}(undef, 2)
+  # surface_coordinates[1] = SVector{1, Float64}(-1.)
+  # surface_coordinates[2] = SVector{1, Float64}(1.)
+  # @show surface_coordinates
+  # @show typeof(surface_coordinates)
+  # return surface_coordinates
+  # return [[-1.], [1.]]
+  surface_coordinates = [[-1.]; [1.]]
+  # return map(x -> convert_to_vector_coords(e, x, backend), surface_coordinates)
+  return map(x -> convert_to(backend, x), surface_coordinates)
 end
 
 function surface_normals(::AbstractEdge, backend::ArrayBackend)
@@ -80,8 +98,8 @@ function shape_function_gradient(e::Edge0{Lagrange}, Xs, ξ, backend)
   return ∇Ns
 end
 
-function shape_function_hessian(::Edge0{Lagrange}, Xs, ξ, backend)
-  ∇∇Ns = convert_to(backend,
+function shape_function_hessian(e::Edge0{Lagrange}, Xs, ξ, backend)
+  ∇∇Ns = convert_to_3d_array(e, backend,
     0.
   )
   return ∇∇Ns

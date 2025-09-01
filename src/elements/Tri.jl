@@ -2,7 +2,14 @@
 surface_element(::AbstractTri{V, I, P, Q}) where {V, I, P, Q} = Edge{I, P, Q}()
 
 function element_edge_vertices(e::AbstractTri, backend)
-  edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 3)
+  if polynomial_degree(e) == 0
+    n_verts_per_edge = 2
+  else
+    n_verts_per_edge = num_vertices_per_edge(e)
+  end
+
+  # edges = Matrix{Int64}(undef, num_vertices_per_edge(e), 3)
+  edges = Matrix{Int64}(undef, n_verts_per_edge, 3)
   edge_nodes = 1:polynomial_degree(e) + 1
 
   # corners

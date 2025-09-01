@@ -6,7 +6,6 @@ using LinearAlgebra
 using Polynomials
 using SpecialPolynomials
 using StaticArrays
-using StructArrays
 
 include("AbstractTypes.jl")
 include("ArrayBackends.jl")
