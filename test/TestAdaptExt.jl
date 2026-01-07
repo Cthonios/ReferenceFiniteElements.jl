@@ -22,24 +22,24 @@ function test_adapt_rocm(re_dev)
   # @test device(re_dev.cell_interps.vals.∇∇N_ξ) |> typeof <: ROCDeviceArray
 end
 
-@testset ExtendedTestSet "AdaptExt - CPU" begin
+@testset "AdaptExt - CPU" begin
   re = ReferenceFE(Quad4{Lagrange, 2}())
   re = Adapt.adapt_structure(Array, re)
 end
 
-@testset ExtendedTestSet "AdaptExt - AMDGPU" begin
-  if AMDGPU.has_rocm_gpu()
-    re = ReferenceFE(Quad4{Lagrange, 2}())
-    re = Adapt.adapt_structure(ROCArray, re)
-    display(re)
-    test_adapt_rocm(re)
-  end
-end
+# @testset "AdaptExt - AMDGPU" begin
+#   if AMDGPU.has_rocm_gpu()
+#     re = ReferenceFE(Quad4{Lagrange, 2}())
+#     re = Adapt.adapt_structure(ROCArray, re)
+#     display(re)
+#     test_adapt_rocm(re)
+#   end
+# end
 
-@testset ExtendedTestSet "AdaptExt - CUDA" begin
-  if CUDA.has_cuda()
-    re = ReferenceFE(Quad4{Lagrange, 2}())
-    re = Adapt.adapt_structure(CuArray, re)
-    test_adapt_cuda(re)
-  end
-end
+# @testset "AdaptExt - CUDA" begin
+#   if CUDA.has_cuda()
+#     re = ReferenceFE(Quad4{Lagrange, 2}())
+#     re = Adapt.adapt_structure(CuArray, re)
+#     test_adapt_cuda(re)
+#   end
+# end

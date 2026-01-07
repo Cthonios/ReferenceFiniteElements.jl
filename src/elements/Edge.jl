@@ -1,230 +1,139 @@
-# abstract methods
-surface_element(::AbstractEdge{I, P, Q}) where {I, P, Q} = Vertex{I, P, Q}()
+struct Edge{PT, PD} <: AbstractEdge{PT, PD}
+    shifted::Bool
 
-function element_edge_vertices(::AbstractEdge, backend::ArrayBackend)
-  edge_nodes = Vector{Vector{Int}}(undef, 0)
-  return map(x -> convert_to(x, backend), edge_nodes)
-end
-
-function element_face_vertices(::AbstractEdge, backend::ArrayBackend)
-  face_nodes = Vector{Vector{Int}}(undef, 0)
-  return map(x -> convert_to(x, backend), face_nodes)
-end
-
-function element_interior_nodes(e::AbstractEdge, ::ArrayBackend)
-  degree = polynomial_degree(e) #+ 1
-  return 2:degree - 1 |> collect
-end
-
-# TODO need to specialize nodal coordinates for different 
-# interpolation rules
-function nodal_coordinates(e::AbstractEdge, backend::ArrayBackend)
-  degree = polynomial_degree(e) + 1
-  if polynomial_degree(e) == 0
-    nodal_coordinates = [-1., 1.]
-  else
-    # nodal_coordinates, _ = gausslobatto(degree)
-    nodal_coordinates = LinRange(-1., 1., degree) |> collect
-  end
-  return map(x -> convert_to_vector_coords(e, backend, x), nodal_coordinates) 
-end
-
-# TODO need to specialize normals and quadrature for 
-# different quadrature rules
-function surface_nodal_coordinates(e::AbstractEdge, backend::ArrayBackend)
-  # surface_coordinates = [
-  #   [-1.];
-  #   [1.]
-  # ]
-  # surface_coordinates = Matrix{Vector{Float64}}(undef, )
-  # @show typeof(surface_coordinates)
-  # surface_coordinates = Vector{Float64}[[-1.]; [1.]]
-  # @show typeof(surface_coordinates)
-  # return map(x -> convert_to_vector_coords(e, backend, x...), surface_coordinates)
-  # surface_coordinates = SVector{1, Float64}[
-  #   SVector{1, Float64}(-1.);
-  #   SVector{1, Float64}(1.)
-  # ]
-  # surface_coordinates = Vector{SVector{1, Float64}}(undef, 2)
-  # surface_coordinates[1] = SVector{1, Float64}(-1.)
-  # surface_coordinates[2] = SVector{1, Float64}(1.)
-  # @show surface_coordinates
-  # @show typeof(surface_coordinates)
-  # return surface_coordinates
-  # return [[-1.], [1.]]
-  surface_coordinates = [[-1.]; [1.]]
-  # return map(x -> convert_to_vector_coords(e, x, backend), surface_coordinates)
-  return map(x -> convert_to(backend, x), surface_coordinates)
-end
-
-function surface_normals(::AbstractEdge, backend::ArrayBackend)
-  normals = [[-1.], [1.]]
-  return map(x -> convert_to(backend, x...), normals)
-end
-
-function quadrature_points_and_weights(e::AbstractEdge, backend::ArrayBackend)
-  ξs, ws = gausslegendre(quadrature_degree(e))
-  return map(x -> convert_to(x, backend), ξs), ws
-end
-
-function surface_quadrature_points_and_weights(::AbstractEdge, backend::ArrayBackend)
-  ξs = map(x -> convert_to(backend, x...), [[-1.], [1.]])
-  ws = [[1.], [1.]]
-  return ξs, ws
-end
-
-# specific implementations
-
-
-# constant edge
-"""
-$(TYPEDEF)
-"""
-struct Edge0{I, Q} <: AbstractEdge{2, I, 0, Q}
-end
-
-# Lagrange implementation
-function shape_function_value(e::Edge0{Lagrange}, Xs, ξ, backend)
-  Ns = convert_to_vector(e, backend,
-    1.
-  )
-  return Ns
-end
-
-function shape_function_gradient(e::Edge0{Lagrange}, Xs, ξ, backend)
-  ∇Ns = convert_to_matrix(e, backend,
-    0.
-  )
-  return ∇Ns
-end
-
-function shape_function_hessian(e::Edge0{Lagrange}, Xs, ξ, backend)
-  ∇∇Ns = convert_to_3d_array(e, backend,
-    0.
-  )
-  return ∇∇Ns
-end
-
-# Linear edge
-"""
-$(TYPEDEF)
-"""
-struct Edge2{I, Q} <: AbstractEdge{2, I, 1, Q}
-end
-
-# Lagrange implementationss
-function shape_function_value(e::Edge2{Lagrange}, Xs, ξ, backend)
-  Ns = convert_to_vector(e, backend,
-    0.5 * (1 - ξ[1]),
-    0.5 * (1 + ξ[1])
-  )
-  return Ns
-end
-
-function shape_function_gradient(e::Edge2{Lagrange}, Xs, ξ, backend)
-  ∇Ns = convert_to_matrix(e, backend,
-    -0.5,
-    0.5
-  )
-  return ∇Ns
-end
-
-function shape_function_hessian(e::Edge2{Lagrange}, Xs, ξ, backend)
-  ∇∇Ns = convert_to_3d_array(e, backend,
-    0.,
-    0.
-  )
-  return ∇∇Ns
-end
-
-# Quadratic edge
-"""
-$(TYPEDEF)
-"""
-struct Edge3{I, Q} <: AbstractEdge{3, I, 2, Q}
-end
-
-# Lagrange implementations
-function shape_function_value(e::Edge3{Lagrange}, Xs, ξ, backend)
-  Ns = convert_to_vector(e, backend,
-    0.5 * (ξ[1] * ξ[1] - ξ[1]),
-    1 - ξ[1] * ξ[1],
-    0.5 * (ξ[1] * ξ[1] + ξ[1])
-  )
-  return Ns
-end
-
-function shape_function_gradient(e::Edge3{Lagrange}, Xs, ξ, backend)
-  Ns = convert_to_matrix(e, backend,
-    0.5 * (2 * ξ[1] - 1),
-    -2 * ξ[1],
-    0.5 * (2 * ξ[1] + 1),
-  )
-  return Ns
-end
-
-function shape_function_hessian(e::Edge3{Lagrange}, Xs, ξ, backend)
-  Ns = convert_to_3d_array(e, backend,
-    1.,
-    -2.,
-    1.,
-  )
-  return Ns
-end
-
-# General edge
-"""
-$(TYPEDEF)
-"""
-struct Edge{V, I, P, Q} <: AbstractEdge{V, I, P, Q}
-end
-Edge{I, P, Q}() where {I, P, Q} = Edge{P + 1, I, P, Q}()
-
-# Lagrange implementation
-function shape_function_value(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
-  n_nodes = polynomial_degree(e) + 1
-  A = zeros(length(Xs), n_nodes)
-  nf = zeros(1, n_nodes)
-  for n in 1:polynomial_degree(e) + 1
-    p = basis(Legendre, n - 1)
-    p = sqrt(2 * (n - 1) + 1) * p
-    for m in axes(A, 1)
-      A[m, n] = p(Xs[m][1])
+    function Edge{PT, PD}(; shifted::Bool = false) where {PT, PD}
+        return new{PT, PD}(shifted)
     end
-    nf[1, n] = p(ξ[1])
-  end
-  N = A' \ nf'
-  return convert_to_vector(e, backend, N[:, 1]...)
 end
 
-function shape_function_gradient(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
-  n_nodes = polynomial_degree(e) + 1
-  A = zeros(length(Xs), n_nodes)
-  nf = zeros(1, n_nodes)
-  for n in 1:polynomial_degree(e) + 1
-    p = basis(Legendre, n - 1)
-    p = sqrt(2 * (n - 1) + 1) * p
-    for m in axes(A, 1)
-      A[m, n] = p(Xs[m][1])
+# dof methods
+boundary_dofs(::Edge{Lagrange, PD}) where PD = [1 2]' |> collect
+
+function dof_coordinates(e::Edge{Lagrange, PD}) where PD
+    if e.shifted
+        x_min = 0.
+    else
+        x_min = -1.
     end
-    nf[1, n] = derivative(p)(ξ[1])
-  end
-  ∇N_ξ = A' \ nf'
-  return convert_to_matrix(e, backend, ∇N_ξ[:, 1]...)
+
+    if PD == 0
+        coords = zeros(1, 1)
+    elseif PD == 1
+        coords = zeros(1, PD + 1)
+        coords[1, 1] = x_min
+        coords[1, 2] = 1.
+    else
+        coords_rng = LinRange(x_min, 1., PD + 1)
+        coords = zeros(1, PD + 1)
+        coords[1, 1] = coords_rng[1]
+        coords[1, 2] = coords_rng[end]
+        coords[1, 3:end] .= coords_rng[2:end - 1]
+    end
+    return coords
 end
 
-function shape_function_hessian(e::Edge{V, Lagrange}, Xs, ξ, backend::ArrayBackend) where V
-  n_nodes = polynomial_degree(e) + 1
-  A = zeros(length(Xs), n_nodes)
-  nf = zeros(1, n_nodes)
-  for n in 1:polynomial_degree(e) + 1
-    p = basis(Legendre, n - 1)
-    p = sqrt(2 * (n - 1) + 1) * p
-    for m in axes(A, 1)
-      A[m, n] = p(Xs[m][1])
+interior_dofs(e::Edge{Lagrange, PD}) where PD = 3:num_cell_dofs(e) |> collect
+
+num_cell_dofs(::Edge{Lagrange, PD}) where PD = PD + 1
+num_interior_dofs(::Edge{Lagrange, PD}) where PD = PD < 2 ? 0 : PD - 1
+
+# surface_dof_coordinates(::Edge{Lagrange, PD}) where PD = [-1. 1.]' |> collect
+
+function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLobattoLegendre)
+    ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
+
+    if e.shifted
+        ξs .= (ξs .+ 1.) ./ 2.
+        ws .= ws ./ 2.
     end
-    nf[1, n] = derivative(p, 2)(ξ[1])
-  end
-  ∇∇N_ξ = A' \ nf'
-  return convert_to_3d_array(e, backend, ∇∇N_ξ[:, 1]...)
+
+    return reshape(ξs, 1, length(ξs)), ws
+end
+
+function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLobattoLegendre)
+    if e.shifted
+        x_min = 0.
+    else
+        x_min = -1.
+    end
+
+    ξs = zeros(1, 1, 2)
+    ξs[1, 1, 1] = x_min
+    ξs[1, 1, 2] = 1.
+    ws = ones(1, 2)
+    return ξs, ws
+end
+
+# nth order implementation
+function shape_function_value(e::Edge{Lagrange, PD}, Xs, ξ::Number) where PD
+    if e.shifted
+        type = ShiftedLegendre
+    else
+        type = Legendre
+    end
+
+    n_nodes = polynomial_degree(e) + 1
+    A = zeros(length(Xs), n_nodes)
+    nf = zeros(1, n_nodes)
+    for n in 1:n_nodes
+        p = basis(type, n - 1)
+        p = sqrt(2 * (n - 1) + 1) * p
+        for m in axes(A, 1)
+            A[m, n] = p(Xs[m][1])
+        end
+        nf[1, n] = p(ξ[1])
+    end
+    N = A' \ nf'
+    return N[:, 1]
+end
+
+function shape_function_gradient(e::Edge{Lagrange, PD}, Xs, ξ) where PD
+    if e.shifted
+        type = ShiftedLegendre
+    else
+        type = Legendre
+    end
+
+    n_nodes = polynomial_degree(e) + 1
+    A = zeros(length(Xs), n_nodes)
+    nf = zeros(1, n_nodes)
+    for n in 1:n_nodes
+        p = basis(type, n - 1)
+        p = sqrt(2 * (n - 1) + 1) * p
+        for m in axes(A, 1)
+            A[m, n] = p(Xs[m][1])
+        end
+        nf[1, n] = derivative(p)(ξ[1])
+    end
+    ∇N_ξ = A' \ nf'
+    return reshape(∇N_ξ, 1, n_nodes)
+end
+
+function shape_function_hessian(e::Edge{Lagrange, PD}, Xs, ξ) where PD
+    if e.shifted
+        type = ShiftedLegendre
+    else
+        type = Legendre
+    end
+
+    n_nodes = polynomial_degree(e) + 1
+    A = zeros(length(Xs), n_nodes)
+    nf = zeros(1, n_nodes)
+    for n in 1:n_nodes
+        p = basis(type, n - 1)
+        p = sqrt(2 * (n - 1) + 1) * p
+        for m in axes(A, 1)
+            A[m, n] = p(Xs[m][1])
+        end
+
+        # need to handle this case specially
+        # in SpecialPolynomials v4
+        if n == 1
+            nf[1, n] = 0.
+        else
+            nf[1, n] = derivative(p, 2)(ξ[1])
+        end
+    end
+    ∇∇N_ξ = A' \ nf'
+    return reshape(∇∇N_ξ, 1, 1, n_nodes)
 end

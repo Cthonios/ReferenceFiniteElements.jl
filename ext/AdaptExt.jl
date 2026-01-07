@@ -1,4 +1,4 @@
-module ReferenceFiniteElementsAdaptExt
+module AdaptExt
 
 using Adapt
 using ReferenceFiniteElements
