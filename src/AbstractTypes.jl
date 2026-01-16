@@ -1,11 +1,16 @@
 abstract type AbstractPolynomialType end
 
 # TODO move somewhere else eventually
+struct Hermite <: AbstractPolynomialType
+end
 struct Lagrange <: AbstractPolynomialType
 end
-
 # special type for Vertex
 struct NoInterpolation <: AbstractPolynomialType
+end
+struct RaviartThomas <: AbstractPolynomialType
+end
+struct Serendipity <: AbstractPolynomialType
 end
 
 abstract type AbstractQuadratureType end
@@ -72,20 +77,26 @@ function num_boundaries end
 function num_edges end
 function num_faces end
 function num_vertices_per_cell end
-function num_vertices_per_edge end
-function num_vertices_per_face end
+# function num_vertices_per_edge end
+# function num_vertices_per_face end
 function vertex_coordinates end # always returns 3 x num_vertices_per_cell
 
 # derived topology methods
 cell_vertices(e::AbstractElementType) = 1:num_vertices_per_cell(e) |> collect
 
 # dof related methods
+# TODO should seperate dofs into
+# 1. vertex dofs
+# 2. edge dofs
+# 3. face dofs
+# 4. cell dofs (what we're calling interior dofs right now)
+# this is how defelement defines things
 function boundary_dofs end
 function dof_coordinates end
 function interior_dofs end
 function num_cell_dofs end
 # below method does not include e.g. vertices
-function num_dofs_per_boundary end
+function num_dofs_on_boundary end
 function num_interior_dofs end
 
 
@@ -95,7 +106,7 @@ $(TYPEDEF)
 """
 abstract type AbstractVertex <: AbstractElementType{NoInterpolation, 0} end
 
-boundary_element(::AbstractVertex) = nothing
+boundary_element(::AbstractVertex, ::Int) = nothing
 boundary_normals(::AbstractVertex) = Matrix{Float64}(undef, 3, 0)
 dimension(::AbstractVertex) = 0
 edge_vertices(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
@@ -104,8 +115,8 @@ num_boundaries(::AbstractVertex) = 0
 num_edges(::AbstractVertex) = 0
 num_faces(::AbstractVertex) = 0
 num_vertices_per_cell(::AbstractVertex) = 1
-num_vertices_per_edge(e::AbstractVertex) = 0
-num_vertices_per_face(::AbstractVertex) = 0
+# num_vertices_per_edge(e::AbstractVertex) = 0
+# num_vertices_per_face(::AbstractVertex) = 0
 vertex_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
 
 # this one is an oddity
@@ -113,7 +124,7 @@ boundary_dofs(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
 dof_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
 interior_dofs(::AbstractVertex) = Vector{Int}(undef, 0)
 num_cell_dofs(::AbstractVertex) = 1
-num_dofs_per_boundary(::AbstractVertex) = 0
+num_dofs_on_boundary(::AbstractVertex, ::Int) = 0
 num_interior_dofs(::AbstractVertex) = 0
 
 # 1d elements
@@ -121,7 +132,7 @@ num_interior_dofs(::AbstractVertex) = 0
 $(TYPEDEF)
 """
 abstract type AbstractEdge{PT, PD} <: AbstractElementType{PT, PD} end
-boundary_element(::AbstractEdge) = Vertex()
+boundary_element(::AbstractEdge, ::Int) = Vertex()
 boundary_normals(::AbstractEdge) = [-1. 0. 0.; 1. 0. 0.]' |> collect
 dimension(::AbstractEdge) = 1
 edge_vertices(::AbstractEdge) = [1 2]' |> collect
@@ -130,8 +141,8 @@ num_boundaries(::AbstractEdge) = 2
 num_edges(::AbstractEdge) = 1
 num_faces(::AbstractEdge) = 0
 num_vertices_per_cell(::AbstractEdge) = 2
-num_vertices_per_edge(::AbstractEdge) = 2
-num_vertices_per_face(::AbstractEdge) = 0
+# num_vertices_per_edge(::AbstractEdge) = 2
+# num_vertices_per_face(::AbstractEdge) = 0
 function vertex_coordinates(e::AbstractEdge) 
   if e.shifted
     return [
@@ -157,14 +168,14 @@ dimension(::AbstractFace) = 2
 face_vertices(e::AbstractFace) = 1:num_vertices_per_cell(e) |> collect
 num_boundaries(e::AbstractFace) = num_edges(e)
 num_faces(::AbstractFace) = 1
-num_vertices_per_edge(e::AbstractFace) = 2
-num_vertices_per_face(e::AbstractFace) = num_vertices_per_cell(e)
+# num_vertices_per_edge(e::AbstractFace) = 2
+# num_vertices_per_face(e::AbstractFace) = num_vertices_per_cell(e)
 
 """
 $(TYPEDEF)
 """
 abstract type AbstractQuad{PT, PD} <: AbstractFace{PT, PD} end
-boundary_element(::AbstractQuad{PT, PD}) where {PT, PD} = Edge{PT, PD}()
+boundary_element(::AbstractQuad{PT, PD}, ::Int) where {PT, PD} = Edge{PT, PD}()
 boundary_normals(::AbstractQuad) = [
   0. 1. 0. -1.;
  -1. 0. 1.  0.;
@@ -186,7 +197,7 @@ vertex_coordinates(::AbstractQuad) = [
 $(TYPEDEF)
 """
 abstract type AbstractTri{PT, PD} <: AbstractFace{PT, PD} end
-boundary_element(::AbstractTri{PT, PD}) where {PT, PD} = Edge{PT, PD}(; shifted = true)
+boundary_element(::AbstractTri{PT, PD}, ::Int) where {PT, PD} = Edge{PT, PD}(; shifted = true)
 boundary_normals(::AbstractTri) = [
   0. 1. / sqrt(2.) -1.;
  -1. 1. / sqrt(2.)  0.;
@@ -212,14 +223,14 @@ $(TYPEDEF)
 abstract type AbstractVolume{PT, PD} <: AbstractElementType{PT, PD} end
 dimension(::AbstractVolume) = 3
 num_boundaries(e::AbstractVolume) = num_faces(e)
-num_vertices_per_edge(e::AbstractVolume) = 2
-num_vertices_per_face(e::AbstractVolume) = num_vertices_per_cell(boundary_element(e))
+# num_vertices_per_edge(e::AbstractVolume) = 2
+# num_vertices_per_face(e::AbstractVolume) = num_vertices_per_cell(boundary_element(e))
 
 """
 $(TYPEDEF)
 """
 abstract type AbstractHex{PT, PD} <: AbstractVolume{PT, PD} end
-boundary_element(::AbstractHex{PT, PD}) where {PT, PD} = Quad{PT, PD}()
+boundary_element(::AbstractHex{PT, PD}, ::Int) where {PT, PD} = Quad{PT, PD}()
 boundary_normals(::AbstractHex) = [
    0. 1. 0. -1.  0. 0.
    0. 0. 0.  0. -1. 1.
@@ -247,8 +258,13 @@ vertex_coordinates(::AbstractHex) = [
 """
 $(TYPEDEF)
 """
+abstract type AbstractPyramid{PT, PD} <: AbstractVolume{PT, PD} end
+
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractTet{PT, PD} <: AbstractVolume{PT, PD} end
-boundary_element(::AbstractTet{PT, PD}) where {PT, PD} = Tri{PT, PD}()
+boundary_element(::AbstractTet{PT, PD}, ::Int) where {PT, PD} = Tri{PT, PD}()
 boundary_normals(::AbstractTet) = [
    0. 1. / sqrt(3.) -1.  0.
   -1. 1. / sqrt(3.)  0.  0.
@@ -271,3 +287,9 @@ vertex_coordinates(::AbstractTet) = [
   0. 0. 1. 0.
   0. 0. 0. 1.
 ]
+
+"""
+$(TYPEDEF)
+"""
+abstract type AbstractWedge{PT, PD} <: AbstractVolume{PT, PD} end
+# boundary_element(::AbstractWedge{PT, PD}, id::Int) where {PT, PD} = 

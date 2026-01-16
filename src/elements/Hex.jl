@@ -137,8 +137,8 @@ function num_interior_dofs(::Hex{Lagrange, PD}) where PD
     end
 end
 
-function quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e)), q_rule)
+function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e, 0), 0), q_rule)
     ξ_return = Matrix{eltype(ξs)}(undef, 3, length(ξs) * length(ξs) * length(ξs) * length(ξs))
     w_return = Vector{eltype(ξs)}(undef, length(ξs) * length(ξs) * length(ξs) * length(ξs))
     for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs, ξs))
@@ -153,7 +153,7 @@ function quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegen
 end
 
 function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e), q_rule)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
   
     ξ_return = zeros(3, length(ws), 6)
     w_return = zeros(length(ws), 6)
@@ -192,6 +192,45 @@ function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLoba
     return ξ_return, w_return
 end
 
+function _edge_dof_indices(v1::Int, v2::Int, n::Int, PD::Int)
+    # Number of vertices
+    nv = 8
+
+    # Check valid edge node
+    @assert 1 ≤ n ≤ PD-1
+
+    # Edges are ordered as in the standard Hex:
+    # edge 1: 1→2
+    # edge 2: 2→3
+    # edge 3: 3→4
+    # edge 4: 4→1
+    # edge 5: 5→6
+    # edge 6: 6→7
+    # edge 7: 7→8
+    # edge 8: 8→5
+    # edge 9: 1→5
+    # edge10:2→6
+    # edge11:3→7
+    # edge12:4→8
+
+    # List of edges in vertex ordering
+    edges = [
+        (1,2), (2,3), (3,4), (4,1),
+        (5,6), (6,7), (7,8), (8,5),
+        (1,5), (2,6), (3,7), (4,8)
+    ]
+
+    # find edge number
+    edge_num = findfirst(e -> e == (v1, v2) || e == (v2, v1), edges)
+    @assert edge_num !== nothing "Edge not found"
+
+    # Each edge has PD-1 interior DOFs
+    edge_offset = nv + (edge_num-1)*(PD-1)
+
+    # global DOF index
+    return edge_offset + n
+end
+
 function _face_dof_indices(face::Int, i::Int, j::Int, PD::Int)
     # i,j in 2:PD (interior nodes)
     # returns (xi_idx, eta_idx, zeta_idx)
@@ -212,6 +251,94 @@ function _face_dof_indices(face::Int, i::Int, j::Int, PD::Int)
     end
 end
 
+function shape_function_value(::Hex{Lagrange, 0}, _, _)
+    return ones(1)
+end
+
+function shape_function_gradient(::Hex{Lagrange, 0}, _, _)
+    return zeros(1, 3)
+end
+
+function shape_function_hessian(::Hex{Lagrange, 0}, _, _)
+    return zeros(1, 3, 3)
+end
+
+function shape_function_value(::Hex{Lagrange, 1}, _, ξ)
+    Ns = [
+        0.125 * (1 - ξ[1]) * (1 - ξ[2]) * (1 - ξ[3]),
+        0.125 * (1 + ξ[1]) * (1 - ξ[2]) * (1 - ξ[3]),
+        0.125 * (1 + ξ[1]) * (1 + ξ[2]) * (1 - ξ[3]),
+        0.125 * (1 - ξ[1]) * (1 + ξ[2]) * (1 - ξ[3]),
+        0.125 * (1 - ξ[1]) * (1 - ξ[2]) * (1 + ξ[3]),
+        0.125 * (1 + ξ[1]) * (1 - ξ[2]) * (1 + ξ[3]),
+        0.125 * (1 + ξ[1]) * (1 + ξ[2]) * (1 + ξ[3]),
+        0.125 * (1 - ξ[1]) * (1 + ξ[2]) * (1 + ξ[3]),
+    ]
+    return Ns
+end
+
+function shape_function_gradient(::Hex{Lagrange, 1}, _, ξ)
+    Ns = zeros(8, 3)
+    # Ns = reshape([
+    #   -0.125 * (1 - ξ[2]) * (1 - ξ[3]),
+    #   0.125 * (1 - ξ[2]) * (1 - ξ[3]),
+    #   0.125 * (1 + ξ[2]) * (1 - ξ[3]),
+    #   -0.125 * (1 + ξ[2]) * (1 - ξ[3]),
+    #   -0.125 * (1 - ξ[2]) * (1 + ξ[3]),
+    #   0.125 * (1 - ξ[2]) * (1 + ξ[3]),
+    #   0.125 * (1 + ξ[2]) * (1 + ξ[3]),
+    #   -0.125 * (1 + ξ[2]) * (1 + ξ[3]),
+    #   #
+    #   -0.125 * (1 - ξ[1]) * (1 - ξ[3]),
+    #   -0.125 * (1 + ξ[1]) * (1 - ξ[3]),
+    #   0.125 * (1 + ξ[1]) * (1 - ξ[3]),
+    #   0.125 * (1 - ξ[1]) * (1 - ξ[3]),
+    #   -0.125 * (1 - ξ[1]) * (1 + ξ[3]),
+    #   -0.125 * (1 + ξ[1]) * (1 + ξ[3]),
+    #   0.125 * (1 + ξ[1]) * (1 + ξ[3]),
+    #   0.125 * (1 - ξ[1]) * (1 + ξ[3]),
+    #   #
+    #   -0.125 * (1 - ξ[1]) * (1 - ξ[2]),
+    #   -0.125 * (1 + ξ[1]) * (1 - ξ[2]),
+    #   -0.125 * (1 + ξ[1]) * (1 + ξ[2]),
+    #   -0.125 * (1 - ξ[1]) * (1 + ξ[2]),
+    #   0.125 * (1 - ξ[1]) * (1 - ξ[2]),
+    #   0.125 * (1 + ξ[1]) * (1 - ξ[2]),
+    #   0.125 * (1 + ξ[1]) * (1 + ξ[2]),
+    #   0.125 * (1 - ξ[1]) * (1 + ξ[2])
+    # ], 8, 3)' |> collect
+    Ns[1, 1] = -0.125 * (1 - ξ[2]) * (1 - ξ[3])
+    Ns[2, 1] = 0.125 * (1 - ξ[2]) * (1 - ξ[3])
+    Ns[3, 1] = 0.125 * (1 + ξ[2]) * (1 - ξ[3])
+    Ns[4, 1] = -0.125 * (1 + ξ[2]) * (1 - ξ[3])
+    Ns[5, 1] = -0.125 * (1 - ξ[2]) * (1 + ξ[3])
+    Ns[6, 1] = 0.125 * (1 - ξ[2]) * (1 + ξ[3])
+    Ns[7, 1] = 0.125 * (1 + ξ[2]) * (1 + ξ[3])
+    Ns[8, 1] = -0.125 * (1 + ξ[2]) * (1 + ξ[3])
+    #
+    Ns[1, 2] = -0.125 * (1 - ξ[1]) * (1 - ξ[3])
+    Ns[2, 2] = -0.125 * (1 + ξ[1]) * (1 - ξ[3])
+    Ns[3, 2] = 0.125 * (1 + ξ[1]) * (1 - ξ[3])
+    Ns[4, 2] = 0.125 * (1 - ξ[1]) * (1 - ξ[3])
+    Ns[5, 2] = -0.125 * (1 - ξ[1]) * (1 + ξ[3])
+    Ns[6, 2] = -0.125 * (1 + ξ[1]) * (1 + ξ[3])
+    Ns[7, 2] = 0.125 * (1 + ξ[1]) * (1 + ξ[3])
+    Ns[8, 2] = 0.125 * (1 - ξ[1]) * (1 + ξ[3])
+    #
+    Ns[1, 3] = -0.125 * (1 - ξ[1]) * (1 - ξ[2])
+    Ns[2, 3] = -0.125 * (1 + ξ[1]) * (1 - ξ[2])
+    Ns[3, 3] = -0.125 * (1 + ξ[1]) * (1 + ξ[2])
+    Ns[4, 3] = -0.125 * (1 - ξ[1]) * (1 + ξ[2])
+    Ns[5, 3] = 0.125 * (1 - ξ[1]) * (1 - ξ[2])
+    Ns[6, 3] = 0.125 * (1 + ξ[1]) * (1 - ξ[2])
+    Ns[7, 3] = 0.125 * (1 + ξ[1]) * (1 + ξ[2])
+    Ns[8, 3] = 0.125 * (1 - ξ[1]) * (1 + ξ[2])
+    return Ns
+end
+
+function shape_function_hessian(::Hex{Lagrange, 1}, _, _)
+    return zeros(3, 3, 8)
+end
 
 function shape_function_value(e::Hex{Lagrange, PD}, _, ξ) where PD
     # ξ = [ξ, η, ζ] in reference coordinates
@@ -312,3 +439,155 @@ function shape_function_value(e::Hex{Lagrange, PD}, _, ξ) where PD
 
     return N
 end
+
+function shape_function_gradient(e::Hex{Lagrange, PD}, _, ξ) where PD
+    le = boundary_element(boundary_element(e))
+
+    coords_1d = dof_coordinates(le)
+
+    Nx  = shape_function_value(le, coords_1d, ξ[1])
+    Ny  = shape_function_value(le, coords_1d, ξ[2])
+    Nz  = shape_function_value(le, coords_1d, ξ[3])
+
+    dNx = shape_function_gradient(le, coords_1d, ξ[1])
+    dNy = shape_function_gradient(le, coords_1d, ξ[2])
+    dNz = shape_function_gradient(le, coords_1d, ξ[3])
+
+    ndofs = num_cell_dofs(e)
+    G = Matrix{eltype(ξ)}(undef, ndofs, 3)
+
+    idx = 1
+
+    # -----------------------
+    # vertices
+    # -----------------------
+    for k in (1, PD + 1), j in (1, PD + 1), i in (1, PD + 1)
+        G[idx, 1] = dNx[i] * Ny[j] * Nz[k]
+        G[idx, 2] = Nx[i] * dNy[j] * Nz[k]
+        G[idx, 3] = Nx[i] * Ny[j] * dNz[k]
+        idx += 1
+    end
+
+    # -----------------------
+    # edges
+    # -----------------------
+    for (v1, v2) in eachcol(boundary_dofs(e))
+        for n in 2:PD
+            i, j, k = _edge_dof_indices(v1, v2, n, PD)
+
+            G[idx, 1] = dNx[i] * Ny[j] * Nz[k]
+            G[idx, 2] = Nx[i] * dNy[j] * Nz[k]
+            G[idx, 3] = Nx[i] * Ny[j] * dNz[k]
+            idx += 1
+        end
+    end
+
+    # -----------------------
+    # face interiors
+    # -----------------------
+    for f in 1:6
+        for iₗ in 2:PD, jₗ in 2:PD
+            i, j, k = _face_dof_indices(f, iₗ, jₗ, PD)
+
+            G[idx, 1] = dNx[i] * Ny[j] * Nz[k]
+            G[idx, 2] = Nx[i] * dNy[j] * Nz[k]
+            G[idx, 3] = Nx[i] * Ny[j] * dNz[k]
+            idx += 1
+        end
+    end
+
+    # -----------------------
+    # cell interior
+    # -----------------------
+    if PD > 2
+        for i in 2:PD, j in 2:PD, k in 2:PD
+            G[idx, 1] = dNx[i] * Ny[j] * Nz[k]
+            G[idx, 2] = Nx[i] * dNy[j] * Nz[k]
+            G[idx, 3] = Nx[i] * Ny[j] * dNz[k]
+            idx += 1
+        end
+    end
+
+    return G
+end
+
+# function shape_function_hessian(e::Hex{Lagrange, PD}, _, ξ) where PD
+#     le = boundary_element(boundary_element(e))
+
+#     coords_1d = dof_coordinates(le)
+#     Nx   = shape_function_value(le, coords_1d, ξ[1])
+#     Ny   = shape_function_value(le, coords_1d, ξ[2])
+#     Nz   = shape_function_value(le, coords_1d, ξ[3])
+
+#     dNx  = shape_function_gradient(le, coords_1d, ξ[1])
+#     dNy  = shape_function_gradient(le, coords_1d, ξ[2])
+#     dNz  = shape_function_gradient(le, coords_1d, ξ[3])
+
+#     d2Nx = shape_function_hessian(le, coords_1d, ξ[1])
+#     d2Ny = shape_function_hessian(le, coords_1d, ξ[2])
+#     d2Nz = shape_function_hessian(le, coords_1d, ξ[3])
+
+#     ndofs = num_cell_dofs(e)
+#     H = Array{eltype(ξ)}(undef, 3, 3, ndofs)
+
+#     idx = 1
+
+#     # -----------------------
+#     # vertices
+#     # -----------------------
+#     for k in (1, PD + 1), j in (1, PD + 1), i in (1, PD + 1)
+#         H[:, :, idx] = [
+#             d2Nx[i] * Ny[j] * Nz[k] dNx[i] * dNy[j] * Nz[k] dNx[i] * Ny[j] * dNz[k];
+#             dNx[i] * dNy[j] * Nz[k] Nx[i] * d2Ny[j] * Nz[k] Nx[i] * dNy[j] * dNz[k];
+#             dNx[i] * Ny[j] * dNz[k] Nx[i] * dNy[j] * dNz[k] Nx[i] * Ny[j] * d2Nz[k]
+#         ]
+#         idx += 1
+#     end
+
+#     # -----------------------
+#     # edges
+#     # -----------------------
+#     for (v1, v2) in eachcol(edge_vertices(e))
+#         for n in 2:PD
+#             i, j, k = edge_dof_indices(v1, v2, n, PD)
+#             H[:, :, idx] = [
+#                 d2Nx[i] * Ny[j] * Nz[k] dNx[i] * dNy[j] * Nz[k] dNx[i] * Ny[j] * dNz[k];
+#                 dNx[i] * dNy[j] * Nz[k] Nx[i] * d2Ny[j] * Nz[k] Nx[i] * dNy[j] * dNz[k];
+#                 dNx[i] * Ny[j] * dNz[k] Nx[i] * dNy[j] * dNz[k] Nx[i] * Ny[j] * d2Nz[k]
+#             ]
+#             idx += 1
+#         end
+#     end
+
+#     # -----------------------
+#     # face interiors
+#     # -----------------------
+#     for f in 1:6
+#         for il in 2:PD, jl in 2:PD
+#             i, j, k = face_dof_indices(f, il, jl, PD)
+
+#             H[:, :, idx] = [
+#                 d2Nx[i] * Ny[j] * Nz[k] dNx[i] * dNy[j] * Nz[k] dNx[i] * Ny[j] * dNz[k];
+#                 dNx[i] * dNy[j] * Nz[k] Nx[i] * d2Ny[j] * Nz[k] Nx[i] * dNy[j] * dNz[k];
+#                 dNx[i] * Ny[j] * dNz[k] Nx[i] * dNy[j] * dNz[k] Nx[i] * Ny[j] * d2Nz[k]
+#             ]
+#             idx += 1
+#         end
+#     end
+
+#     # -----------------------
+#     # cell interior
+#     # -----------------------
+#     if PD > 2
+#         for i in 2:PD, j in 2:PD, k in 2:PD
+#             H[:, :, idx] = [
+#                 d2Nx[i] * Ny[j] * Nz[k] dNx[i] * dNy[j] * Nz[k] dNx[i] * Ny[j] * dNz[k];
+#                 dNx[i] * dNy[j] * Nz[k] Nx[i] * d2Ny[j] * Nz[k] Nx[i] * dNy[j] * dNz[k];
+#                 dNx[i] * Ny[j] * dNz[k] Nx[i] * dNy[j] * dNz[k] Nx[i] * Ny[j] * d2Nz[k]
+#             ]
+#             idx += 1
+#         end
+#     end
+
+#     return H
+# end

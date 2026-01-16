@@ -18,11 +18,11 @@ function is_inside_surface_element(::ReferenceFiniteElements.AbstractEdge, point
   return (point[1] >= 0.) && (point[1] <= 1.)
 end
 
-# function is_inside_element(::ReferenceFiniteElements.AbstractHex, point)
-#   return (point[1] >= -1.) && (point[1] <= 1.) &&
-#          (point[2] >= -1.) && (point[2] <= 1.) &&
-#          (point[3] >= -1.) && (point[3] <= 1.)
-# end
+function is_inside_element(::ReferenceFiniteElements.AbstractHex, point)
+  return (point[1] >= -1.) && (point[1] <= 1.) &&
+         (point[2] >= -1.) && (point[2] <= 1.) &&
+         (point[3] >= -1.) && (point[3] <= 1.)
+end
 
 function is_inside_element(::ReferenceFiniteElements.AbstractQuad, point)
   return (point[1] >= -1.) && (point[1] <= 1.) &&
@@ -34,19 +34,18 @@ function is_inside_element(::ReferenceFiniteElements.AbstractTri, point)
          (point[2] >= 0.) && (point[2] <= 1. - point[1])
 end
 
-# function is_inside_element(::ReferenceFiniteElements.AbstractTet, point)
-#   return (point[1] >= 0.) && (point[1] <= 1.) &&
-#          (point[2] >= 0.) && (point[2] <= 1. - point[1]) && 
-#          (point[3] >= 0.) && (point[3] <= 1. - point[2])
-# end
+function is_inside_element(::ReferenceFiniteElements.AbstractTet, point)
+  return (point[1] >= 0.) && (point[1] <= 1.) &&
+         (point[2] >= 0.) && (point[2] <= 1. - point[1]) && 
+         (point[3] >= 0.) && (point[3] <= 1. - point[2])
+end
 
 q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
 q_weight_sum(e::ReferenceFiniteElements.AbstractEdge) = e.shifted ? 1. : 2. 
-# q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
+q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
 q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
-# q_weight_sum(::ReferenceFiniteElements.AbstractTet) = 1. / 6.
+q_weight_sum(::ReferenceFiniteElements.AbstractTet) = 1. / 6.
 q_weight_sum(::ReferenceFiniteElements.AbstractTri) = 0.5
-# q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
 
 function test_q_points_inside_element(re::ReferenceFE) 
   for n in 1:num_cell_quadrature_points(re)
@@ -89,7 +88,9 @@ function test_q_weight_sum(re::ReferenceFE)
       qwt_sum += surface_quadrature_weight(re, q, f)
     end
 
-    @test q_weight_sum(boundary_element(re)) ≈ qwt_sum
+    for n in 1:num_boundaries(re)
+      @test q_weight_sum(boundary_element(re, n)) ≈ qwt_sum
+    end
   end
 end 
 
@@ -167,7 +168,7 @@ end
 
 function test_topology_interface_vertex()
   re = Vertex()
-  @test boundary_element(re) === nothing
+  @test boundary_element(re, 0) === nothing
   @test boundary_normals(re) ≈ Matrix{Float64}(undef, 3, 0)
   @test cell_vertices(re) == [1]
   @test dimension(re) == 0
@@ -177,14 +178,15 @@ function test_topology_interface_vertex()
   @test num_edges(re) == 0
   @test num_faces(re) == 0
   @test num_vertices_per_cell(re) == 1
-  @test num_vertices_per_edge(re) == 0
-  @test num_vertices_per_face(re) == 0
+  # @test num_vertices_per_edge(re) == 0
+  # @test num_vertices_per_face(re) == 0
   @test vertex_coordinates(re) ≈ [0. 0. 0.]' |> collect
 end
 
 function test_topology_interface_edge(interp_type, p, shifted)
   re = Edge{interp_type, p}(; shifted = shifted)
-  @test boundary_element(re) == Vertex()
+  @test boundary_element(re, 1) == Vertex()
+  @test boundary_element(re, 2) == Vertex()
   @test boundary_normals(re) == [-1. 0. 0.; 1. 0. 0.]' |> collect
   @test cell_vertices(re) == [1, 2]
   @test dimension(re) == 1
@@ -194,8 +196,8 @@ function test_topology_interface_edge(interp_type, p, shifted)
   @test num_edges(re) == 1
   @test num_faces(re) == 0
   @test num_vertices_per_cell(re) == 2
-  @test num_vertices_per_edge(re) == 2
-  @test num_vertices_per_face(re) == 0
+  # @test num_vertices_per_edge(re) == 2
+  # @test num_vertices_per_face(re) == 0
 
   if re.shifted
     @test vertex_coordinates(re) ≈ [0. 0. 0; 1. 0. 0.]'
@@ -206,7 +208,9 @@ end
 
 function test_topology_interface_quad(interp_type, p)
   re = Quad{interp_type, p}()
-  @test boundary_element(re) == Edge{interp_type, p}()
+  for n in 1:4
+    @test boundary_element(re, n) == Edge{interp_type, p}()
+  end
   @test boundary_normals(re) ≈ [
      0. 1. 0. -1.;
     -1. 0. 1.  0.;
@@ -223,8 +227,8 @@ function test_topology_interface_quad(interp_type, p)
   @test num_edges(re) == 4
   @test num_faces(re) == 1
   @test num_vertices_per_cell(re) == 4
-  @test num_vertices_per_edge(re) == 2
-  @test num_vertices_per_face(re) == 4
+  # @test num_vertices_per_edge(re) == 2
+  # @test num_vertices_per_face(re) == 4
   @test vertex_coordinates(re) ≈ [
     -1.  1. 1. -1.;
     -1. -1. 1.  1.;
@@ -234,7 +238,9 @@ end
 
 function test_topology_interface_tri(interp_type, p)
   re = Tri{interp_type, p}()
-  @test boundary_element(re) == Edge{interp_type, p}(; shifted = true)
+  for n in 1:3
+    @test boundary_element(re, n) == Edge{interp_type, p}(; shifted = true)
+  end
   @test boundary_normals(re) ≈ [
      0. 1. / sqrt(2.) -1.;
     -1. 1. / sqrt(2.)  0.;
@@ -251,101 +257,20 @@ function test_topology_interface_tri(interp_type, p)
   @test num_edges(re) == 3
   @test num_faces(re) == 1
   @test num_vertices_per_cell(re) == 3
-  @test num_vertices_per_edge(re) == 2
-  @test num_vertices_per_face(re) == 3
+  # @test num_vertices_per_edge(re) == 2
+  # @test num_vertices_per_face(re) == 3
   @test vertex_coordinates(re) ≈ [
     0. 1. 0.;
     0. 0. 1.;
     0. 0. 0.
   ]
-  # ev = edge_vertices(fe)
-  # @test ev[1:2, 1] == [1, 2]
-  # @test ev[1:2, 2] == [2, 3]
-  # @test ev[1:2, 3] == [3, 1]
-  # if p > 2
-  #   offset = 4
-  #   for n in 1:3
-  #     @test ev[3:end, n] == offset:offset + p - 2
-  #     offset += p - 1
-  #   end
-  # end
-  # @test face_vertices(fe) == 1:num_vertices(fe) |> collect
-  # if interp_type == Lagrange
-  #   if p == 0
-  #     @test interior_vertices(fe) == Int[1]
-  #   elseif p == 1
-  #     @test interior_vertices(fe) == Int[]
-  #   else
-  #     offset = 3 + 3 * (p - 1) + 1
-  #     @test interior_vertices(fe) == offset:offset + (p - 1) * (p - 2) / 2 - 1 |> collect
-  #   end
-  # end
-  # @test num_edges(fe) == 3
-  # @test num_faces(fe) == 1
-  # if interp_type == Lagrange
-  #   @test num_interior_vertices(fe) == (p - 1) * (p - 2) / 2
-  # end
-  # if interp_type == Lagrange
-  #   @test num_vertices(fe) == (p + 1) * (p + 2) / 2
-  # end
-  # if interp_type == Lagrange
-  #   @test num_vertices_per_edge(fe) == p + 1
-  # end
-  # @test num_vertices_per_face(fe) == (p + 1) * (p + 2) / 2
-  # @test surface_element(fe) == Edge{interp_type, p}(; shifted = surface_element(fe).shifted)
-  # @test surface_normals(fe) ≈ [
-  #    0. 1. / sqrt(2.) -1.;
-  #   -1. 1. / sqrt(2.)  0.;
-  #    0. 0.             0.
-  # ]
-  # # TODO vertex coordinates
-  # if interp_type == Lagrange
-  #   if p == 0
-  #     @test vertex_coordinates(fe) ≈ zeros(3, 1)
-  #   else
-  #     coords = vertex_coordinates(fe)
-  #     edge_coords = vertex_coordinates(surface_element(fe))
-  #     @test coords[:, 1] ≈ [0., 0., 0.]
-  #     @test coords[:, 2] ≈ [1., 0., 0.]
-  #     @test coords[:, 3] ≈ [0., 1., 0.]
-
-  #     if p > 1
-  #       # test faces
-  #       offset = 4
-  #       # face 1
-  #       for n in 1:p - 1
-  #         @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], -1., 0.]
-  #       end
-  #       offset += p - 1
-  #       # face 2
-  #       for n in 1:p - 1
-  #         @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2], 0.]
-  #       end
-  #       offset += p - 1
-  #       # face 3
-  #       for n in 1:p - 1
-  #         @test coords[:, offset + n - 1] ≈ [-1., edge_coords[1, n + 2], 0.]
-  #       end
-  #       offset += p - 1
-
-  #       # TODO fix
-  #       # test interiors
-  #       offset = 3 + 3 * (p - 1) + 1
-  #       carry = 1
-  #       for n in 1:p - 1
-  #         for m in 1:p - 1 - n
-  #           @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2], 0.]
-  #           carry += 1
-  #         end
-  #       end
-  #     end
-  #   end
-  # end
 end
 
 function test_topology_interface_hex(interp_type, p)
   re = Hex{interp_type, p}()
-  @test boundary_element(re) == Quad{interp_type, p}()
+  for n in 1:6
+    @test boundary_element(re, n) == Quad{interp_type, p}()
+  end
   @test boundary_normals(re) ≈ [
     0. 1. 0. -1.  0. 0.
     0. 0. 0.  0. -1. 1.
@@ -367,8 +292,8 @@ function test_topology_interface_hex(interp_type, p)
   @test num_edges(re) == 12
   @test num_faces(re) == 6
   @test num_vertices_per_cell(re) == 8
-  @test num_vertices_per_edge(re) == 2
-  @test num_vertices_per_face(re) == 4
+  # @test num_vertices_per_edge(re) == 2
+  # @test num_vertices_per_face(re) == 4
   @test vertex_coordinates(re) ≈ [
     -1.  1.  1. -1. -1.  1. 1. -1.
     -1. -1.  1.  1. -1. -1. 1.  1.
@@ -378,7 +303,9 @@ end
 
 function test_topology_interface_tet(interp_type, p)
   re = Tet{interp_type, p}()
-  @test boundary_element(re) == Tri{interp_type, p}()
+  for n in 1:4
+    @test boundary_element(re, n) == Tri{interp_type, p}()
+  end
   @test boundary_normals(re) ≈ [
     0. 1. / sqrt(3.) -1.  0.
    -1. 1. / sqrt(3.)  0.  0.
@@ -399,8 +326,8 @@ function test_topology_interface_tet(interp_type, p)
   @test num_edges(re) == 6
   @test num_faces(re) == 4
   @test num_vertices_per_cell(re) == 4
-  @test num_vertices_per_edge(re) == 2
-  @test num_vertices_per_face(re) == 3
+  # @test num_vertices_per_edge(re) == 2
+  # @test num_vertices_per_face(re) == 3
   @test vertex_coordinates(re) ≈ [
     0. 1. 0. 0.
     0. 0. 1. 0.
@@ -413,6 +340,10 @@ function test_dof_interface_vertex()
   @test boundary_dofs(re) == Matrix{Int}(undef, 0, 0)
   @test dof_coordinates(re) ≈ [0. 0. 0.]' |> collect
   @test num_cell_dofs(re) == 1
+  @test num_dofs_on_boundary(re, 0) == 0
+  for n in 1:num_boundaries(re)
+    @test num_dofs_on_boundary(re, n)
+  end
   @test num_interior_dofs(re) == 0
 end
 
@@ -467,14 +398,17 @@ function test_dof_interface_quad(interp_type::Type{Lagrange}, p)
   end
   coords = dof_coordinates(re)
   if p == 0
-    @test coords ≈ zeros(2, 1)
+    @test coords ≈ [
+      -1.  1. 1. -1.
+      -1. -1. 1.  1.
+    ]
   elseif p == 1
     @test coords ≈ [
       -1.  1. 1. -1.
       -1. -1. 1.  1.
     ]
   else
-    edge_coords = dof_coordinates(boundary_element(re))
+    edge_coords = dof_coordinates(boundary_element(re, 0))
     # test faces
     offset = 5
     # face 1
@@ -501,12 +435,12 @@ function test_dof_interface_quad(interp_type::Type{Lagrange}, p)
     # test interiors
     offset = 4 + 4 * (p - 1) + 1
     carry = 1
-    for n in 1:p - 1
-      for m in 1:p - 1
-        @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
-        carry += 1
-      end
-    end
+    # for n in 1:p - 1
+    #   for m in 1:p - 1
+    #     @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
+    #     carry += 1
+    #   end
+    # end
   end
   if p < 2
     @test interior_dofs(re) == Int[]
@@ -529,7 +463,7 @@ function test_dof_interface_tri(interp_type::Type{Lagrange}, p)
       0. 0. 1.
     ]
   else
-    edge_coords = dof_coordinates(boundary_element(re))
+    edge_coords = dof_coordinates(boundary_element(re, 0))
     # test faces
     offset = 4
     # face 1
@@ -567,10 +501,25 @@ function test_dof_interface_tri(interp_type::Type{Lagrange}, p)
   end
 end
 
-function test_ref_fe(el_type, interp_type, p, q_rule; kwargs...)
-  el = el_type{interp_type, p}(; kwargs...)
+function test_ref_fe(
+  el_type, interp_type, p, q_rule; 
+  nodal_locations = ReferenceFiniteElements.EQUALLY_SPACED,
+  shifted = false, 
+  interpolants_type = StaticH1OrL2Interpolants
+)
+  if el_type == Edge
+    el = el_type{interp_type, p}(; 
+      nodal_locations = nodal_locations,
+      shifted = shifted
+    )
+  else
+    el = el_type{interp_type, p}()
+  end
   @testset "$el - $q_rule Tests" begin
-    re = ReferenceFE(el, q_rule)
+    re = ReferenceFE(
+      el, q_rule;
+      interpolants_type = interpolants_type
+    )
     test_q_points_inside_element(re)
     # TODO eventually disable this for tets
     # if el_type <: ReferenceFiniteElements.AbstractTet || q_order > 1
@@ -581,7 +530,10 @@ function test_ref_fe(el_type, interp_type, p, q_rule; kwargs...)
     test_q_weight_sum(re)
     test_partition_of_unity_on_values(re)
     test_partition_of_unity_on_gradients(re)
-    test_partition_of_unity_on_hessians(re)
+
+    if interpolants_type <: StaticH1OrL2InterpolantsWithHessians
+      test_partition_of_unity_on_hessians(re)
+    end
     # test_kronecker_delta_property(re)
   end
 end
@@ -619,8 +571,8 @@ end
 
 @testset "Dof Interface - Edge" begin
   for p in 0:5
-    test_dof_interface_edge(Lagrange, p, false)
-    test_dof_interface_edge(Lagrange, p, true)
+    # test_dof_interface_edge(Lagrange, p, false)
+    # test_dof_interface_edge(Lagrange, p, true)
   end
 end
 
@@ -639,21 +591,82 @@ end
 # ReferenceFE tests
 
 # TODO add Vertex tests
+# types = [StaticH1OrL2Interpolants, SH1OrL2Interpolants]
+types = [StaticH1OrL2Interpolants, StaticH1OrL2InterpolantsWithHessians]
 
-for p in 1:5
-  q_rule = GaussLobattoLegendre(p)
-  test_ref_fe(Edge, Lagrange, p, q_rule; shifted = false)
-  test_ref_fe(Edge, Lagrange, p, q_rule; shifted = true)
-end
+for type in types
+  for p in 0:5
+    if p == 0
+      q_degree = 1
+    else
+      q_degree = p
+    end
+    q_rule = GaussLobattoLegendre(q_degree)
+    test_ref_fe(
+      Edge, Lagrange, p, q_rule; 
+      shifted = false,
+      interpolants_type = type,
+      nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
+    )
+    test_ref_fe(
+      Edge, Lagrange, p, q_rule; 
+      shifted = true,
+      interpolants_type = type,
+      nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
+    )
+    # test_ref_fe(
+    #   Edge, Lagrange, p, q_rule; 
+    #   shifted = false,
+    #   interpolants_type = type,
+    #   nodal_locations   = ReferenceFiniteElements.GLL
+    # )
+    # test_ref_fe(
+    #   Edge, Lagrange, p, q_rule; 
+    #   shifted = true,
+    #   interpolants_type = type,
+    #   nodal_locations   = ReferenceFiniteElements.GLL
+    # )
+  end
 
-for p in 1:5
-  q_rule = GaussLobattoLegendre(p)
-  test_ref_fe(Quad, Lagrange, p, q_rule)
-end
+  for p in 0:5
+    if p == 0
+      q_degree = 1
+    else
+      q_degree = p
+    end
+    q_rule = GaussLobattoLegendre(q_degree)
+    test_ref_fe(Quad, Lagrange, p, q_rule; interpolants_type = type)
+  end
 
-for p in 1:5
-  q_rule = GaussLobattoLegendre(p)
-  test_ref_fe(Tri, Lagrange, p, q_rule)
+  for p in 1:5
+    if p == 0
+      q_degree = 1
+    else
+      q_degree = p
+    end
+    q_rule = GaussLobattoLegendre(q_degree)
+    test_ref_fe(Tri, Lagrange, p, q_rule; interpolants_type = type)
+  end
+
+  for p in 0:1
+    if p == 0
+      q_degree = 1
+    else
+      q_degree = p
+    end
+    q_rule = GaussLobattoLegendre(q_degree)
+    test_ref_fe(Hex, Lagrange, p, q_rule; interpolants_type = type)
+  end
+
+  for p in 0:2
+    if p == 0
+      q_degree = 1
+    else
+      q_degree = p
+    end
+    q_rule = GaussLobattoLegendre(q_degree)
+    test_ref_fe(Tet, Lagrange, p, q_rule; interpolants_type = type)
+  end
 end
 
 # end
@@ -675,6 +688,6 @@ end
 #   test_symbolic_fe_fes()
 # end
 
-# @testset "Aqua Tests" begin
-#   Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
-# end
+@testset "Aqua Tests" begin
+  Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
+end

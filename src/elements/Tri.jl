@@ -1,69 +1,3 @@
-struct Tri{PT, PD} <: AbstractTri{PT, PD}
-end
-
-function boundary_dofs(e::Tri{Lagrange, PD}) where PD
-    linear_edges = edge_vertices(e)
-    if PD < 2
-        return linear_edges
-    else
-        edges = zeros(Int, PD + 1, 3)
-        edges[1:2, 1:3] .= linear_edges
-        offset = 4
-        for n in 1:3
-            edges[3:end, n] = offset:offset + PD - 2
-            offset += PD - 1
-        end
-        return edges
-    end
-end
-function dof_coordinates(e::Tri{Lagrange, PD}) where PD
-    if PD == 0
-        return zeros(2, 1)
-    end
-
-    coords = [
-        0. 1. 0.;
-        0. 0. 1.
-    ]
-
-    if PD > 1
-        # do edge midpoints
-        edge_coords = dof_coordinates(boundary_element(e))
-
-        # face 1
-        for n in 1:PD - 1
-            coords = hcat(coords, [edge_coords[1, n + 2], -1.])
-        end
-        # face 2
-        for n in 1:PD - 1
-            coords = hcat(coords, [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]])
-        end
-        # face 3
-        for n in 1:PD - 1
-            coords = hcat(coords, [-1., edge_coords[1, n + 2]])
-        end
-
-        # now for interiors
-        # TODO not correct yet
-        for n in 1:PD - 1
-            for m in 1:PD - 1 - n
-                # @assert false "TODO"
-                coords = hcat(coords, [edge_coords[1, m + 2], edge_coords[1, n + 2]])
-            end
-        end
-    end
-    return coords
-end
-function interior_dofs(::Tri{Lagrange, PD}) where PD
-    if PD < 3
-        return Int[]
-    else
-        @assert false "TODO"
-    end
-end
-num_cell_dofs(::Tri{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) ÷ 2
-num_interior_dofs(::Tri{Lagrange, PD}) where PD = PD < 3 ? 0 : (PD - 1) * (PD - 2) ÷ 2
-
 function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLobattoLegendre)
     if cell_quadrature_degree(q_rule) == 1
       ξs = Matrix{Float64}(undef, 2, 1)
@@ -148,7 +82,7 @@ function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLobattoL
 end
 
 function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e), q_rule)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
 
     ξ_return = zeros(2, length(ws), 3)
     w_return = zeros(length(ws), 3)
@@ -166,80 +100,101 @@ function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLoba
     return ξ_return, w_return
 end
 
-# TODO eventually use edge methods instead of the below
-function _simplex_lagrange_1d(i::Int, λ, PD::Int)
-    i == 0 && return one(λ)
-    val = one(λ)
-    xi = i / PD
-    for m in 0:(i - 1)
-        xm = m / PD
-        val *= (λ - xm) / (xi - xm)
-    end
-    return val
+struct Tri{PT, PD} <: AbstractTri{PT, PD}
 end
 
-function _simplex_lagrange_1d_derivative(i::Int, λ, PD::Int)
-    i == 0 && return zero(λ)
+########################################################################
+# Lagrange implementation
+########################################################################
+function boundary_dofs(e::Tri{Lagrange, PD}) where PD
+    linear_edges = edge_vertices(e)
+    if PD < 2
+        return linear_edges
+    else
+        edges = zeros(Int, PD + 1, 3)
+        edges[1:2, 1:3] .= linear_edges
+        offset = 4
+        for n in 1:3
+            edges[3:end, n] = offset:offset + PD - 2
+            offset += PD - 1
+        end
+        return edges
+    end
+end
+function dof_coordinates(e::Tri{Lagrange, PD}) where PD
+    if PD == 0
+        return zeros(2, 1)
+    end
 
-    xi = i / PD
-    dval = zero(λ)
+    coords = [
+        0. 1. 0.;
+        0. 0. 1.
+    ]
 
-    for n in 0:(i - 1)
-        xn = n / PD
+    if PD > 1
+        # do edge midpoints
+        edge_coords = dof_coordinates(boundary_element(e, 0))
 
-        term = one(λ)
-        for m in 0:(i - 1)
-            m == n && continue
-            xm = m / PD
-            term *= (λ - xm) / (xi - xm)
+        # face 1
+        for n in 1:PD - 1
+            coords = hcat(coords, [edge_coords[1, n + 2], -1.])
+        end
+        # face 2
+        for n in 1:PD - 1
+            coords = hcat(coords, [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]])
+        end
+        # face 3
+        for n in 1:PD - 1
+            coords = hcat(coords, [-1., edge_coords[1, n + 2]])
         end
 
-        dval += term / (xi - xn)
-    end
-
-    return dval
-end
-
-function _simplex_lagrange_1d_second_derivative(i::Int, λ, PD::Int)
-    i ≤ 1 && return zero(λ)
-
-    xi = i / PD
-    d2 = zero(λ)
-
-    for a in 0:(i - 1), b in 0:(i - 1)
-        a == b && continue
-
-        xa = a / PD
-        xb = b / PD
-
-        term = one(λ)
-        for m in 0:(i - 1)
-            (m == a || m == b) && continue
-            xm = m / PD
-            term *= (λ - xm) / (xi - xm)
+        # now for interiors
+        # TODO not correct yet
+        for n in 1:PD - 1
+            for m in 1:PD - 1 - n
+                # @assert false "TODO"
+                coords = hcat(coords, [edge_coords[1, m + 2], edge_coords[1, n + 2]])
+            end
         end
-
-        d2 += term / ((xi - xa) * (xi - xb))
     end
+    return coords
+end
+function interior_dofs(::Tri{Lagrange, PD}) where PD
+    if PD < 3
+        return Int[]
+    else
+        @assert false "TODO"
+    end
+end
+num_cell_dofs(::Tri{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) ÷ 2
+num_interior_dofs(::Tri{Lagrange, PD}) where PD = PD < 3 ? 0 : (PD - 1) * (PD - 2) ÷ 2
 
-    return d2
+function shape_function_value(::Tri{Lagrange, 0}, _, _)
+    return ones(1)
 end
 
-function shape_function_value(e::Tri{Lagrange, PD}, _, ξ) where PD
-    λ1 = 1.0 - ξ[1] - ξ[2]
+function shape_function_gradient(::Tri{Lagrange, 0}, _, _)
+    return zeros(1, 2)
+end
+
+function shape_function_hessian(::Tri{Lagrange, 0}, _, _)
+    return zeros(1, 2, 2)
+end
+
+function shape_function_value(::Tri{Lagrange, PD}, _, ξ) where PD
+    λ1 = 1 - ξ[1] - ξ[2]
     λ2 = ξ[1]
     λ3 = ξ[2]
 
-    N = Vector{eltype(ξ)}(undef, num_cell_dofs(e))
+    N = Vector{eltype(ξ)}(undef, (PD+1)*(PD+2)÷2)
     offset = 0
 
     # -------------------------
     # vertices
     # -------------------------
-    N[1] = _simplex_lagrange_1d(PD, λ1, PD)
-    N[2] = _simplex_lagrange_1d(PD, λ2, PD)
-    N[3] = _simplex_lagrange_1d(PD, λ3, PD)
-    offset = 3
+    offset += 1; N[offset] = λ1^PD
+    offset += 1; N[offset] = λ2^PD
+    offset += 1; N[offset] = λ3^PD
 
     # -------------------------
     # edges
@@ -248,24 +203,21 @@ function shape_function_value(e::Tri{Lagrange, PD}, _, ξ) where PD
     for i in 1:PD - 1
         offset += 1
         N[offset] =
-            _simplex_lagrange_1d(PD - i, λ1, PD) *
-            _simplex_lagrange_1d(i,      λ2, PD)
+            binomial(PD, i) * λ1^(PD - i) * λ2^i
     end
 
     # edge 2–3 (λ1 = 0)
     for i in 1:PD - 1
         offset += 1
         N[offset] =
-            _simplex_lagrange_1d(PD - i, λ2, PD) *
-            _simplex_lagrange_1d(i,      λ3, PD)
+            binomial(PD, i) * λ2^(PD - i) * λ3^i
     end
 
     # edge 3–1 (λ2 = 0)
     for i in 1:PD - 1
         offset += 1
         N[offset] =
-            _simplex_lagrange_1d(PD - i, λ3, PD) *
-            _simplex_lagrange_1d(i,      λ1, PD)
+            binomial(PD, i) * λ3^(PD - i) * λ1^i
     end
 
     # -------------------------
@@ -275,35 +227,38 @@ function shape_function_value(e::Tri{Lagrange, PD}, _, ξ) where PD
         k = PD - i - j
         offset += 1
         N[offset] =
-            _simplex_lagrange_1d(i, λ1, PD) *
-            _simplex_lagrange_1d(j, λ2, PD) *
-            _simplex_lagrange_1d(k, λ3, PD)
+            binomial(PD, i) *
+            binomial(PD - i, j) *
+            λ1^i * λ2^j * λ3^k
     end
 
     return N
 end
 
 function shape_function_gradient(e::Tri{Lagrange, PD}, _, ξ) where PD
-    λ1 = 1.0 - ξ[1] - ξ[2]
+    λ1 = 1 - ξ[1] - ξ[2]
     λ2 = ξ[1]
     λ3 = ξ[2]
 
-    dN = Matrix{eltype(ξ)}(undef, 2, num_cell_dofs(e))
-    offset = 0
+    gλ1 = SVector(-1.0, -1.0)
+    gλ2 = SVector(1.0,  0.0)
+    gλ3 = SVector(0.0,  1.0)
 
-    # barycentric gradients
-    gλ1 = [-1., -1.]
-    gλ2 = [1., 0.]
-    gλ3 = [0., 1.]
+    ndofs = num_cell_dofs(e)
+    dN = Matrix{eltype(ξ)}(undef, ndofs, 2)
+    offset = 0
 
     # -------------------------
     # vertices
     # -------------------------
-    dN[:, 1] = _simplex_lagrange_1d_derivative(PD, λ1, PD) * gλ1
-    dN[:, 2] = _simplex_lagrange_1d_derivative(PD, λ2, PD) * gλ2
-    dN[:, 3] = _simplex_lagrange_1d_derivative(PD, λ3, PD) * gλ3
+    offset += 1
+    dN[offset, :] = PD * λ1^(PD - 1) * gλ1
 
-    offset = 3
+    offset += 1
+    dN[offset, :] = PD * λ2^(PD - 1) * gλ2
+
+    offset += 1
+    dN[offset, :] = PD * λ3^(PD - 1) * gλ3
 
     # -------------------------
     # edges
@@ -311,142 +266,34 @@ function shape_function_gradient(e::Tri{Lagrange, PD}, _, ξ) where PD
     # edge 1–2 (λ3 = 0)
     for i in 1:PD - 1
         offset += 1
-        L1 = _simplex_lagrange_1d(PD - i, λ1, PD)
-        L2 = _simplex_lagrange_1d(i,      λ2, PD)
-        dL1 = _simplex_lagrange_1d_derivative(PD - i, λ1, PD)
-        dL2 = _simplex_lagrange_1d_derivative(i,      λ2, PD)
-
-        dN[:, offset] =
-            dL1 * L2 * gλ1 +
-            L1 * dL2 * gλ2
+        C = binomial(PD, i)
+        dN[offset, :] =
+            C * (
+                (PD - i) * λ1^(PD - i - 1) * λ2^i       * gλ1 +
+                i        * λ1^(PD - i)     * λ2^(i - 1) * gλ2
+            )
     end
 
     # edge 2–3 (λ1 = 0)
     for i in 1:PD - 1
         offset += 1
-        L2 = _simplex_lagrange_1d(PD - i, λ2, PD)
-        L3 = _simplex_lagrange_1d(i,      λ3, PD)
-        dL2 = _simplex_lagrange_1d_derivative(PD - i, λ2, PD)
-        dL3 = _simplex_lagrange_1d_derivative(i,      λ3, PD)
-
-        dN[:, offset] =
-            dL2 * L3 * gλ2 +
-            L2 * dL3 * gλ3
+        C = binomial(PD, i)
+        dN[offset, :] =
+            C * (
+                (PD - i) * λ2^(PD - i - 1) * λ3^i       * gλ2 +
+                i        * λ2^(PD - i)     * λ3^(i - 1) * gλ3
+            )
     end
 
     # edge 3–1 (λ2 = 0)
     for i in 1:PD - 1
         offset += 1
-        L3 = _simplex_lagrange_1d(PD - i, λ3, PD)
-        L1 = _simplex_lagrange_1d(i,      λ1, PD)
-        dL3 = _simplex_lagrange_1d_derivative(PD - i, λ3, PD)
-        dL1 = _simplex_lagrange_1d_derivative(i,      λ1, PD)
-
-        dN[:, offset] =
-            dL3 * L1 * gλ3 +
-            L3 * dL1 * gλ1
-    end
-
-    # -------------------------
-    # interior
-    # -------------------------
-    for i in 1:PD-2, j in 1:PD-1-i
-        k = PD - i - j
-        offset += 1
-
-        L1 = _simplex_lagrange_1d(i, λ1, PD)
-        L2 = _simplex_lagrange_1d(j, λ2, PD)
-        L3 = _simplex_lagrange_1d(k, λ3, PD)
-
-        dL1 = _simplex_lagrange_1d_derivative(i, λ1, PD)
-        dL2 = _simplex_lagrange_1d_derivative(j, λ2, PD)
-        dL3 = _simplex_lagrange_1d_derivative(k, λ3, PD)
-
-        dN[:, offset] =
-            dL1 * L2 * L3 * gλ1 +
-            L1 * dL2 * L3 * gλ2 +
-            L1 * L2 * dL3 * gλ3
-    end
-
-    return dN
-end
-
-function shape_function_hessian(e::Tri{Lagrange, PD}, _, ξ) where PD
-    λ1 = 1.0 - ξ[1] - ξ[2]
-    λ2 = ξ[1]
-    λ3 = ξ[2]
-
-    H = Array{eltype(ξ), 3}(undef, 2, 2, num_cell_dofs(e))
-
-    # barycentric gradients
-    gλ1 = [-1., -1.]
-    gλ2 = [1., 0.]
-    gλ3 = [0., 1.]
-
-    # outer products
-    ⊗(a,b) = a * transpose(b)
-
-    # -------------------------
-    # vertices
-    # -------------------------
-    H[:, :, 1] = _simplex_lagrange_1d_second_derivative(PD, λ1, PD) * (gλ1 ⊗ gλ1)
-    H[:, :, 2] = _simplex_lagrange_1d_second_derivative(PD, λ2, PD) * (gλ2 ⊗ gλ2)
-    H[:, :, 3] = _simplex_lagrange_1d_second_derivative(PD, λ3, PD) * (gλ3 ⊗ gλ3)
-
-    offset = 3
-
-    # -------------------------
-    # edges
-    # -------------------------
-    # edge 1–2
-    for i in 1:PD - 1
-        offset += 1
-
-        L1  = _simplex_lagrange_1d(PD - i, λ1, PD)
-        L2  = _simplex_lagrange_1d(i,      λ2, PD)
-        dL1 = _simplex_lagrange_1d_derivative(PD - i, λ1, PD)
-        dL2 = _simplex_lagrange_1d_derivative(i,      λ2, PD)
-        d2L1 = _simplex_lagrange_1d_second_derivative(PD - i, λ1, PD)
-        d2L2 = _simplex_lagrange_1d_second_derivative(i,      λ2, PD)
-
-        H[:, :, offset] =
-            d2L1 * L2 * (gλ1 ⊗ gλ1) +
-            L1 * d2L2 * (gλ2 ⊗ gλ2) +
-            dL1 * dL2 * (gλ1 ⊗ gλ2 + gλ2 ⊗ gλ1)
-    end
-
-    # edge 2–3
-    for i in 1:PD - 1
-        offset += 1
-
-        L2  = _simplex_lagrange_1d(PD - i, λ2, PD)
-        L3  = _simplex_lagrange_1d(i,      λ3, PD)
-        dL2 = _simplex_lagrange_1d_derivative(PD - i, λ2, PD)
-        dL3 = _simplex_lagrange_1d_derivative(i,      λ3, PD)
-        d2L2 = _simplex_lagrange_1d_second_derivative(PD - i, λ2, PD)
-        d2L3 = _simplex_lagrange_1d_second_derivative(i,      λ3, PD)
-
-        H[:, :, offset] =
-            d2L2 * L3 * (gλ2 ⊗ gλ2) +
-            L2 * d2L3 * (gλ3 ⊗ gλ3) +
-            dL2 * dL3 * (gλ2 ⊗ gλ3 + gλ3 ⊗ gλ2)
-    end
-
-    # edge 3–1
-    for i in 1:PD - 1
-        offset += 1
-
-        L3  = _simplex_lagrange_1d(PD - i, λ3, PD)
-        L1  = _simplex_lagrange_1d(i,      λ1, PD)
-        dL3 = _simplex_lagrange_1d_derivative(PD - i, λ3, PD)
-        dL1 = _simplex_lagrange_1d_derivative(i,      λ1, PD)
-        d2L3 = _simplex_lagrange_1d_second_derivative(PD - i, λ3, PD)
-        d2L1 = _simplex_lagrange_1d_second_derivative(i,      λ1, PD)
-
-        H[:, :, offset] =
-            d2L3 * L1 * (gλ3 ⊗ gλ3) +
-            L3 * d2L1 * (gλ1 ⊗ gλ1) +
-            dL3 * dL1 * (gλ3 ⊗ gλ1 + gλ1 ⊗ gλ3)
+        C = binomial(PD, i)
+        dN[offset, :] =
+            C * (
+                (PD - i) * λ3^(PD - i - 1) * λ1^i       * gλ3 +
+                i        * λ3^(PD - i)     * λ1^(i - 1) * gλ1
+            )
     end
 
     # -------------------------
@@ -456,78 +303,124 @@ function shape_function_hessian(e::Tri{Lagrange, PD}, _, ξ) where PD
         k = PD - i - j
         offset += 1
 
-        L1  = _simplex_lagrange_1d(i, λ1, PD)
-        L2  = _simplex_lagrange_1d(j, λ2, PD)
-        L3  = _simplex_lagrange_1d(k, λ3, PD)
+        C = binomial(PD, i) * binomial(PD - i, j)
 
-        dL1 = _simplex_lagrange_1d_derivative(i, λ1, PD)
-        dL2 = _simplex_lagrange_1d_derivative(j, λ2, PD)
-        dL3 = _simplex_lagrange_1d_derivative(k, λ3, PD)
+        dN[offset, :] =
+            C * (
+                i * λ1^(i - 1) * λ2^j       * λ3^k       * gλ1 +
+                j * λ1^i       * λ2^(j - 1) * λ3^k       * gλ2 +
+                k * λ1^i       * λ2^j       * λ3^(k - 1) * gλ3
+            )
+    end
 
-        d2L1 = _simplex_lagrange_1d_second_derivative(i, λ1, PD)
-        d2L2 = _simplex_lagrange_1d_second_derivative(j, λ2, PD)
-        d2L3 = _simplex_lagrange_1d_second_derivative(k, λ3, PD)
+    return dN
+end
 
-        H[:, :, offset] =
-            d2L1 * L2 * L3 * (gλ1 ⊗ gλ1) +
-            L1 * d2L2 * L3 * (gλ2 ⊗ gλ2) +
-            L1 * L2 * d2L3 * (gλ3 ⊗ gλ3) +
-            dL1 * dL2 * L3 * (gλ1 ⊗ gλ2 + gλ2 ⊗ gλ1) +
-            dL1 * L2 * dL3 * (gλ1 ⊗ gλ3 + gλ3 ⊗ gλ1) +
-            L1 * dL2 * dL3 * (gλ2 ⊗ gλ3 + gλ3 ⊗ gλ2)
+function shape_function_hessian(e::Tri{Lagrange, PD}, _, ξ) where PD
+    T = eltype(ξ)
+
+    λ1 = one(T) - ξ[1] - ξ[2]
+    λ2 = ξ[1]
+    λ3 = ξ[2]
+
+    gλ1 = SVector(-one(T), -one(T))
+    gλ2 = SVector(one(T), zero(T))
+    gλ3 = SVector(zero(T), one(T))
+
+    ndofs = num_cell_dofs(e)
+    H = Array{T}(undef, ndofs, 2, 2)
+
+    @inline pow0(λ, p) = p == 0 ? one(T) : p > 0 ? λ^p : zero(T)
+
+    @inline sym(a, b) = SMatrix{2,2}(
+        a[1] * b[1], a[1] * b[2],
+        a[2] * b[1], a[2] * b[2]
+    )
+
+    offset = 0
+    for i in 0:PD, j in 0:(PD - i)
+        k = PD - i - j
+        offset += 1
+        H[offset, :, :] .= zero(T)
+
+        C = binomial(PD, i) * binomial(PD - i, j)
+
+        if i ≥ 2
+            H[offset, :, :] .+=
+                C * i * (i - 1) *
+                pow0(λ1, i - 2) * pow0(λ2, j) * pow0(λ3, k) * sym(gλ1, gλ1)
+        end
+        if j ≥ 2
+            H[offset, :, :] .+=
+                C * j * (j - 1) *
+                pow0(λ1, i) * pow0(λ2, j - 2) * pow0(λ3, k) * sym(gλ2, gλ2)
+        end
+        if k ≥ 2
+            H[offset, :, :] .+=
+                C * k * (k - 1) *
+                pow0(λ1, i) * pow0(λ2, j) * pow0(λ3, k - 2) * sym(gλ3, gλ3)
+        end
+
+        if i ≥ 1 && j ≥ 1
+            H[offset, :, :] .+=
+                C * i * j *
+                pow0(λ1, i - 1) * pow0(λ2, j - 1) * pow0(λ3, k) * (sym(gλ1, gλ2) + sym(gλ2, gλ1))
+        end
+        if i ≥ 1 && k ≥ 1
+            H[offset, :, :] .+=
+                C * i * k *
+                pow0(λ1, i-1) * pow0(λ2, j) * pow0(λ3, k - 1) * (sym(gλ1, gλ3) + sym(gλ3, gλ1))
+        end
+        if j ≥ 1 && k ≥ 1
+            H[offset, :, :] .+=
+                C * j * k *
+                pow0(λ1, i) * pow0(λ2, j - 1) * pow0(λ3, k - 1) * (sym(gλ2, gλ3) + sym(gλ3, gλ2))
+        end
     end
 
     return H
 end
 
+########################################################################
+# Raviart-Thomas implementation
+########################################################################
+function boundary_dofs(::Tri{RaviartThomas, 0})
+    return reshape(collect(1:3), 1, 3)
+end
+function dof_coordinates(::Tri{RaviartThomas, 0})
+    # edge midpoints of reference triangle
+    return [
+        0.5  0.5  0.0;
+        0.0  0.5  0.5
+    ]
+end
+interior_dofs(::Tri{RaviartThomas, 0}) = Int[]
+num_cell_dofs(::Tri{RaviartThomas, 0}) = 3
+num_interior_dofs(::Tri{RaviartThomas, 0}) = 0
 
-# function shape_function_value(e::Tri{Lagrange, PD}, X, ξ) where PD
-#     # barycentric coordinates
-#     λ1 = 1. - ξ[1] - ξ[2]
-#     λ2 = ξ[1]
-#     λ3 = ξ[2]
+function geometry_shape_function_value(::Tri{RaviartThomas, 0}, X, ξ)
+    return shape_function_value(Tri{Lagrange, 1}(), X, ξ)
+end
 
-#     N = Vector{eltype(ξ)}(undef, num_cell_dofs(e))
+function geometry_shape_function_gradient(::Tri{RaviartThomas, 0}, X, ξ)
+    return shape_function_gradient(Tri{Lagrange, 1}(), X, ξ)
+end
 
-#     # vertices
-#     # N[1] = _barycentric(PD, λ1, PD)
-#     # N[2] = _barycentric(PD, λ2, PD)
-#     # N[3] = _barycentric(PD, λ3, PD)
-#     N[1] = _lagrange_simplex(PD, 0, 0, λ1, λ2, λ3, PD)
-#     N[2] = _lagrange_simplex(0, PD, 0, λ1, λ2, λ3, PD)
-#     N[3] = _lagrange_simplex(0, 0, PD, λ1, λ2, λ3, PD)
+function shape_function_value(::Tri{RaviartThomas, 0}, _, ξ)
+    N = Matrix{Float64}(undef, 3, 2)
 
-#     # -------------------------
-#     # edges
-#     # -------------------------
-#     offset = 3
-#     # edge 1–2 (λ3 = 0)
-#     for i in 1:PD-1
-#         offset += 1
-#         N[offset] = _lagrange_simplex(PD - i, i, 0, λ1, λ2, λ3, PD)
-#     end
+    N[1, 1] = 1
+    N[1, 2] = -ξ[2]
+    #
+    N[2, 1] = -ξ[1]
+    N[2, 2] = 1 - ξ[2]
+    #
+    N[3, 1] = ξ[1]
+    N[3, 2] = ξ[2]
 
-#     # edge 2–3 (λ1 = 0)
-#     for i in 1:PD-1
-#         offset += 1
-#         N[offset] = _lagrange_simplex(0, PD - i, i, λ1, λ2, λ3, PD)
-#     end
+    return N
+end
 
-#     # edge 3–1 (λ2 = 0)
-#     for i in 1:PD-1
-#         offset += 1
-#         N[offset] = _lagrange_simplex(i, 0, PD - i, λ1, λ2, λ3, PD)
-#     end
-
-#     # -------------------------
-#     # interior
-#     # -------------------------
-#     for i in 1:PD-2, j in 1:PD-1-i
-#         k = PD - i - j
-#         offset += 1
-#         N[offset] = _lagrange_simplex(i, j, k, λ1, λ2, λ3, PD)
-#     end
-
-#     return N
-# end
-
+function shape_function_divergence(::Tri{RaviartThomas, 0}, _, ξ)
+    return [-2., -2., 2.]
+end

@@ -25,7 +25,7 @@ function test_exodus_ext()
   end
 
   re_1 = ReferenceFE(blocks[2], Lagrange; p_order = 1)
-  re_2 = ReferenceFE(Tet{Lagrange, 2}())
+  re_2 = ReferenceFE(Tet{Lagrange, 2}(), GaussLobattoLegendre(2))
 
   # @test re_1.cell_Xs == re_2.cell_Xs
   # @test re_1.face_nodes == re_2.face_nodes

@@ -2,6 +2,7 @@ module ReferenceFiniteElements
 
 # import Polynomials: derivative
 # import SpecialPolynomials: basis, Legendre, ShiftedLegendre
+using Adapt
 using DocStringExtensions
 using FastGaussQuadrature
 using LinearAlgebra
@@ -57,6 +58,7 @@ export boundary_dofs
 export dof_coordinates
 export interior_dofs
 export num_cell_dofs
+export num_dofs_on_boundary
 export num_interior_dofs
 # export surface_dof_coordinates
 
@@ -67,15 +69,19 @@ export Quad
 export Tet
 export Tri
 export Vertex
-# export Edge0, Edge2, Edge3, Edge
-# export Hex0, Hex8, Hex
-# export Quad0, Quad4, Quad9, Quad
-# export Tet0, Tet4, Tet10
-# export Tri0, Tri3, Tri6, Tri
-# export Vertex
+
+# interpolants
+# export H1OrL2Interpolants
+export MappedH1OrL2Interpolants
+export MappedH1OrL2SurfaceInterpolants
+export StaticH1OrL2Interpolants
+export StaticH1OrL2InterpolantsWithHessians
 
 # polynomial types
+export Hermite
 export Lagrange
+export RaviartThomas
+export Serendipity
 
 # quadrature types
 export GaussLobattoLegendre
@@ -97,6 +103,7 @@ export surface_shape_function_value
 
 # topology interface
 export boundary_element
+export boundary_normal
 export boundary_normals
 export cell_vertices
 export dimension
@@ -109,45 +116,5 @@ export num_vertices_per_cell
 export num_vertices_per_edge
 export num_vertices_per_face
 export vertex_coordinates
-
-# # main type
-# export ReferenceFE,
-#        MappedInterpolants,
-#        MappedSurfaceInterpolants
-
-# # methods
-# export num_faces,
-#        num_quadrature_points,
-#        num_shape_functions,
-#        num_vertices,
-#        surface_element
-
-# export quadrature_point,
-#        quadrature_points,
-#        quadrature_weight,
-#        quadrature_weights,
-#        shape_function_gradient,
-#        shape_function_gradients,
-#        shape_function_hessian,
-#        shape_function_hessians,
-#        shape_function_value,
-#        shape_function_values,
-#        surface_normal,
-#        surface_normals,
-#        surface_quadrature_point,
-#        surface_quadrature_points,
-#        surface_quadrature_weight,
-#        surface_quadrature_weights,
-#        surface_shape_function_gradient,
-#        surface_shape_function_gradients,
-#        surface_shape_function_hessian,
-#        surface_shape_function_hessians,
-#        surface_shape_function_value,
-#        surface_shape_function_values
-
-# export calculate_JxW,
-#        integrate,
-#        map_shape_function_gradient,
-#        mapping_jacobian
 
 end # module ReferenceFiniteElements
