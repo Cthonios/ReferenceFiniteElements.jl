@@ -1,7 +1,5 @@
 module ReferenceFiniteElements
 
-# import Polynomials: derivative
-# import SpecialPolynomials: basis, Legendre, ShiftedLegendre
 using Adapt
 using DocStringExtensions
 using FastGaussQuadrature
@@ -31,8 +29,6 @@ end
 
 # includes
 include("AbstractTypes.jl")
-# include("ArrayBackends.jl")
-# include("Interpolants.jl")
 include("ReferenceFEs.jl")
 
 # 0-d elements
@@ -113,8 +109,6 @@ export num_boundaries
 export num_edges
 export num_faces
 export num_vertices_per_cell
-export num_vertices_per_edge
-export num_vertices_per_face
 export vertex_coordinates
 
 end # module ReferenceFiniteElements

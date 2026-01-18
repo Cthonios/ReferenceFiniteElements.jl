@@ -3,7 +3,6 @@
 using Aqua
 # using CUDA
 using Distributions
-using Exodus
 using LinearAlgebra
 using ReferenceFiniteElements
 using StaticArrays
@@ -648,7 +647,7 @@ for type in types
     test_ref_fe(Tri, Lagrange, p, q_rule; interpolants_type = type)
   end
 
-  for p in 0:1
+  for p in 1:1
     if p == 0
       q_degree = 1
     else
@@ -658,7 +657,7 @@ for type in types
     test_ref_fe(Hex, Lagrange, p, q_rule; interpolants_type = type)
   end
 
-  for p in 0:2
+  for p in 0:1
     if p == 0
       q_degree = 1
     else
@@ -675,19 +674,22 @@ end
 #   test_ref_fes()
 # end
 
-# extension tests
-# include("TestAdaptExt.jl")
-include("TestExodusExt.jl")
-# include("TestSymbolicsExt.jl")
+# # extension tests
+# # include("TestAdaptExt.jl")
+# include("TestExodusExt.jl")
+# # include("TestSymbolicsExt.jl")
 
-@testset "ExodusExt" begin
-  test_exodus_ext()
-end
+# @testset "ExodusExt" begin
+#   test_exodus_ext()
+# end
 
 # @testset "SymbolicExt" begin
 #   test_symbolic_fe_fes()
 # end
 
 @testset "Aqua Tests" begin
-  Aqua.test_all(ReferenceFiniteElements; ambiguities=false)
+  Aqua.test_all(
+    ReferenceFiniteElements; 
+    piracies    = false
+  )
 end

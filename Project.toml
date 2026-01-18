@@ -13,22 +13,19 @@ SpecialPolynomials = "a25cea48-d430-424a-8ee7-0d3ad3742e9e"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [weakdeps]
-Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [extensions]
-ExodusExt = "Exodus"
 RecipesBaseExt = "RecipesBase"
 SymbolicsExt = "Symbolics"
 
 [compat]
-Adapt = "4.4"
+Adapt = "4"
 Aqua = "0.8"
 Distributions = "0.25"
 DocStringExtensions = "0.9"
-Exodus = "0.14"
-FastGaussQuadrature = "0.5, 1"
+FastGaussQuadrature = "1"
 LinearAlgebra = "1"
 Polynomials = "4"
 RecipesBase = "1"
@@ -41,8 +38,7 @@ julia = "1"
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-Exodus = "f57ae99e-f805-4780-bdca-96e224be1e5a"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Distributions", "Exodus", "Test"]
+test = ["Aqua", "Distributions", "Test"]

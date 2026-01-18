@@ -259,6 +259,7 @@ vertex_coordinates(::AbstractHex) = [
 $(TYPEDEF)
 """
 abstract type AbstractPyramid{PT, PD} <: AbstractVolume{PT, PD} end
+# TODO finish me
 
 """
 $(TYPEDEF)
@@ -292,4 +293,4 @@ vertex_coordinates(::AbstractTet) = [
 $(TYPEDEF)
 """
 abstract type AbstractWedge{PT, PD} <: AbstractVolume{PT, PD} end
-# boundary_element(::AbstractWedge{PT, PD}, id::Int) where {PT, PD} = 
+# TODO finish out
