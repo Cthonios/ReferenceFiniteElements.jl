@@ -1,3 +1,6 @@
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractInterpolants end
 abstract type AbstractDynamicInterpolants <: AbstractInterpolants end # TODO implment
 abstract type AbstractStaticInterpolants <: AbstractInterpolants end
@@ -358,10 +361,18 @@ function Adapt.adapt_structure(to, re::ReferenceFE)
     return ReferenceFE(re.element, bdofs, bnorms, cell_interps, surf_interps)
 end
 
+function Base.show(io::IO, re::ReferenceFE)
+    println(io, "ReferenceFE")
+    println(io, "  Element type      = $(element(re))")
+    println(io, "  Polynomial type   = $(polynomial_type(element(re)))")
+    println(io, "  Polynomial degree = $(polynomial_degree(element(re)))")
+end
+
 # topology interface
 boundary_element(re::ReferenceFE, i::Int) = boundary_element(re.element, i)
 boundary_normal(re::ReferenceFE, f::Int) = view(re.boundary_normals, :, f)
 dimension(re::ReferenceFE) = dimension(re.element)
+element(re::ReferenceFE) = re.element
 num_boundaries(re::ReferenceFE) = num_boundaries(re.element)
 num_edges(re::ReferenceFE) = num_edges(re.element)
 num_faces(re::ReferenceFE) = num_faces(re.element)

@@ -1,3 +1,6 @@
+"""
+$(TYPEDEF)
+"""
 struct Quad{PT, PD} <: AbstractQuad{PT, PD}
 end
 

@@ -29,7 +29,7 @@ end
 
 # includes
 include("AbstractTypes.jl")
-include("ReferenceFEs.jl")
+include("ReferenceFE.jl")
 
 # 0-d elements
 include("elements/Vertex.jl")
@@ -104,6 +104,7 @@ export boundary_normals
 export cell_vertices
 export dimension
 export edge_vertices
+export element
 export face_vertices
 export num_boundaries
 export num_edges

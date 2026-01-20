@@ -100,6 +100,9 @@ function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLoba
     return ξ_return, w_return
 end
 
+"""
+$(TYPEDEF)
+"""
 struct Tri{PT, PD} <: AbstractTri{PT, PD}
 end
 

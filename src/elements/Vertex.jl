@@ -1,3 +1,6 @@
+"""
+$(TYPEDEF)
+"""
 struct Vertex <: AbstractVertex
 end
 

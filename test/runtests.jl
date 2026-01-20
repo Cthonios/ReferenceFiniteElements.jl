@@ -515,17 +515,17 @@ function test_ref_fe(
     el = el_type{interp_type, p}()
   end
   @testset "$el - $q_rule Tests" begin
-    re = ReferenceFE(
+    @show re = ReferenceFE(
       el, q_rule;
       interpolants_type = interpolants_type
     )
     test_q_points_inside_element(re)
     # TODO eventually disable this for tets
-    # if el_type <: ReferenceFiniteElements.AbstractTet || q_order > 1
-    #   # do nothing here
-    # else
+    if el_type <: ReferenceFiniteElements.AbstractTet
+      # do nothing here
+    else
       test_q_weight_positivity(re)
-    # end
+    end
     test_q_weight_sum(re)
     test_partition_of_unity_on_values(re)
     test_partition_of_unity_on_gradients(re)
@@ -657,7 +657,7 @@ for type in types
     test_ref_fe(Hex, Lagrange, p, q_rule; interpolants_type = type)
   end
 
-  for p in 0:1
+  for p in 0:2
     if p == 0
       q_degree = 1
     else

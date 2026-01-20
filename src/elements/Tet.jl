@@ -1,37 +1,9 @@
+"""
+$(TYPEDEF)
+"""
 struct Tet{PT, PD} <: AbstractTet{PT, PD}
 end
 
-# function boundary_dofs(e::Tet{Lagrange, PD}) where PD
-#     # vertex DOFs are always first 4
-#     vertex_dofs = cell_vertices(e)
-    
-#     # edge DOFs: 6 edges × (PD-1) DOFs each
-#     edge_dofs = Vector{Vector{Int}}(undef, 6)
-#     offset = 4
-#     for (i, _) in enumerate(eachcol(edge_vertices(e)))
-#         if PD < 2
-#             edge_dofs[i] = Int[]
-#         else
-#             edge_dofs[i] = offset + (0:PD - 2)
-#             offset += PD - 1
-#         end
-#     end
-
-#     # face DOFs: 4 faces × ((PD-1)*(PD-2)/2)
-#     face_dofs = Vector{Vector{Int}}(undef, 4)
-#     for (i, _) in enumerate(eachcol(face_vertices(e)))
-#         if PD < 3
-#             face_dofs[i] = Int[]
-#         else
-#             n_face = (PD - 1) * (PD - 2) ÷ 2
-#             face_dofs[i] = offset + (0:n_face - 1)
-#             offset += n_face
-#         end
-#     end
-
-#     # return (vertex_dofs, edge_dofs, face_dofs)
-#     return face_dofs
-# end
 function boundary_dofs(e::Tet{Lagrange, PD}) where PD
     # Canonical linear vertices
     linear_vertices = cell_vertices(e)
@@ -49,9 +21,18 @@ function boundary_dofs(e::Tet{Lagrange, PD}) where PD
     # For PD >= 2, we include edge interiors
     # faces = zeros(Int, PD + 1 + (PD - 1) * (PD - 2) ÷ 2, nfaces)
     if PD < 2
-        faces = zeros(Int, 3, nfaces)
+        # faces = zeros(Int, 3, nfaces)
+        return face_verts
     elseif PD == 2
-        faces = zeros(Int, 6, nfaces)
+        # faces = zeros(Int, 6, nfaces)
+        return [
+            2   1   1   1;
+            3   4   2   3;
+            4   3   4   2;
+            6   8   5   7;
+           10  10   9   6;
+            9   7   8   5;
+        ]
     else
         faces = zeros(Int, (PD - 1) * (PD - 2) ÷ 2, nfaces)
     end
@@ -103,89 +84,76 @@ function boundary_dofs(e::Tet{Lagrange, PD}) where PD
     return faces
 end
 
-# function dof_coordinates(e::Tet{Lagrange, PD}) where PD
-#     if PD == 0
-#         return zeros(2, 1)
-#     end
-
-#     coords = [
-#         0. 1. 0.;
-#         0. 0. 1.
-#     ]
-
-#     if PD > 1
-#         # do edge midpoints
-#         edge_coords = dof_coordinates(boundary_element(e))
-
-#         # face 1
-#         for n in 1:PD - 1
-#             coords = hcat(coords, [edge_coords[1, n + 2], -1.])
-#         end
-#         # face 2
-#         for n in 1:PD - 1
-#             coords = hcat(coords, [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]])
-#         end
-#         # face 3
-#         for n in 1:PD - 1
-#             coords = hcat(coords, [-1., edge_coords[1, n + 2]])
-#         end
-
-#         # now for interiors
-#         # TODO not correct yet
-#         for n in 1:PD - 1
-#             for m in 1:PD - 1 - n
-#                 # @assert false "TODO"
-#                 coords = hcat(coords, [edge_coords[1, m + 2], edge_coords[1, n + 2]])
-#             end
-#         end
-#     end
-#     return coords
-# end
 function dof_coordinates(e::Tet{Lagrange, PD}) where PD
     coords = vertex_coordinates(e)
 
     offset = 4
 
-    # edge DOFs
-    if PD ≥ 2
-        for (v1, v2) in eachcol(edge_vertices(e))
-            for i in 1:PD - 1
-                t = i / PD
-                new_coord = (1.0 - t) * coords[:, v1] + t * coords[:, v2]
-                coords = hcat(coords, new_coord)
-                offset += 1
-            end
-        end
-    end
+    if PD < 2
+        # return coords
+        # do nothing to coords
+    elseif PD == 2
+        X = zeros(3, 10)
 
-    # face DOFs
-    if PD ≥ 3
-        for (v1, v2, v3) in face_vertices(e)
-            for i in 1:PD - 1
-                for j in 1:PD - 1 - i
-                    t1 = i / PD
-                    t2 = j / PD
-                    t3 = 1.0 - t1 - t2
-                    new_coord = t1 * coords[:,v1] + t2 * coords[:,v2] + t3 * coords[:,v3]
+        # Vertices
+        X[:, 1] .= (0, 0, 0)   # node 1
+        X[:, 2] .= (1, 0, 0)   # node 2
+        X[:, 3] .= (0, 1, 0)   # node 3
+        X[:, 4] .= (0, 0, 1)   # node 4
+    
+        # Mid-edge nodes (ExodusII ordering)
+        X[:, 5] .= (1//2, 0,     0    )  # edge 1-2
+        X[:, 6] .= (1//2, 1//2,  0    )  # edge 2-3
+        X[:, 7] .= (0,    1//2,  0    )  # edge 3-1
+        X[:, 8] .= (0,    0,     1//2 )  # edge 1-4
+        X[:, 9] .= (1//2, 0,     1//2 )  # edge 2-4
+        X[:, 10] .= (0,    1//2,  1//2 )  # edge 3-4
+    
+        # return X
+        coords = X
+    else
+
+        # edge DOFs
+        if PD ≥ 2
+            for (v1, v2) in eachcol(edge_vertices(e))
+                for i in 1:PD - 1
+                    t = i / PD
+                    new_coord = (1.0 - t) * coords[:, v1] + t * coords[:, v2]
                     coords = hcat(coords, new_coord)
                     offset += 1
                 end
             end
         end
-    end
 
-    # interior DOFs
-    if PD ≥ 4
-        for i in 1:PD - 3
-            for j in 1:PD - 2 - i
-                for k in 1:PD - 1 - i - j
-                    t1 = i / PD
-                    t2 = j / PD
-                    t3 = k / PD
-                    t4 = 1.0 - t1 - t2 - t3
-                    new_coord = t1 * coords[:,1] + t2 * coords[:,2] + t3 * coords[:,3] + t4 * coords[:,4]
-                    coords = hcat(coords, new_coord)
-                    offset += 1
+        # face DOFs
+        if PD ≥ 3
+            for (v1, v2, v3) in face_vertices(e)
+                for i in 1:PD - 1
+                    for j in 1:PD - 1 - i
+                        t1 = i / PD
+                        t2 = j / PD
+                        t3 = 1.0 - t1 - t2
+                        new_coord = t1 * coords[:,v1] + t2 * coords[:,v2] + t3 * coords[:,v3]
+                        coords = hcat(coords, new_coord)
+                        offset += 1
+                    end
+                end
+            end
+        end
+
+        # interior DOFs
+        if PD ≥ 4
+            for i in 1:PD - 3
+                for j in 1:PD - 2 - i
+                    for k in 1:PD - 1 - i - j
+                        t1 = i / PD
+                        t2 = j / PD
+                        t3 = k / PD
+                        t4 = 1.0 - t1 - t2 - t3
+                        new_coord = t1 * coords[:,1] + t2 * coords[:,2] + t3 * coords[:,3] + t4 * coords[:,4]
+                        coords = hcat(coords, new_coord)
+                        offset += 1
+                    end
                 end
             end
         end
@@ -331,77 +299,54 @@ function shape_function_gradient(::Tet{Lagrange, 2}, _, ξ)
     t2 = ξ[2]
     t3 = ξ[3]
     grads = zeros(10, 3)
-
+    #
     grads[1, 1] = 1. - 4. * t0
-    grads[1, 2] = 1. - 4. * t0
-    grads[1, 3] = 1. - 4. * t0
-    #
-    grads[2, 1] = 4. * t1 - 1.
-    #
-    grads[3, 2] = 4. * t2 - 1.
-    #
-    grads[4, 3] = 4. * t3 - 1.
-    #
+    grads[2, 1] = 4. * t1 - 1
+    grads[3, 1] = 0.
+    grads[4, 1] = 0.
     grads[5, 1] = 4. * (t0 - t1)
-    grads[5, 2] = -4. * t1
-    grads[5, 3] = -4. * t2
-    #
     grads[6, 1] = 4. * t2
-    grads[6, 2] = 4. * t1
-    #
     grads[7, 1] = -4. * t2
-    grads[7, 2] = 4. * (t0 - t2)
-    grads[7, 3] = -4. * t2
-    #
     grads[8, 1] = -4. * t3
-    grads[8, 2] = -4. * t3
-    grads[8, 3] = 4. * (t0 - t3)
-    #
     grads[9, 1] = 4. * t3
-    grads[9, 3] = 4. * t1
+    grads[10, 1] = 0.
     #
+    grads[1, 2] = 1. - 4. * t0
+    grads[2, 2] = 0.
+    grads[3, 2] = 4. * t2 - 1.
+    grads[4, 2] = 0.
+    grads[5, 2] = -4. * t1
+    grads[6, 2] = 4. * t1
+    grads[7, 2] = 4. * (t0 - t2)
+    grads[8, 2] = -4. * t3
+    grads[9, 2] = 0.
     grads[10, 2] = 4. * t3
+    #
+    grads[1, 3] = 1. - 4. * t0
+    grads[2, 3] = 0.
+    grads[3, 3] = 0.
+    grads[4, 3] = 4. * t3 - 1.
+    grads[5, 3] = -4. * t1
+    grads[6, 3] = 0.
+    grads[7, 3] = -4. * t2
+    grads[8, 3] = 4. * (t0 - t3)
+    grads[9, 3] = 4. * t1
     grads[10, 3] = 4. * t2
+
     return grads
 end
 
 function shape_function_hessian(::Tet{Lagrange, 2}, _, _)
     hess = zeros(10, 3, 3)
-
-    hess[1, :, :] .= 4.
-    #
-    hess[2, 1, 1] = 4.
-    #
-    hess[3, 2, 2] = 4.
-    #
-    hess[4, 3, 3] = 4.
-    #
-    hess[5, 1, 1] = -8.
-    hess[5, 2, 1] = -4.
-    hess[5, 3, 1] = -4.
-    hess[5, 2, 1] = -4.
-    hess[5, 3, 1] = -4.
-    #
-    hess[6, 1, 2] = 4.
-    hess[6, 2, 1] = 4.
-    #
-    hess[7, 1, 2] = -4.
-    hess[7, 2, 1] = -4.
-    hess[7, 2, 2] = -8.
-    hess[7, 2, 3] = -4.
-    hess[7, 3, 2] = -4.
-    #
-    hess[8, 1, 3] = -4.
-    hess[8, 2, 3] = -4.
-    hess[8, 3, 1] = -4.
-    hess[8, 3, 2] = -4.
-    hess[8, 3, 3] = -8.
-    #
-    hess[9, 1, 3] = 4.
-    hess[9, 3, 1] = 4.
-    #
-    hess[10, 2, 3] = 4.
-    hess[10, 3, 2] = 4.
+    hess[:, 1, 1] .= [4.,  4.,  0.,  0., -8.,  0.,  0.,  0.,  0.,  0.]
+    hess[:, 1, 2] .= [4.,  0.,  0.,  0., -4.,  4., -4.,  0.,  0.,  0.]
+    hess[:, 1, 3] .= [4.,  0.,  0.,  0., -4.,  0.,  0., -4.,  4.,  0.]
+    hess[:, 2, 1] .= [4.,  0.,  0.,  0., -4.,  4., -4.,  0.,  0.,  0.]
+    hess[:, 2, 2] .= [4.,  0.,  4.,  0.,  0.,  0., -8.,  0.,  0.,  0.]
+    hess[:, 2, 3] .= [4.,  0.,  0.,  0.,  0.,  0., -4., -4.,  0.,  4.]
+    hess[:, 3, 1] .= [4.,  0.,  0.,  0., -4.,  0.,  0., -4.,  4.,  0.]
+    hess[:, 3, 2] .= [4.,  0.,  0.,  0.,  0.,  0., -4., -4.,  0.,  4.]
+    hess[:, 3, 3] .= [4.,  0.,  0.,  4.,  0.,  0.,  0., -8.,  0.,  0.]
     return hess
 end
 

@@ -1,3 +1,6 @@
+"""
+$(TYPEDEF)
+"""
 struct Hex{PT, PD} <: AbstractHex{PT, PD}
 end
 
@@ -17,45 +20,49 @@ function boundary_dofs(e::Hex{Lagrange, PD}) where PD
     edge_offset = nv + 1          # first edge DOF index
     face_offset = nv + ne * (PD - 1) + 1  # first interior face DOF index
 
-    for f = 1:num_faces(e)
-        # corner vertices
-        F[1:4, f] .= faces[:, f]
+    if PD > 1
+        for f = 1:num_faces(e)
+            # corner vertices
+            F[1:4, f] .= faces[:, f]
 
-        row = 5
+            row = 5
 
-        # edges of this face: the edges are assumed to follow vertex order
-        face_edge_pairs = [
-            (faces[1, f], faces[2, f]),
-            (faces[2, f], faces[3, f]),
-            (faces[3, f], faces[4, f]),
-            (faces[4, f], faces[1, f])
-        ]
+            # edges of this face: the edges are assumed to follow vertex order
+            face_edge_pairs = [
+                (faces[1, f], faces[2, f]),
+                (faces[2, f], faces[3, f]),
+                (faces[3, f], faces[4, f]),
+                (faces[4, f], faces[1, f])
+            ]
 
-        for (v1, v2) in face_edge_pairs
-            # find the edge index
-            idx = findfirst(ei -> 
-                (edges[1,ei] == v1 && edges[2,ei] == v2) ||
-                (edges[1,ei] == v2 && edges[2,ei] == v1), 
-                1:ne
-            )
+            for (v1, v2) in face_edge_pairs
+                # find the edge index
+                idx = findfirst(ei -> 
+                    (edges[1,ei] == v1 && edges[2,ei] == v2) ||
+                    (edges[1,ei] == v2 && edges[2,ei] == v1), 
+                    1:ne
+                )
+                if PD > 1
+                    F[row:row + PD - 2, f] .= edge_offset:edge_offset + PD - 2
+                    edge_offset += PD - 1
+                    row += PD - 1
+                end
+            end
+
+            # face interior DOFs
             if PD > 1
-                F[row:row + PD - 2, f] .= edge_offset:edge_offset + PD - 2
-                edge_offset += PD - 1
-                row += PD - 1
+                n_interior = (PD - 1)^2
+                F[row:row + n_interior - 1, f] .= face_offset:face_offset + n_interior - 1
+                face_offset += n_interior
             end
         end
 
-        # face interior DOFs
-        if PD > 1
-            n_interior = (PD - 1)^2
-            F[row:row + n_interior - 1, f] .= face_offset:face_offset + n_interior - 1
-            face_offset += n_interior
-        end
+        # Trim unused rows
+        # return F[1:row + (PD>1 ? n_interior : 0) - 1, :]
+        return F
+    else
+        return faces
     end
-
-    # Trim unused rows
-    # return F[1:row + (PD>1 ? n_interior : 0) - 1, :]
-    return F
 end
 function dof_coordinates(e::Hex{Lagrange, PD}) where PD
     if PD == 0

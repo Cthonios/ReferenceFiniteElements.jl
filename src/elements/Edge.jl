@@ -1,6 +1,9 @@
 const EQUALLY_SPACED = 1
 const GLL            = 2
 
+"""
+$(TYPEDEF)
+"""
 struct Edge{PT, PD} <: AbstractEdge{PT, PD}
     nodal_locations::Int
     shifted::Bool

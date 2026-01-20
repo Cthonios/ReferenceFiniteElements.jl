@@ -1,23 +1,53 @@
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractPolynomialType end
 
 # TODO move somewhere else eventually
+"""
+$(TYPEDEF)
+"""
 struct Hermite <: AbstractPolynomialType
 end
+"""
+$(TYPEDEF)
+"""
 struct Lagrange <: AbstractPolynomialType
 end
 # special type for Vertex
+"""
+$(TYPEDEF)
+"""
 struct NoInterpolation <: AbstractPolynomialType
 end
+"""
+$(TYPEDEF)
+"""
 struct RaviartThomas <: AbstractPolynomialType
 end
+"""
+$(TYPEDEF)
+"""
 struct Serendipity <: AbstractPolynomialType
 end
 
+"""
+$(TYPEDEF)
+"""
 abstract type AbstractQuadratureType end
 
+"""
+$(TYPEDSIGNATURES)
+"""
 cell_quadrature_degree(q_rule::AbstractQuadratureType) = q_rule.cell_degree
+"""
+$(TYPEDSIGNATURES)
+"""
 surface_quadrature_degree(q_rule::AbstractQuadratureType) = q_rule.surf_degree
 
+"""
+$(TYPEDEF)
+"""
 struct GaussLobattoLegendre <: AbstractQuadratureType
   cell_degree::Int
   surf_degree::Int
@@ -35,7 +65,13 @@ struct GaussLobattoLegendre <: AbstractQuadratureType
 end
 
 # methods to define for quadrature types
+"""
+$(TYPEDSIGNATURES)
+"""
 function cell_quadrature_points_and_weights end
+"""
+$(TYPEDSIGNATURES)
+"""
 function surface_quadrature_points_and_weights end
 
 """
@@ -68,17 +104,45 @@ polynomial_degree(::AbstractElementType{PT, PD}) where {PT, PD} = PD
 # methods to define for elements for compile time info
 
 # topology methods
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary_element end
+"""
+$(TYPEDSIGNATURES)
+"""
 function boundary_normals end # always returns 3 x num boundaries
+"""
+$(TYPEDSIGNATURES)
+"""
 function dimension end
+"""
+$(TYPEDSIGNATURES)
+"""
 function edge_vertices end
+"""
+$(TYPEDSIGNATURES)
+"""
 function face_vertices end
+"""
+$(TYPEDSIGNATURES)
+"""
 function num_boundaries end
+"""
+$(TYPEDSIGNATURES)
+"""
 function num_edges end
+"""
+$(TYPEDSIGNATURES)
+"""
 function num_faces end
+"""
+$(TYPEDSIGNATURES)
+"""
 function num_vertices_per_cell end
-# function num_vertices_per_edge end
-# function num_vertices_per_face end
+"""
+$(TYPEDSIGNATURES)
+"""
 function vertex_coordinates end # always returns 3 x num_vertices_per_cell
 
 # derived topology methods
@@ -115,8 +179,6 @@ num_boundaries(::AbstractVertex) = 0
 num_edges(::AbstractVertex) = 0
 num_faces(::AbstractVertex) = 0
 num_vertices_per_cell(::AbstractVertex) = 1
-# num_vertices_per_edge(e::AbstractVertex) = 0
-# num_vertices_per_face(::AbstractVertex) = 0
 vertex_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
 
 # this one is an oddity
@@ -141,8 +203,6 @@ num_boundaries(::AbstractEdge) = 2
 num_edges(::AbstractEdge) = 1
 num_faces(::AbstractEdge) = 0
 num_vertices_per_cell(::AbstractEdge) = 2
-# num_vertices_per_edge(::AbstractEdge) = 2
-# num_vertices_per_face(::AbstractEdge) = 0
 function vertex_coordinates(e::AbstractEdge) 
   if e.shifted
     return [
@@ -168,8 +228,6 @@ dimension(::AbstractFace) = 2
 face_vertices(e::AbstractFace) = 1:num_vertices_per_cell(e) |> collect
 num_boundaries(e::AbstractFace) = num_edges(e)
 num_faces(::AbstractFace) = 1
-# num_vertices_per_edge(e::AbstractFace) = 2
-# num_vertices_per_face(e::AbstractFace) = num_vertices_per_cell(e)
 
 """
 $(TYPEDEF)
@@ -223,8 +281,6 @@ $(TYPEDEF)
 abstract type AbstractVolume{PT, PD} <: AbstractElementType{PT, PD} end
 dimension(::AbstractVolume) = 3
 num_boundaries(e::AbstractVolume) = num_faces(e)
-# num_vertices_per_edge(e::AbstractVolume) = 2
-# num_vertices_per_face(e::AbstractVolume) = num_vertices_per_cell(boundary_element(e))
 
 """
 $(TYPEDEF)
