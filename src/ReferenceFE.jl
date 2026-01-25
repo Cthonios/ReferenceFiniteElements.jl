@@ -299,7 +299,8 @@ struct ReferenceFE{
     SurfInterps <: Union{
         <:AbstractInterpolants,
         <:AbstractMatrix{<:AbstractInterpolants}
-    }
+    },
+    NEPE
 }
     element::EType
     boundary_dofs::BDofs
@@ -337,6 +338,7 @@ struct ReferenceFE{
             typeof(el_type), 
             typeof(bdofs), typeof(bnorms),
             typeof(cell_interps), typeof(surf_interps),
+            num_cell_dofs(el_type)
         }(
             el_type, bdofs, bnorms, cell_interps, surf_interps
         )
@@ -348,7 +350,8 @@ struct ReferenceFE{
         new{
             typeof(element), 
             typeof(bdofs), typeof(bnorms),
-            typeof(cell_interps), typeof(surf_interps)
+            typeof(cell_interps), typeof(surf_interps),
+            num_cell_dofs(element)
         }(element, bdofs, bnorms, cell_interps, surf_interps)
     end
 end
@@ -384,7 +387,8 @@ boundary_dofs(re::ReferenceFE) = re.boundary_dofs
 boundary_dofs(re::ReferenceFE, f::Int) = re.boundary_dofs[f]
 dof_coordinates(re::ReferenceFE) = dof_coordinates(re.element)
 interior_dofs(re::ReferenceFE) = interior_dofs(re.element)
-num_cell_dofs(re::ReferenceFE) = num_cell_dofs(re.element)
+# num_cell_dofs(re::ReferenceFE) = num_cell_dofs(re.element)
+@inline num_cell_dofs(::ReferenceFE{A, B, C, D, E, NEPE}) where {A, B, C, D, E, NEPE} = NEPE
 
 # quadrature interface
 cell_quadrature_point(re::ReferenceFE, q::Int) = quadrature_point(re.cell_interps, q)
