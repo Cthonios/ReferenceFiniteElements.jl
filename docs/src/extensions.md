@@ -1,9 +1,3 @@
-# ReferenceFiniteElementsAdaptExt
-For using `ReferenceFiniteElements` on GPUs. So far only tested with `CUDA.jl` as the GPU backend.
-
-# ReferenceFiniteElementsExodusExt
-Convenience methods for setting up `ReferenceFE`s based on an Exodus block. Really only useful if you use exodusII mesh types.
-
 # ReferenceFiniteElementsRecipesBaseExt
 Plotting tools for educational purposes. To use, try the following
 ```julia

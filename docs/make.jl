@@ -1,5 +1,3 @@
-using Adapt
-using Exodus
 using LaTeXStrings
 using RecipesBase
 using ReferenceFiniteElements
@@ -24,12 +22,12 @@ makedocs(;
             "Installation"  => "installation.md",
             "Quick start"   => "quick_start.md",
         ],
-        # "Extensions" => "extensions.md",
+        "Extensions"     => "extensions.md",
         "Abstract Types" => "abstract_types.md",
-        "Storage Types" => "storage_types.md",
-        "Element Types" => "element_types.md",
-        "Developer"  => "developer.md",
-        "Index"      => "index.md"
+        "Storage Types"  => "storage_types.md",
+        "Element Types"  => "element_types.md",
+        "Developer"      => "developer.md",
+        "Index"          => "index.md"
     ],
 )
 

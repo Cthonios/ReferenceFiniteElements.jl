@@ -1,4 +1,6 @@
-# Type hierarchy
+# Abstract types
+
+## Element abstract type hierarchy
 The root of the type hierarchy tree in ```ReferenceFiniteElements``` is the following 
 abstract type.
 
@@ -6,26 +8,37 @@ abstract type.
 ReferenceFiniteElements.AbstractElementType
 ```
 
-There are some useful methods associated with this abstract type such as
+## Interpolants abstract types
 ```@docs
-ReferenceFiniteElements.dimension
-ReferenceFiniteElements.num_vertices
-ReferenceFiniteElements.num_edges
-ReferenceFiniteElements.num_faces
-ReferenceFiniteElements.interpolation_type
-ReferenceFiniteElements.polynomial_degree
-ReferenceFiniteElements.quadrature_degree
+ReferenceFiniteElements.AbstractInterpolants
+ReferenceFiniteElements.AbstractPolynomialType
+polynomial_degree
+polynomial_type
 ```
 
-That can fetch the parameteric types.
-
-Other useful methods associated with this abstract type are the following which can be used to query information about the element topology.
+## Quadrature abstract types
 ```@docs
-ReferenceFiniteElements.num_interior_vertices
-ReferenceFiniteElements.num_quadrature_points
-ReferenceFiniteElements.num_shape_functions
-ReferenceFiniteElements.num_vertices_per_edge
-ReferenceFiniteElements.num_vertices_per_face
+ReferenceFiniteElements.AbstractQuadratureType
+ReferenceFiniteElements.cell_quadrature_degree
+ReferenceFiniteElements.cell_quadrature_points_and_weights
+ReferenceFiniteElements.surface_quadrature_degree
+ReferenceFiniteElements.surface_quadrature_points_and_weights
+```
+
+## Topology Interface
+The below methods must be implemented to define the element 
+toplogy.
+```@docs
+boundary_element
+boundary_normals
+dimension
+edge_vertices
+face_vertices
+num_boundaries
+num_edges
+num_faces
+num_vertices_per_cell
+vertex_coordinates
 ```
 
 # Element subtypes
@@ -63,11 +76,7 @@ ReferenceFiniteElements.AbstractVolume
 There are also various subtypes of this type including
 ```@docs
 ReferenceFiniteElements.AbstractHex
+ReferenceFiniteElements.AbstractPyramid
 ReferenceFiniteElements.AbstractTet
-```
-
-# Abstract Types for Storage Containers
-```@docs
-ReferenceFiniteElements.AbstractInterpolationType
-ReferenceFiniteElements.AbstractInterpolantsContainer
+ReferenceFiniteElements.AbstractWedge
 ```
