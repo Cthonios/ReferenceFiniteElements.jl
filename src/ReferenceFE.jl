@@ -477,21 +477,29 @@ function MappedH1OrL2SurfaceInterpolants(e::ReferenceFE, X, q::Integer, f::Integ
     NNPS = num_cell_dofs(boundary_element(e, f))
     edge_nodes = SVector{NNPS, Int}(boundary_dofs(e, f))
     N_reduced = SVector{NNPS, eltype(N)}(@views N[edge_nodes])
-    n = boundary_normal(e, f)
 
-    # jacobian
-    X_diff = X[:, 2] - X[:, 1]
-    det_J = norm(X_diff)
-    # interpolate coordinates
-    edge_nodes = boundary_dofs(e, f)
-    X_q = SVector{2, eltype(X)}(@views X[:, edge_nodes] * N_reduced)
-  
-    # JxW
+    # Physical coordinates of the face nodes (columns of X indexed by local face-node ids)
+    X_face = X[:, edge_nodes]
+
+    # Jacobian and outward unit normal, dispatched on boundary element dimension:
+    #   1D boundary (Edge): line Jacobian = edge length
+    #   2D boundary (Tri/Quad): area Jacobian = |t1 × t2|, normal computed from cross product
+    if dimension(boundary_element(e, f)) == 1
+        X_diff = X_face[:, 2] - X_face[:, 1]
+        det_J  = norm(X_diff)
+        n      = boundary_normal(e, f)
+    else
+        t1    = X_face[:, 2] - X_face[:, 1]
+        t2    = X_face[:, 3] - X_face[:, 1]
+        n_raw = cross(t1, t2)
+        det_J = norm(n_raw)
+        n     = n_raw / det_J
+    end
+
+    # Physical coordinates at the quadrature point
+    X_q = X_face * N_reduced
+
     JxW = det_J * w
-  
-    # TODO below incorrect. Not giving correct gradient
-    # or normal
-    # @show N
     return MappedH1OrL2SurfaceInterpolants(X_q, N, N_reduced, JxW, n)
 end
 
