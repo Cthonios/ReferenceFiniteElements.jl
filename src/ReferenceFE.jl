@@ -481,19 +481,30 @@ function MappedH1OrL2SurfaceInterpolants(e::ReferenceFE, X, q::Integer, f::Integ
     # Physical coordinates of the face nodes (columns of X indexed by local face-node ids)
     X_face = X[:, edge_nodes]
 
-    # Jacobian and outward unit normal, dispatched on boundary element dimension:
-    #   1D boundary (Edge): line Jacobian = edge length
-    #   2D boundary (Tri/Quad): area Jacobian = |t1 × t2|, normal computed from cross product
-    if dimension(boundary_element(e, f)) == 1
+    # Jacobian and outward unit normal, dispatched on boundary element dimension.
+    # The quadrature weights w come from the reference element (e.g. Gauss-Legendre
+    # on [-1,1] for unshifted edges, or on [0,1] for shifted edges).  The physical
+    # Jacobian must map from reference measure to physical measure, so
+    #   det_J = physical_length_or_area / reference_length_or_area.
+    # For shifted edges ([0,1], ref_length=1) det_J = physical_length.
+    # For unshifted edges ([-1,1], ref_length=2) det_J = physical_length / 2.
+    # Analogously for 2D faces (shifted Tri on [0,1]², area=1/2; unshifted Quad
+    # on [-1,1]², area=4).
+    be = boundary_element(e.element, f)
+    if dimension(be) == 1
         X_diff = X_face[:, 2] - X_face[:, 1]
-        det_J  = norm(X_diff)
+        ref_len = be.shifted ? 1.0 : 2.0
+        det_J  = norm(X_diff) / ref_len
         n      = boundary_normal(e, f)
     else
         t1    = X_face[:, 2] - X_face[:, 1]
         t2    = X_face[:, 3] - X_face[:, 1]
         n_raw = cross(t1, t2)
-        det_J = norm(n_raw)
-        n     = n_raw / det_J
+        # reference area: shifted Tri (right triangle on [0,1]²) has area 1/2;
+        # unshifted Quad on [-1,1]² has area 4.
+        ref_area = isa(be, AbstractTri) ? 0.5 : 4.0
+        det_J = norm(n_raw) / ref_area
+        n     = n_raw / norm(n_raw)
     end
 
     # Physical coordinates at the quadrature point
