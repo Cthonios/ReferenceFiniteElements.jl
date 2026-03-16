@@ -477,21 +477,40 @@ function MappedH1OrL2SurfaceInterpolants(e::ReferenceFE, X, q::Integer, f::Integ
     NNPS = num_cell_dofs(boundary_element(e, f))
     edge_nodes = SVector{NNPS, Int}(boundary_dofs(e, f))
     N_reduced = SVector{NNPS, eltype(N)}(@views N[edge_nodes])
-    n = boundary_normal(e, f)
 
-    # jacobian
-    X_diff = X[:, 2] - X[:, 1]
-    det_J = norm(X_diff)
-    # interpolate coordinates
-    edge_nodes = boundary_dofs(e, f)
-    X_q = SVector{2, eltype(X)}(@views X[:, edge_nodes] * N_reduced)
-  
-    # JxW
+    # Physical coordinates of the face nodes (columns of X indexed by local face-node ids)
+    X_face = X[:, edge_nodes]
+
+    # Jacobian and outward unit normal, dispatched on boundary element dimension.
+    # The quadrature weights w come from the reference element (e.g. Gauss-Legendre
+    # on [-1,1] for unshifted edges, or on [0,1] for shifted edges).  The physical
+    # Jacobian must map from reference measure to physical measure, so
+    #   det_J = physical_length_or_area / reference_length_or_area.
+    # For shifted edges ([0,1], ref_length=1) det_J = physical_length.
+    # For unshifted edges ([-1,1], ref_length=2) det_J = physical_length / 2.
+    # Analogously for 2D faces (shifted Tri on [0,1]², area=1/2; unshifted Quad
+    # on [-1,1]², area=4).
+    be = boundary_element(e.element, f)
+    if dimension(be) == 1
+        X_diff = X_face[:, 2] - X_face[:, 1]
+        ref_len = be.shifted ? 1.0 : 2.0
+        det_J  = norm(X_diff) / ref_len
+        n      = boundary_normal(e, f)
+    else
+        t1    = X_face[:, 2] - X_face[:, 1]
+        t2    = X_face[:, 3] - X_face[:, 1]
+        n_raw = cross(t1, t2)
+        # reference area: shifted Tri (right triangle on [0,1]²) has area 1/2;
+        # unshifted Quad on [-1,1]² has area 4.
+        ref_area = isa(be, AbstractTri) ? 0.5 : 4.0
+        det_J = norm(n_raw) / ref_area
+        n     = n_raw / norm(n_raw)
+    end
+
+    # Physical coordinates at the quadrature point
+    X_q = X_face * N_reduced
+
     JxW = det_J * w
-  
-    # TODO below incorrect. Not giving correct gradient
-    # or normal
-    # @show N
     return MappedH1OrL2SurfaceInterpolants(X_q, N, N_reduced, JxW, n)
 end
 

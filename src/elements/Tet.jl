@@ -222,9 +222,9 @@ function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLoba
     ξ_return[2, :, 3] .= ξs[1, :]
     ξ_return[3, :, 3] .= ξs[2, :]
     #
-    ξ_return[1, :, 1] .= ξs[1, :]
-    ξ_return[2, :, 1] .= ξs[2, :]
-    ξ_return[3, :, 1] .= 0.
+    ξ_return[1, :, 4] .= ξs[1, :]
+    ξ_return[2, :, 4] .= ξs[2, :]
+    ξ_return[3, :, 4] .= 0.
 
     for n in 1:4
         w_return[:, n] .= ws
