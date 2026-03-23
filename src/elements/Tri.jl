@@ -1,5 +1,29 @@
-function cell_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
-    return cell_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule)))
+function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLegendre)
+    deg = cell_quadrature_degree(q_rule)
+    if deg == 1
+        # 1-point centroid rule (degree 1)
+        ξs = Matrix{Float64}(undef, 2, 1)
+        ξs[:, 1] = [1. / 3., 1. / 3.]
+        ws = [0.5]
+    elseif deg == 2
+        # 3-point rule (degree 2)
+        ξs = Matrix{Float64}(undef, 2, 3)
+        ξs[:, 1] = [1. / 6., 1. / 6.]
+        ξs[:, 2] = [4. / 6., 1. / 6.]
+        ξs[:, 3] = [1. / 6., 4. / 6.]
+        ws = [1. / 6., 1. / 6., 1. / 6.]
+    elseif deg == 3
+        # 4-point rule (degree 3): centroid + 3 edge midpoints
+        ξs = Matrix{Float64}(undef, 2, 4)
+        ξs[:, 1] = [1. / 3., 1. / 3.]
+        ξs[:, 2] = [1. / 5., 3. / 5.]
+        ξs[:, 3] = [3. / 5., 1. / 5.]
+        ξs[:, 4] = [1. / 5., 1. / 5.]
+        ws = [-27. / 96., 25. / 96., 25. / 96., 25. / 96.]
+    else
+        @assert false "GaussLegendre degree 1 through 3 supported for Tri."
+    end
+    return ξs, ws
 end
 
 function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
