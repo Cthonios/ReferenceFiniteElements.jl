@@ -141,6 +141,31 @@ num_cell_dofs(::Edge{Lagrange, PD}) where PD = PD + 1
 num_dofs_on_boundary(::Edge{Lagrange, PD}, ::Int) where PD = 1
 num_interior_dofs(::Edge{Lagrange, PD}) where PD = PD < 2 ? 0 : PD - 1
 
+function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLegendre)
+    ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
+
+    if e.shifted
+        ξs .= (ξs .+ 1.) ./ 2.
+        ws .= ws ./ 2.
+    end
+
+    return reshape(ξs, 1, length(ξs)), ws
+end
+
+function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLegendre)
+    if e.shifted
+        x_min = 0.
+    else
+        x_min = -1.
+    end
+
+    ξs = zeros(1, 1, 2)
+    ξs[1, 1, 1] = x_min
+    ξs[1, 1, 2] = 1.
+    ws = ones(1, 2)
+    return ξs, ws
+end
+
 function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLobattoLegendre)
     ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
 

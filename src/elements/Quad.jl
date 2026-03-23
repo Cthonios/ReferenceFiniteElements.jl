@@ -75,6 +75,41 @@ function num_interior_dofs(::Quad{Lagrange, PD}) where PD
     end
 end
 
+function cell_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLegendre)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
+    ξ_return = Matrix{eltype(ξs)}(undef, 2, length(ws) * length(ws))
+    w_return = Vector{eltype(ξs)}(undef, length(ws) * length(ws))
+    for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs))
+        ξ_return[1, q] = ξ[1]
+        ξ_return[2, q] = ξ[2]
+    end
+    for (q, w) in enumerate(Base.Iterators.product(ws, ws))
+        w_return[q] = w[1] * w[2]
+    end
+    return ξ_return, w_return
+end
+
+function surface_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLegendre)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
+
+    ξ_return = zeros(2, length(ws), 4)
+    w_return = zeros(length(ws), 4)
+
+    ξ_return[1, :, 1] .= ξs[1, :]
+    ξ_return[2, :, 1] .= -1.
+    ξ_return[1, :, 2] .= 1.
+    ξ_return[2, :, 2] .= ξs[1, :]
+    ξ_return[1, :, 3] .= ξs[1, :]
+    ξ_return[2, :, 3] .= 1.
+    ξ_return[1, :, 4] .= -1.
+    ξ_return[2, :, 4] .= ξs[1, :]
+
+    for n in 1:4
+        w_return[:, n] .= ws
+    end
+    return ξ_return, w_return
+end
+
 function cell_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLobattoLegendre)
     # ξs, ws = gausslegendre(cell_quadrature_degree(e))
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)

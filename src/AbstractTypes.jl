@@ -64,6 +64,25 @@ struct GaussLobattoLegendre <: AbstractQuadratureType
   end
 end
 
+"""
+$(TYPEDEF)
+"""
+struct GaussLegendre <: AbstractQuadratureType
+  cell_degree::Int
+  surf_degree::Int
+
+  function GaussLegendre(degree::Int)
+    @assert degree > 0 "Quadrature degree must be greater than zero"
+    new(degree, degree)
+  end
+
+  function GaussLegendre(cell_degree::Int, surf_degree::Int)
+    @assert cell_degree > 0 "Cell quadrature degree must be greater than zero"
+    @assert surf_degree > 0 "Surface quadrature degree must be greater than zero"
+    new(cell_degree, surf_degree)
+  end
+end
+
 # methods to define for quadrature types
 """
 $(TYPEDSIGNATURES)

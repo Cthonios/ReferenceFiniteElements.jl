@@ -178,6 +178,43 @@ end
 num_cell_dofs(::Tet{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) * (PD + 3) ÷ 6
 num_interior_dofs(::Tet{Lagrange, PD}) where PD = PD < 4 ? 0 : (PD - 1) * (PD - 2) * (PD - 3) ÷ 6
 
+function cell_quadrature_points_and_weights(::AbstractTet, q_rule::GaussLegendre)
+    deg = cell_quadrature_degree(q_rule)
+    if deg == 1
+        # 1-point centroid rule (degree 1)
+        ξs = Matrix{Float64}(undef, 3, 1)
+        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
+        ws = [1. / 6.]
+    elseif deg == 2
+        # 4-point symmetric rule (degree 2)
+        s = sqrt(5.0)
+        a = (5. + 3. * s) / 20.
+        b = (5. - s) / 20.
+        ξs = Matrix{Float64}(undef, 3, 4)
+        ξs[:, 1] = [b, b, b]
+        ξs[:, 2] = [a, b, b]
+        ξs[:, 3] = [b, a, b]
+        ξs[:, 4] = [b, b, a]
+        ws = [1. / 24., 1. / 24., 1. / 24., 1. / 24.]
+    elseif deg == 3
+        # 5-point rule (degree 3)
+        ξs = Matrix{Float64}(undef, 3, 5)
+        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
+        ξs[:, 2] = [1. / 6., 1. / 6., 1. / 6.]
+        ξs[:, 3] = [1. / 6., 1. / 6., 1. / 2.]
+        ξs[:, 4] = [1. / 6., 1. / 2., 1. / 6.]
+        ξs[:, 5] = [1. / 2., 1. / 6., 1. / 6.]
+        ws = [-2. / 15., 3. / 40., 3. / 40., 3. / 40., 3. / 40.]
+    else
+        @assert false "GaussLegendre degree 1 through 3 supported for Tet."
+    end
+    return ξs, ws
+end
+
+function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
+    return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
+end
+
 function cell_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobattoLegendre)
     if cell_quadrature_degree(q_rule) == 1
         ξs = Matrix{Float64}(undef, 3, 1)

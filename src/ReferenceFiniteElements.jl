@@ -80,7 +80,9 @@ export RaviartThomas
 export Serendipity
 
 # quadrature types
+export AbstractQuadratureType
 export GaussLobattoLegendre
+export GaussLegendre
 
 # reference fe
 export ReferenceFE
