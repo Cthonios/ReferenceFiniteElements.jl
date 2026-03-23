@@ -178,6 +178,14 @@ end
 num_cell_dofs(::Tet{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) * (PD + 3) ÷ 6
 num_interior_dofs(::Tet{Lagrange, PD}) where PD = PD < 4 ? 0 : (PD - 1) * (PD - 2) * (PD - 3) ÷ 6
 
+function cell_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
+    return cell_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule)))
+end
+
+function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
+    return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
+end
+
 function cell_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobattoLegendre)
     if cell_quadrature_degree(q_rule) == 1
         ξs = Matrix{Float64}(undef, 3, 1)

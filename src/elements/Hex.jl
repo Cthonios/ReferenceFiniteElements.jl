@@ -144,6 +144,49 @@ function num_interior_dofs(::Hex{Lagrange, PD}) where PD
     end
 end
 
+function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendre)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e, 0), 0), q_rule)
+    n = length(ws)
+    ξ_return = Matrix{eltype(ξs)}(undef, 3, n * n * n)
+    w_return = Vector{eltype(ξs)}(undef, n * n * n)
+    for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs, ξs))
+        ξ_return[1, q] = ξ[1]
+        ξ_return[2, q] = ξ[2]
+        ξ_return[3, q] = ξ[3]
+    end
+    for (q, w) in enumerate(Base.Iterators.product(ws, ws, ws))
+        w_return[q] = w[1] * w[2] * w[3]
+    end
+    return ξ_return, w_return
+end
+
+function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendre)
+    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
+
+    ξ_return = zeros(3, length(ws), 6)
+    w_return = zeros(length(ws), 6)
+
+    ξ_return[1:2, :, 1] .= ξs
+    ξ_return[3, :, 1]   .= -1.
+    ξ_return[1, :, 2]   .= 1.
+    ξ_return[2:3, :, 2] .= ξs
+    ξ_return[1:2, :, 3] .= ξs
+    ξ_return[3, :, 3]   .= 1.
+    ξ_return[1, :, 4]   .= -1.
+    ξ_return[2:3, :, 4] .= ξs
+    ξ_return[1, :, 5]   .= ξs[1, :]
+    ξ_return[2, :, 5]   .= -1.
+    ξ_return[3, :, 5]   .= ξs[2, :]
+    ξ_return[1, :, 6]   .= ξs[1, :]
+    ξ_return[2, :, 6]   .= 1.
+    ξ_return[3, :, 6]   .= ξs[2, :]
+
+    for n in 1:6
+        w_return[:, n] .= ws
+    end
+    return ξ_return, w_return
+end
+
 function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e, 0), 0), q_rule)
     ξ_return = Matrix{eltype(ξs)}(undef, 3, length(ξs) * length(ξs) * length(ξs) * length(ξs))

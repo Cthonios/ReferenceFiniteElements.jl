@@ -1,3 +1,11 @@
+function cell_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
+    return cell_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule)))
+end
+
+function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
+    return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
+end
+
 function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLobattoLegendre)
     if cell_quadrature_degree(q_rule) == 1
       ξs = Matrix{Float64}(undef, 2, 1)
