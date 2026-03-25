@@ -37,5 +37,6 @@ Serendipity
 
 # Quadrature types
 ```@docs
+GaussLegendre
 GaussLobattoLegendre
 ```
