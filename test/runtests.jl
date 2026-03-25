@@ -523,6 +523,9 @@ function test_ref_fe(
     # TODO eventually disable this for tets
     if el_type <: ReferenceFiniteElements.AbstractTet
       # do nothing here
+    elseif el_type <: ReferenceFiniteElements.AbstractTri &&
+           typeof(q_rule) <: GaussLegendre
+      # do nothing here
     else
       test_q_weight_positivity(re)
     end
@@ -592,79 +595,87 @@ end
 # TODO add Vertex tests
 # types = [StaticH1OrL2Interpolants, SH1OrL2Interpolants]
 types = [StaticH1OrL2Interpolants, StaticH1OrL2InterpolantsWithHessians]
-
+q_types = [GaussLegendre, GaussLobattoLegendre]
+max_degrees = [3, 5]
 for type in types
-  for p in 0:5
-    if p == 0
-      q_degree = 1
-    else
-      q_degree = p
+  for (q_type, max_degree) in zip(q_types, max_degrees)
+    for p in 0:max_degree
+      if p == 0
+        q_degree = 1
+      else
+        q_degree = p
+      end
+      # q_rule = GaussLobattoLegendre(q_degree)
+      q_rule = q_type(q_degree)
+      test_ref_fe(
+        Edge, Lagrange, p, q_rule; 
+        shifted = false,
+        interpolants_type = type,
+        nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
+      )
+      test_ref_fe(
+        Edge, Lagrange, p, q_rule; 
+        shifted = true,
+        interpolants_type = type,
+        nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
+      )
+      # test_ref_fe(
+      #   Edge, Lagrange, p, q_rule; 
+      #   shifted = false,
+      #   interpolants_type = type,
+      #   nodal_locations   = ReferenceFiniteElements.GLL
+      # )
+      # test_ref_fe(
+      #   Edge, Lagrange, p, q_rule; 
+      #   shifted = true,
+      #   interpolants_type = type,
+      #   nodal_locations   = ReferenceFiniteElements.GLL
+      # )
     end
-    q_rule = GaussLobattoLegendre(q_degree)
-    test_ref_fe(
-      Edge, Lagrange, p, q_rule; 
-      shifted = false,
-      interpolants_type = type,
-      nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
-    )
-    test_ref_fe(
-      Edge, Lagrange, p, q_rule; 
-      shifted = true,
-      interpolants_type = type,
-      nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
-    )
-    # test_ref_fe(
-    #   Edge, Lagrange, p, q_rule; 
-    #   shifted = false,
-    #   interpolants_type = type,
-    #   nodal_locations   = ReferenceFiniteElements.GLL
-    # )
-    # test_ref_fe(
-    #   Edge, Lagrange, p, q_rule; 
-    #   shifted = true,
-    #   interpolants_type = type,
-    #   nodal_locations   = ReferenceFiniteElements.GLL
-    # )
-  end
 
-  for p in 0:5
-    if p == 0
-      q_degree = 1
-    else
-      q_degree = p
+    for p in 0:max_degree
+      if p == 0
+        q_degree = 1
+      else
+        q_degree = p
+      end
+      # q_rule = GaussLobattoLegendre(q_degree)
+      q_rule = q_type(q_degree)
+      test_ref_fe(Quad, Lagrange, p, q_rule; interpolants_type = type)
     end
-    q_rule = GaussLobattoLegendre(q_degree)
-    test_ref_fe(Quad, Lagrange, p, q_rule; interpolants_type = type)
-  end
 
-  for p in 1:5
-    if p == 0
-      q_degree = 1
-    else
-      q_degree = p
+    for p in 1:max_degree
+      if p == 0
+        q_degree = 1
+      else
+        q_degree = p
+      end
+      # q_rule = GaussLobattoLegendre(q_degree)
+      q_rule = q_type(q_degree)
+      test_ref_fe(Tri, Lagrange, p, q_rule; interpolants_type = type)
     end
-    q_rule = GaussLobattoLegendre(q_degree)
-    test_ref_fe(Tri, Lagrange, p, q_rule; interpolants_type = type)
-  end
 
-  for p in 1:1
-    if p == 0
-      q_degree = 1
-    else
-      q_degree = p
+    for p in 1:1
+      if p == 0
+        q_degree = 1
+      else
+        q_degree = p
+      end
+      # q_rule = GaussLobattoLegendre(q_degree)
+      q_rule = q_type(q_degree)
+      test_ref_fe(Hex, Lagrange, p, q_rule; interpolants_type = type)
     end
-    q_rule = GaussLobattoLegendre(q_degree)
-    test_ref_fe(Hex, Lagrange, p, q_rule; interpolants_type = type)
-  end
 
-  for p in 0:2
-    if p == 0
-      q_degree = 1
-    else
-      q_degree = p
+    for p in 0:2
+      if p == 0
+        q_degree = 1
+      else
+        q_degree = p
+      end
+      # q_rule = GaussLobattoLegendre(q_degree)
+      q_rule = q_type(q_degree)
+      test_ref_fe(Tet, Lagrange, p, q_rule; interpolants_type = type)
     end
-    q_rule = GaussLobattoLegendre(q_degree)
-    test_ref_fe(Tet, Lagrange, p, q_rule; interpolants_type = type)
   end
 end
 

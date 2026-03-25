@@ -81,8 +81,8 @@ export Serendipity
 
 # quadrature types
 export AbstractQuadratureType
-export GaussLobattoLegendre
 export GaussLegendre
+export GaussLobattoLegendre
 
 # reference fe
 export ReferenceFE
