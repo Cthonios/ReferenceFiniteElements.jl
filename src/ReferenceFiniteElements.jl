@@ -8,25 +8,6 @@ using Polynomials
 using SpecialPolynomials
 using StaticArrays
 
-function Polynomials.derivative(p::P) where {
-    B <: SpecialPolynomials.ShiftedLegendreBasis,
-    T, X,
-    P <: SpecialPolynomials.AbstractUnivariatePolynomial{B,T,X}
-}
-    hasnan(p) && return Polynomials.⟒(P){T,X}(T[NaN])
-
-    d = degree(p)
-    qs = zeros(T, d)
-
-    for i in 0:(d - 1)
-        gamma = 2 * (2i + 1)   # ← extra factor of 2 from chain rule
-        qs[i + 1] = gamma * sum(p[j] for j in (i + 1):2:d)
-    end
-
-    dp = Polynomials.MutableDensePolynomial{B, Float64, :x}(qs)
-    return dp
-end
-
 # includes
 include("AbstractTypes.jl")
 include("ReferenceFE.jl")
