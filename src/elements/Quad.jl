@@ -65,6 +65,8 @@ function interior_dofs(e::Quad{Lagrange, PD}) where PD
     end
 end
 num_cell_dofs(::Quad{Lagrange, PD}) where PD = (PD + 1) * (PD + 1)
+# provides bdofs...?
+num_dofs_on_boundary(::Quad{Lagrange, PD}, ::Int) where PD = PD == 0 ? 2 : PD + 1
 function num_interior_dofs(::Quad{Lagrange, PD}) where PD
     if PD == 0
         return 1
@@ -88,6 +90,8 @@ function cell_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLegend
     end
     return ξ_return, w_return
 end
+
+num_cell_quadrature_points(::AbstractQuad, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = CD * CD
 
 function surface_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
@@ -124,6 +128,8 @@ function cell_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLobatt
     end
     return ξ_return, w_return
 end
+
+num_cell_quadrature_points(::AbstractQuad, ::Type{GaussLobattoLegendre{CD, SD}}) where {CD, SD} = CD * CD
 
 function surface_quadrature_points_and_weights(e::AbstractQuad, q_rule::GaussLobattoLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)

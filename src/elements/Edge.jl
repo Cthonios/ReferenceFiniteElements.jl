@@ -4,9 +4,9 @@ const GLL            = 2
 """
 $(TYPEDEF)
 """
-struct Edge{PT, PD} <: AbstractEdge{PT, PD}
+struct Edge{PT, PD, Shifted} <: AbstractEdge{PT, PD}
     nodal_locations::Int
-    shifted::Bool
+    # shifted::Bool
 
     function Edge{PT, PD}(; 
         nodal_locations::Int = EQUALLY_SPACED,
@@ -14,7 +14,7 @@ struct Edge{PT, PD} <: AbstractEdge{PT, PD}
     ) where {PT, PD}
         @assert nodal_locations == EQUALLY_SPACED ||
                 nodal_locations == GLL
-        return new{PT, PD}(nodal_locations, shifted)
+        return new{PT, PD, shifted}(nodal_locations)
     end
 
     function Edge{Hermite, PD}(; 
@@ -24,12 +24,20 @@ struct Edge{PT, PD} <: AbstractEdge{PT, PD}
         @assert PD >= 3 "PD should be greater than or equal to 3 for Hermite"
         @assert nodal_locations == EQUALLY_SPACED ||
                 nodal_locations == GLL
-        return new{Hermite, PD}(nodal_locations, shifted)
+        return new{Hermite, PD, shifted}(nodal_locations)
+    end
+
+    function Edge{PT, PD, Shifted}(; nodal_locations::Int = EQUALLY_SPACED) where {PT, PD, Shifted}
+        new{PT, PD, Shifted}(nodal_locations)
     end
 end
 
+_interp_type(::Edge{PT, PD, false}) where {PT, PD} = Legendre
+_interp_type(::Edge{PT, PD, true}) where {PT, PD} = ShiftedLegendre
+_is_shifted(::Edge{PT, PD, Shifted}) where {PT, PD, Shifted} = Shifted
+
 # dof methods
-boundary_dofs(::Edge) = [1 2]' |> collect
+boundary_dofs(::Edge) = [1;; 2]
 
 # Hermite specific
 # TODO finish me
@@ -96,7 +104,7 @@ num_interior_dofs(::Edge{Hermite, PD}) where PD = PD > 3 ? PD - 1 : 0
 
 # Lagrange specific
 function dof_coordinates(e::Edge{Lagrange, PD}) where PD
-    if e.shifted
+    if _is_shifted(e)
         x_mid = 0.5
         x_min = 0.
     else
@@ -116,14 +124,12 @@ function dof_coordinates(e::Edge{Lagrange, PD}) where PD
         coords[1, 2] = 1.
         coords[1, 3] = x_mid
     else
-        coords_rng = LinRange(x_min, 1., PD + 1)
         coords = zeros(1, PD + 1)
-        coords[1, 1] = coords_rng[1]
-        coords[1, 2] = coords_rng[end]
-
+        coords[1, 1] = x_min
+        coords[1, 2] = 1.
         if e.nodal_locations == EQUALLY_SPACED
-            coords_rng = LinRange(x_mid, 1., PD + 1)
-            coords[1, 3:end] .= coords_rng[2:end - 1]
+            coords_rng = LinRange(x_min, 1., PD + 1)
+            coords[1, 3:end] .= coords_rng[2:end-1]
         elseif e.nodal_locations == GLL
             @assert false "Need to finish this up"
             # poly_coeffs = zeros(Int, PD + 1)
@@ -144,7 +150,8 @@ num_interior_dofs(::Edge{Lagrange, PD}) where PD = PD < 2 ? 0 : PD - 1
 function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLegendre)
     ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
 
-    if e.shifted
+    # if e.shifted
+    if _is_shifted(e)
         ξs .= (ξs .+ 1.) ./ 2.
         ws .= ws ./ 2.
     end
@@ -152,8 +159,10 @@ function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLegend
     return reshape(ξs, 1, length(ξs)), ws
 end
 
+num_cell_quadrature_points(::AbstractEdge, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = CD
+
 function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLegendre)
-    if e.shifted
+    if _is_shifted(e)
         x_min = 0.
     else
         x_min = -1.
@@ -169,7 +178,7 @@ end
 function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLobattoLegendre)
     ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
 
-    if e.shifted
+    if _is_shifted(e)
         ξs .= (ξs .+ 1.) ./ 2.
         ws .= ws ./ 2.
     end
@@ -177,8 +186,10 @@ function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLobatt
     return reshape(ξs, 1, length(ξs)), ws
 end
 
+num_cell_quadrature_points(::AbstractEdge, ::Type{GaussLobattoLegendre{CD, SD}}) where {CD, SD} = CD
+
 function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLobattoLegendre)
-    if e.shifted
+    if _is_shifted(e)
         x_min = 0.
     else
         x_min = -1.
@@ -192,26 +203,81 @@ function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLobattoLe
 end
 
 # 0th order Lagrange implementation
-function shape_function_value(::Edge{Lagrange, 0}, _, ::Number)
+function shape_function_value(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
     return ones(1)
 end
 
-function shape_function_gradient(::Edge{Lagrange, 0}, _, ::Number)
+function shape_function_gradient(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
     return zeros(1, 1)
 end
 
-function shape_function_hessian(::Edge{Lagrange, 0}, _, ::Number)
+function shape_function_hessian(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
     return zeros(1, 1, 1)
 end
 
-# nth order Lagrange implementation
-function shape_function_value(e::Edge{Lagrange, PD}, Xs, ξ::Number) where PD
-    if e.shifted
-        type = ShiftedLegendre
-    else
-        type = Legendre
-    end
+function shape_function_value(::Edge{Lagrange, 1, false}, _, ξ::Number)
+    return [
+        0.5 * (1 - ξ),
+        0.5 * (1 + ξ)
+    ]
+end
 
+function shape_function_value(::Edge{Lagrange, 1, true}, _, ξ::Number)
+    return [
+        1 - ξ,
+        ξ
+    ]
+end
+
+function shape_function_gradient(::Edge{Lagrange, 1, false}, _, ξ::Number)
+    return [
+        -0.5,
+        0.5
+    ]
+end
+
+function shape_function_gradient(::Edge{Lagrange, 1, true}, _, ξ::Number)
+    return [
+        -1.0,
+        1.0
+    ]
+end
+
+function shape_function_value(::Edge{Lagrange, 2, false}, _, ξ::Number)
+    return [
+        0.5 * ξ * (ξ - 1.0),
+        1.0 - ξ^2,
+        0.5 * ξ * (ξ + 1.0),
+    ]
+end
+
+function shape_function_value(::Edge{Lagrange, 2, true}, _, ξ::Number)
+    return [
+        (1.0 - ξ) * (1.0 - 2.0 * ξ),
+        4.0 * ξ * (1.0 - ξ),
+        ξ * (2.0 * ξ - 1.0),
+    ]
+end
+
+function shape_function_gradient(::Edge{Lagrange, 2, false}, _, ξ::Number)
+    return SVector(
+        0.5 * (2.0 * ξ - 1.0),
+        -2.0 * ξ,
+        0.5 * (2.0 * ξ + 1.0),
+    )
+end
+
+# Second order shifted
+function shape_function_gradient(::Edge{Lagrange, 2, true}, _, ξ::Number)
+    return SVector(
+        4.0 * ξ - 3.0,
+        4.0 - 8.0 * ξ,
+        4.0 * ξ - 1.0,
+    )
+end
+
+function shape_function_value(e::Edge{Lagrange, PD, Shifted}, Xs, ξ::Number) where {PD, Shifted}
+    type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)
     nf = zeros(1, n_nodes)
@@ -227,13 +293,8 @@ function shape_function_value(e::Edge{Lagrange, PD}, Xs, ξ::Number) where PD
     return N[:, 1]
 end
 
-function shape_function_gradient(e::Edge{Lagrange, PD}, Xs, ξ) where PD
-    if e.shifted
-        type = ShiftedLegendre
-    else
-        type = Legendre
-    end
-
+function shape_function_gradient(e::Edge{Lagrange, PD, Shifted}, Xs, ξ) where {PD, Shifted}
+    type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)
     nf = zeros(1, n_nodes)
@@ -249,13 +310,8 @@ function shape_function_gradient(e::Edge{Lagrange, PD}, Xs, ξ) where PD
     return reshape(∇N_ξ, n_nodes, 1)
 end
 
-function shape_function_hessian(e::Edge{Lagrange, PD}, Xs, ξ) where PD
-    if e.shifted
-        type = ShiftedLegendre
-    else
-        type = Legendre
-    end
-
+function shape_function_hessian(e::Edge{Lagrange, PD, Shifted}, Xs, ξ) where {PD, Shifted}
+    type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)
     nf = zeros(1, n_nodes)

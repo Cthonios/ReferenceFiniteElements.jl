@@ -34,52 +34,56 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractQuadratureType end
+abstract type AbstractQuadratureType{CD, SD} end
 
 """
 $(TYPEDSIGNATURES)
 """
-cell_quadrature_degree(q_rule::AbstractQuadratureType) = q_rule.cell_degree
+cell_quadrature_degree(::AbstractQuadratureType{CD, SD}) where {CD, SD} = CD
 """
 $(TYPEDSIGNATURES)
 """
-surface_quadrature_degree(q_rule::AbstractQuadratureType) = q_rule.surf_degree
+surface_quadrature_degree(::AbstractQuadratureType{CD, SD}) where {CD, SD} = SD
 
 """
 $(TYPEDEF)
 """
-struct GaussLobattoLegendre <: AbstractQuadratureType
-  cell_degree::Int
-  surf_degree::Int
-
+struct GaussLobattoLegendre{CD, SD} <: AbstractQuadratureType{CD, SD}
   function GaussLobattoLegendre(degree::Int)
-    @assert degree > 0 "Quadrature degree must be greater than zero"
-    new(degree, degree)
+    return GaussLobattoLegendre{degree, degree}()
   end
   
   function GaussLobattoLegendre(cell_degree::Int, surf_degree::Int)
-    @assert cell_degree > 0 "Cell quadrature degree must be greater than zero"
-    @assert surf_degree > 0 "Surface quadrature degree must be greater than zero"
-    new(cell_degree, surf_degree)
+    return GaussLobattoLegendre{cell_degree, surf_degree}()
+  end
+
+  function GaussLobattoLegendre{CD, SD}() where {CD, SD}
+    @assert isa(CD, Integer)
+    @assert isa(SD, Integer)
+    @assert CD > 0 "Cell quadrature degree must be greater than zero"
+    @assert SD > 0 "Surface quadrature degree must be greater than zero"
+    new{CD, SD}()
   end
 end
 
 """
 $(TYPEDEF)
 """
-struct GaussLegendre <: AbstractQuadratureType
-  cell_degree::Int
-  surf_degree::Int
-
+struct GaussLegendre{CD, SD} <: AbstractQuadratureType{CD, SD}
   function GaussLegendre(degree::Int)
-    @assert degree > 0 "Quadrature degree must be greater than zero"
-    new(degree, degree)
+    return GaussLegendre{degree, degree}()
   end
 
   function GaussLegendre(cell_degree::Int, surf_degree::Int)
-    @assert cell_degree > 0 "Cell quadrature degree must be greater than zero"
-    @assert surf_degree > 0 "Surface quadrature degree must be greater than zero"
-    new(cell_degree, surf_degree)
+    return GaussLegendre{cell_degree, surf_degree}()
+  end
+
+  function GaussLegendre{CD, SD}() where {CD, SD}
+    @assert isa(CD, Integer)
+    @assert isa(SD, Integer)
+    @assert CD > 0 "Cell quadrature degree must be greater than zero"
+    @assert SD > 0 "Surface quadrature degree must be greater than zero"
+    new{CD, SD}()
   end
 end
 
@@ -105,20 +109,23 @@ general meaning.
 
 """
 abstract type AbstractElementType{
+  D, # dimension number
   PT <: AbstractPolynomialType, 
   PD
 } end
+
+dimension(::AbstractElementType{D, PT, PD}) where {D, PT, PD} = D
 
 """
 $(TYPEDSIGNATURES)
 Returns the polynomial type ``PT``.
 """
-polynomial_type(::AbstractElementType{PT, PD}) where {PT, PD} = PT
+polynomial_type(::AbstractElementType{D, PT, PD}) where {D, PT, PD} = PT
 """
 $(TYPEDSIGNATURES)
 Returns the polynomial degree ``CD``.
 """
-polynomial_degree(::AbstractElementType{PT, PD}) where {PT, PD} = PD
+polynomial_degree(::AbstractElementType{D, PT, PD}) where {D, PT, PD} = PD
 
 # methods to define for elements for compile time info
 
@@ -131,10 +138,10 @@ function boundary_element end
 $(TYPEDSIGNATURES)
 """
 function boundary_normals end # always returns 3 x num boundaries
-"""
-$(TYPEDSIGNATURES)
-"""
-function dimension end
+# """
+# $(TYPEDSIGNATURES)
+# """
+# function dimension end
 """
 $(TYPEDSIGNATURES)
 """
@@ -182,16 +189,14 @@ function num_cell_dofs end
 function num_dofs_on_boundary end
 function num_interior_dofs end
 
-
 # 0d elements
 """
 $(TYPEDEF)
 """
-abstract type AbstractVertex <: AbstractElementType{NoInterpolation, 0} end
+abstract type AbstractVertex <: AbstractElementType{0, NoInterpolation, 0} end
 
 boundary_element(::AbstractVertex, ::Int) = nothing
 boundary_normals(::AbstractVertex) = Matrix{Float64}(undef, 3, 0)
-dimension(::AbstractVertex) = 0
 edge_vertices(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
 face_vertices(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
 num_boundaries(::AbstractVertex) = 0
@@ -212,10 +217,9 @@ num_interior_dofs(::AbstractVertex) = 0
 """
 $(TYPEDEF)
 """
-abstract type AbstractEdge{PT, PD} <: AbstractElementType{PT, PD} end
+abstract type AbstractEdge{PT, PD} <: AbstractElementType{1, PT, PD} end
 boundary_element(::AbstractEdge, ::Int) = Vertex()
 boundary_normals(::AbstractEdge) = [-1. 0. 0.; 1. 0. 0.]' |> collect
-dimension(::AbstractEdge) = 1
 edge_vertices(::AbstractEdge) = [1 2]' |> collect
 face_vertices(::AbstractEdge) = Matrix{Int}(undef, 0, 0)
 num_boundaries(::AbstractEdge) = 2
@@ -223,7 +227,8 @@ num_edges(::AbstractEdge) = 1
 num_faces(::AbstractEdge) = 0
 num_vertices_per_cell(::AbstractEdge) = 2
 function vertex_coordinates(e::AbstractEdge) 
-  if e.shifted
+  # if e.shifted
+  if _is_shifted(e)
     return [
       0. 1.;
       0. 0.;
@@ -242,8 +247,7 @@ end
 """
 $(TYPEDEF)
 """
-abstract type AbstractFace{PT, PD} <: AbstractElementType{PT, PD} end
-dimension(::AbstractFace) = 2
+abstract type AbstractFace{PT, PD} <: AbstractElementType{2, PT, PD} end
 face_vertices(e::AbstractFace) = 1:num_vertices_per_cell(e) |> collect
 num_boundaries(e::AbstractFace) = num_edges(e)
 num_faces(::AbstractFace) = 1
@@ -297,8 +301,7 @@ vertex_coordinates(::AbstractTri) = [
 """
 $(TYPEDEF)
 """
-abstract type AbstractVolume{PT, PD} <: AbstractElementType{PT, PD} end
-dimension(::AbstractVolume) = 3
+abstract type AbstractVolume{PT, PD} <: AbstractElementType{3, PT, PD} end
 num_boundaries(e::AbstractVolume) = num_faces(e)
 
 """
@@ -321,6 +324,7 @@ face_vertices(::AbstractHex) = [
   6 7 8 8 3 7
   5 6 7 4 2 8
 ]
+num_dofs_on_boundary(::AbstractHex{Lagrange, PD}, ::Int) where PD = PD == 0 ? 4 : (PD + 1) * (PD + 1)
 num_edges(::AbstractHex) = 12
 num_faces(::AbstractHex) = 6
 num_vertices_per_cell(::AbstractHex) = 8
@@ -355,6 +359,7 @@ face_vertices(::AbstractTet) = [
   2 3 4 3
   4 4 3 2
 ]
+num_dofs_on_boundary(::AbstractTet{Lagrange, PD}, ::Int) where PD = PD == 0 ? 3 : (PD + 1) * (PD + 2) ÷ 2
 num_edges(::AbstractTet) = 6
 num_faces(::AbstractTet) = 4
 num_vertices_per_cell(::AbstractTet) = 4

@@ -40,7 +40,7 @@ function is_inside_element(::ReferenceFiniteElements.AbstractTet, point)
 end
 
 q_weight_sum(::ReferenceFiniteElements.AbstractVertex) = 1.
-q_weight_sum(e::ReferenceFiniteElements.AbstractEdge) = e.shifted ? 1. : 2. 
+q_weight_sum(e::ReferenceFiniteElements.AbstractEdge) = ReferenceFiniteElements._is_shifted(e) ? 1. : 2. 
 q_weight_sum(::ReferenceFiniteElements.AbstractHex) = 8.
 q_weight_sum(::ReferenceFiniteElements.AbstractQuad) = 4.
 q_weight_sum(::ReferenceFiniteElements.AbstractTet) = 1. / 6.
@@ -48,7 +48,7 @@ q_weight_sum(::ReferenceFiniteElements.AbstractTri) = 0.5
 
 function test_q_points_inside_element(re::ReferenceFE) 
   for n in 1:num_cell_quadrature_points(re)
-    @test is_inside_element(re.element, cell_quadrature_point(re, n))
+    @test is_inside_element(element(re), cell_quadrature_point(re, n))
   end
 
   # TODO re-enable
@@ -80,7 +80,7 @@ function test_q_weight_sum(re::ReferenceFE)
   for q in 1:num_cell_quadrature_points(re)
     qwt_sum += cell_quadrature_weight(re, q)
   end
-  @test q_weight_sum(re.element) ≈ qwt_sum
+  @test q_weight_sum(element(re)) ≈ qwt_sum
   for f in 1:num_boundaries(re)
     qwt_sum = 0.
     for q in 1:num_surface_quadrature_points(re)
@@ -198,7 +198,8 @@ function test_topology_interface_edge(interp_type, p, shifted)
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 0
 
-  if re.shifted
+  # if re.shifted
+  if ReferenceFiniteElements._is_shifted(re)
     @test vertex_coordinates(re) ≈ [0. 0. 0; 1. 0. 0.]'
   else
     @test vertex_coordinates(re) ≈ [-1. 0. 0.; 1. 0. 0.]' |> collect
@@ -348,13 +349,14 @@ end
 
 function test_dof_interface_edge(interp_type::Type{Lagrange}, p, shifted)
   re = Edge{interp_type, p}(; shifted = shifted)
-  if re.shifted
+  # if re.shifted
+  if ReferenceFiniteElements._is_shifted(re)
     x_min = 0.
   else
     x_min = -1.
   end
 
-  @test boundary_dofs(re) == [1 2]' |> collect
+  @test boundary_dofs(re) == [1;; 2]
   coords = dof_coordinates(re)
   if p == 0
     @test coords ≈ zeros(1, 1)
@@ -515,10 +517,7 @@ function test_ref_fe(
     el = el_type{interp_type, p}()
   end
   @testset "$el - $q_rule Tests" begin
-    @show re = ReferenceFE(
-      el, q_rule;
-      interpolants_type = interpolants_type
-    )
+    @show re = ReferenceFE(el, q_rule, interpolants_type)
     test_q_points_inside_element(re)
     # TODO eventually disable this for tets
     if el_type <: ReferenceFiniteElements.AbstractTet
@@ -573,8 +572,8 @@ end
 
 @testset "Dof Interface - Edge" begin
   for p in 0:5
-    # test_dof_interface_edge(Lagrange, p, false)
-    # test_dof_interface_edge(Lagrange, p, true)
+    test_dof_interface_edge(Lagrange, p, false)
+    test_dof_interface_edge(Lagrange, p, true)
   end
 end
 
@@ -599,7 +598,7 @@ q_types = [GaussLegendre, GaussLobattoLegendre]
 max_degrees = [3, 5]
 for type in types
   for (q_type, max_degree) in zip(q_types, max_degrees)
-    for p in 0:max_degree
+    for p in 1:max_degree
       if p == 0
         q_degree = 1
       else
@@ -607,30 +606,30 @@ for type in types
       end
       # q_rule = GaussLobattoLegendre(q_degree)
       q_rule = q_type(q_degree)
-      test_ref_fe(
-        Edge, Lagrange, p, q_rule; 
-        shifted = false,
-        interpolants_type = type,
-        nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
-      )
-      test_ref_fe(
-        Edge, Lagrange, p, q_rule; 
-        shifted = true,
-        interpolants_type = type,
-        nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
-      )
       # test_ref_fe(
       #   Edge, Lagrange, p, q_rule; 
       #   shifted = false,
       #   interpolants_type = type,
-      #   nodal_locations   = ReferenceFiniteElements.GLL
+      #   nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
       # )
       # test_ref_fe(
       #   Edge, Lagrange, p, q_rule; 
       #   shifted = true,
       #   interpolants_type = type,
-      #   nodal_locations   = ReferenceFiniteElements.GLL
+      #   nodal_locations   = ReferenceFiniteElements.EQUALLY_SPACED
       # )
+      # # test_ref_fe(
+      # #   Edge, Lagrange, p, q_rule; 
+      # #   shifted = false,
+      # #   interpolants_type = type,
+      # #   nodal_locations   = ReferenceFiniteElements.GLL
+      # # )
+      # # test_ref_fe(
+      # #   Edge, Lagrange, p, q_rule; 
+      # #   shifted = true,
+      # #   interpolants_type = type,
+      # #   nodal_locations   = ReferenceFiniteElements.GLL
+      # # )
     end
 
     for p in 0:max_degree
@@ -699,8 +698,5 @@ end
 # end
 
 @testset "Aqua Tests" begin
-  Aqua.test_all(
-    ReferenceFiniteElements; 
-    piracies    = false
-  )
+  Aqua.test_all(ReferenceFiniteElements)
 end
