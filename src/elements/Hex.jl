@@ -160,6 +160,8 @@ function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendr
     return ξ_return, w_return
 end
 
+num_cell_quadrature_points(::AbstractHex, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = CD * CD * CD
+
 function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
 
@@ -201,6 +203,8 @@ function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobatto
     end
     return ξ_return, w_return
 end
+
+num_cell_quadrature_points(::AbstractHex, ::Type{GaussLobattoLegendre{CD, SD}}) where {CD, SD} = CD * CD * CD
 
 function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)

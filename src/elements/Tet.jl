@@ -211,6 +211,10 @@ function cell_quadrature_points_and_weights(::AbstractTet, q_rule::GaussLegendre
     return ξs, ws
 end
 
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{1, SD}}) where SD = 1
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{2, SD}}) where SD = 4
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{3, SD}}) where SD = 5
+
 function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
     return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
 end
@@ -241,6 +245,11 @@ function cell_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobatto
     end
     return ξs, ws
 end
+
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLobattoLegendre{1, SD}}) where SD = 1
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLobattoLegendre{2, SD}}) where SD = 5
+
+
 function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobattoLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
 

@@ -26,6 +26,10 @@ function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLegendre
     return ξs, ws
 end
 
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{1, SD}}) where SD = 1
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{2, SD}}) where SD = 3
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{3, SD}}) where SD = 4
+
 function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
     return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
 end
@@ -112,6 +116,13 @@ function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLobattoL
 
     return ξs, ws
 end
+
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{1, SD}}) where SD = 1
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{2, SD}}) where SD = 3
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{3, SD}}) where SD = 6
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{4, SD}}) where SD = 6
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{5, SD}}) where SD = 7
+num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{6, SD}}) where SD = 12
 
 function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLobattoLegendre)
     ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
@@ -202,6 +213,7 @@ function interior_dofs(::Tri{Lagrange, PD}) where PD
     end
 end
 num_cell_dofs(::Tri{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) ÷ 2
+num_dofs_on_boundary(::Tri{Lagrange, PD}, ::Int) where PD = PD == 0 ? 2 : PD + 1
 num_interior_dofs(::Tri{Lagrange, PD}) where PD = PD < 3 ? 0 : (PD - 1) * (PD - 2) ÷ 2
 
 function shape_function_value(::Tri{Lagrange, 0}, _, _)

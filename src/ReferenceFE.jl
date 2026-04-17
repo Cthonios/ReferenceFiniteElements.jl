@@ -151,30 +151,70 @@ shape_function_divergence(interps::AbstractVector{T}, q::Int, f::Int) where T <:
 #     return H1OrL2Interpolants(ws, ξs, Ns, ∇N_ξs, ∇∇N_ξs)
 # end
 
+# function _setup_cell_interpolants_old(
+#     el_type::AbstractElementType,
+#     q_rule::AbstractQuadratureType,
+#     type::Type{<:AbstractStaticInterpolants}
+# )
+#     Xs = dof_coordinates(el_type)
+#     ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
+#     NN = num_cell_dofs(el_type)
+#     ND = dimension(el_type)
+#     if type <: StaticH1OrL2Interpolants
+#         interps = Vector{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
+#     elseif type <: StaticH1OrL2InterpolantsWithHessians
+#         interps = Vector{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, length(ws))
+#     elseif type <: StaticHdivInterpolants
+#         interps = Vector{StaticHdivInterpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
+#     else
+#         @assert false "Unsupported type $type"
+#     end
+
+#     for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
+#         if typeof(el_type) <: Edge
+#             ξ = ξ[1]
+#         end
+#         interps[q] = type(el_type, Xs, ξ, w)
+#     end
+#     return interps
+# end
+
 function _setup_cell_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    type::Type{<:AbstractStaticInterpolants}
+    ::Type{<:StaticH1OrL2Interpolants}
 )
     Xs = dof_coordinates(el_type)
     ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
-    if type <: StaticH1OrL2Interpolants
-        interps = Vector{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
-    elseif type <: StaticH1OrL2InterpolantsWithHessians
-        interps = Vector{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, length(ws))
-    elseif type <: StaticHdivInterpolants
-        interps = Vector{StaticHdivInterpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
-    else
-        @assert false "Unsupported type $type"
-    end
+    interps = Vector{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
 
     for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
         if typeof(el_type) <: Edge
             ξ = ξ[1]
         end
-        interps[q] = type(el_type, Xs, ξ, w)
+        interps[q] = StaticH1OrL2Interpolants(el_type, Xs, ξ, w)
+    end
+    return interps
+end
+
+function _setup_cell_interpolants(
+    el_type::AbstractElementType,
+    q_rule::AbstractQuadratureType,
+    ::Type{<:StaticH1OrL2InterpolantsWithHessians}
+)
+    Xs = dof_coordinates(el_type)
+    ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
+    NN = num_cell_dofs(el_type)
+    ND = dimension(el_type)
+    interps = Vector{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, length(ws))
+
+    for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
+        if typeof(el_type) <: Edge
+            ξ = ξ[1]
+        end
+        interps[q] = StaticH1OrL2InterpolantsWithHessians(el_type, Xs, ξ, w)
     end
     return interps
 end
@@ -220,7 +260,7 @@ end
 function _setup_surface_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    type::Type{<:AbstractStaticInterpolants}
+    type::Type{<:StaticH1OrL2Interpolants}
 )
     if dimension(el_type) == 1
         Xs = zeros(1, 1, 2)
@@ -234,45 +274,20 @@ function _setup_surface_interpolants(
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
     NB = num_boundaries(el_type)
-    if type <: StaticH1OrL2Interpolants
-        interps = Matrix{type{Float64, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
-    elseif type <: StaticH1OrL2InterpolantsWithHessians
-        interps = Matrix{type{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, size(ws, 1), NB)
-    elseif type <: StaticHdivInterpolants
-        interps = Matrix{type{Float64, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
-    else
-        @assert false
-    end
+    interps = Matrix{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
 
     # special annoying case that may be Lagrange specific
     if dimension(el_type) == 1
-        if type <: StaticH1OrL2Interpolants
-            interps[1, 1] = StaticH1OrL2Interpolants(
-                1., SVector{ND, Float64}(ξs[1, 1, 1]),
-                zero(SVector{NN, Float64}),
-                zero(SMatrix{NN, ND, Float64, ND * NN})
-            )
-            interps[1, 2] = StaticH1OrL2Interpolants(
-                1., SVector{ND, Float64}(ξs[1, 1, 2]),
-                zero(SVector{NN, Float64}),
-                zero(SMatrix{NN, ND, Float64, ND * NN})
-            )
-        elseif type <: StaticH1OrL2InterpolantsWithHessians
-            interps[1, 1] = StaticH1OrL2InterpolantsWithHessians(
-                1., SVector{ND, Float64}(ξs[1, 1, 1]),
-                zero(SVector{NN, Float64}),
-                zero(SMatrix{NN, ND, Float64, ND * NN}),
-                zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
-            )
-            interps[1, 2] = StaticH1OrL2InterpolantsWithHessians(
-                1., SVector{ND, Float64}(ξs[1, 1, 2]),
-                zero(SVector{NN, Float64}),
-                zero(SMatrix{NN, ND, Float64, ND * NN}),
-                zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
-            )
-        else
-            @assert false
-        end
+        interps[1, 1] = StaticH1OrL2Interpolants(
+            1., SVector{ND, Float64}(ξs[1, 1, 1]),
+            zero(SVector{NN, Float64}),
+            zero(SMatrix{NN, ND, Float64, ND * NN})
+        )
+        interps[1, 2] = StaticH1OrL2Interpolants(
+            1., SVector{ND, Float64}(ξs[1, 1, 2]),
+            zero(SVector{NN, Float64}),
+            zero(SMatrix{NN, ND, Float64, ND * NN})
+        )
     else
         for f in axes(ξs, 3)
             for q in axes(ξs, 2)
@@ -288,67 +303,91 @@ function _setup_surface_interpolants(
     return interps
 end
 
-struct ReferenceFE{
-    EType       <: AbstractElementType,
-    BDofs       <: AbstractVector{<:SVector},
-    BNorms      <: AbstractMatrix{<:Number},
-    CellInterps <: Union{
-        <:AbstractInterpolants, 
-        <:AbstractVector{<:AbstractInterpolants}
-    },
-    SurfInterps <: Union{
-        <:AbstractInterpolants,
-        <:AbstractMatrix{<:AbstractInterpolants}
-    },
-    NEPE
-}
-    element::EType
+function _setup_surface_interpolants(
+    el_type::AbstractElementType,
+    q_rule::AbstractQuadratureType,
+    type::Type{<:StaticH1OrL2InterpolantsWithHessians}
+)
+    if dimension(el_type) == 1
+        Xs = zeros(1, 1, 2)
+        Xs[1, 1, 1] = -1.
+        Xs[1, 1, 2] = 1.
+    else
+        Xs = dof_coordinates(el_type)[:, boundary_dofs(el_type)]
+    end
+    ξs, ws = surface_quadrature_points_and_weights(el_type, q_rule)
+
+    NN = num_cell_dofs(el_type)
+    ND = dimension(el_type)
+    NB = num_boundaries(el_type)
+    interps = Matrix{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, size(ws, 1), NB)
+
+    # special annoying case that may be Lagrange specific
+    if dimension(el_type) == 1
+        interps[1, 1] = StaticH1OrL2InterpolantsWithHessians(
+            1., SVector{ND, Float64}(ξs[1, 1, 1]),
+            zero(SVector{NN, Float64}),
+            zero(SMatrix{NN, ND, Float64, ND * NN}),
+            zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
+        )
+        interps[1, 2] = StaticH1OrL2InterpolantsWithHessians(
+            1., SVector{ND, Float64}(ξs[1, 1, 2]),
+            zero(SVector{NN, Float64}),
+            zero(SMatrix{NN, ND, Float64, ND * NN}),
+            zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
+        )
+    else
+        for f in axes(ξs, 3)
+            for q in axes(ξs, 2)
+                if typeof(el_type) <: Edge
+                    ξ = ξs[1, q, f]
+                else
+                    ξ = ξs[:, q, f]
+                end
+                interps[q, f] = type(el_type, Xs[:, :, f], ξ, ws[q, f])
+            end
+        end
+    end
+    return interps
+end
+
+_default_interpolants_type(::AbstractElementType{D, Lagrange, PD}) where {D, PD} = StaticH1OrL2Interpolants
+
+struct ReferenceFE{E, Q, BDofs, BNorms, CellInterps, SurfInterps, NEPE}
+    element::E
     boundary_dofs::BDofs
     boundary_normals::BNorms
     cell_interps::CellInterps
     surf_interps::SurfInterps
 
-    function ReferenceFE(
-        el_type::AbstractElementType{Lagrange, PD},
-        q_rule::AbstractQuadratureType;
-        interpolants_type = StaticH1OrL2Interpolants
-    ) where PD
-        return ReferenceFE(el_type, q_rule, interpolants_type)
+    function ReferenceFE(el::E, ::Q) where {E, Q}
+        interps_type = _default_interpolants_type(el)
+        return ReferenceFE{E, Q, interps_type}()
     end
 
-    function ReferenceFE(
-        el_type::AbstractElementType{RaviartThomas, PD},
-        q_rule::AbstractQuadratureType;
-        interpolants_type = StaticHdivInterpolants
-    ) where PD
-        return ReferenceFE(el_type, q_rule, interpolants_type)
+    function ReferenceFE(::E, ::Q, ::Type{IT}) where {E, Q, IT}
+        return ReferenceFE{E, Q, IT}()
     end
 
-    function ReferenceFE(
-        el_type::AbstractElementType,
-        q_rule::AbstractQuadratureType,
-        interpolants_type::Type{<:AbstractInterpolants}
-    )
+    function ReferenceFE{E, Q, IT}() where {E, Q, IT}
+        el_type = E()
+        q_rule = Q()
         bdofs = boundary_dofs(el_type)
-        bdofs = map(x -> SVector{length(x), Int}(x), eachcol(bdofs))
-        bnorms = boundary_normals(el_type)
-        cell_interps = _setup_cell_interpolants(el_type, q_rule, interpolants_type)
-        surf_interps = _setup_surface_interpolants(el_type, q_rule, interpolants_type)
-        new{
-            typeof(el_type), 
-            typeof(bdofs), typeof(bnorms),
-            typeof(cell_interps), typeof(surf_interps),
-            num_cell_dofs(el_type)
-        }(
-            el_type, bdofs, bnorms, cell_interps, surf_interps
+        bdofs = map(
+            (i, x) -> SVector{num_dofs_on_boundary(el_type, i), Int}(x),
+            1:num_boundaries(el_type),
+            eachcol(bdofs)
         )
+        bnorms = boundary_normals(el_type)
+        cell_interps = _setup_cell_interpolants(el_type, q_rule, IT)
+        surf_interps = _setup_surface_interpolants(el_type, q_rule, IT)
+        return ReferenceFE{E, Q}(el_type, bdofs, bnorms, cell_interps, surf_interps)
     end
 
-    function ReferenceFE(
-        element, bdofs, bnorms, cell_interps, surf_interps
-    )
+    # constructor used by adapt method below
+    function ReferenceFE{E, Q}(element, bdofs, bnorms, cell_interps, surf_interps) where {E, Q}
         new{
-            typeof(element), 
+            E, Q,
             typeof(bdofs), typeof(bnorms),
             typeof(cell_interps), typeof(surf_interps),
             num_cell_dofs(element)
@@ -361,7 +400,7 @@ function Adapt.adapt_structure(to, re::ReferenceFE)
     bnorms = adapt(to, re.boundary_normals)
     cell_interps = adapt(to, re.cell_interps)
     surf_interps = adapt(to, re.surf_interps)
-    return ReferenceFE(re.element, bdofs, bnorms, cell_interps, surf_interps)
+    return ReferenceFE{typeof(re.element), quadrature_rule(re)}(re.element, bdofs, bnorms, cell_interps, surf_interps)
 end
 
 function Base.show(io::IO, re::ReferenceFE)
@@ -372,29 +411,30 @@ function Base.show(io::IO, re::ReferenceFE)
 end
 
 # topology interface
-boundary_element(re::ReferenceFE, i::Int) = boundary_element(re.element, i)
+boundary_element(re::ReferenceFE, i::Int) = boundary_element(element(re), i)
 boundary_normal(re::ReferenceFE, f::Int) = view(re.boundary_normals, :, f)
-dimension(re::ReferenceFE) = dimension(re.element)
+dimension(re::ReferenceFE) = dimension(element(re))
 element(re::ReferenceFE) = re.element
-num_boundaries(re::ReferenceFE) = num_boundaries(re.element)
-num_edges(re::ReferenceFE) = num_edges(re.element)
-num_faces(re::ReferenceFE) = num_faces(re.element)
-polynomial_degree(re::ReferenceFE) = polynomial_degree(re.element)
-vertex_coordinates(re::ReferenceFE) = vertex_coordinates(re.element)
+num_boundaries(re::ReferenceFE) = num_boundaries(element(re))
+num_edges(re::ReferenceFE) = num_edges(element(re))
+num_faces(re::ReferenceFE) = num_faces(element(re))
+polynomial_degree(re::ReferenceFE) = polynomial_degree(element(re))
+vertex_coordinates(re::ReferenceFE) = vertex_coordinates(element(re))
 
 # dof interface
 boundary_dofs(re::ReferenceFE) = re.boundary_dofs
 boundary_dofs(re::ReferenceFE, f::Int) = re.boundary_dofs[f]
-dof_coordinates(re::ReferenceFE) = dof_coordinates(re.element)
-interior_dofs(re::ReferenceFE) = interior_dofs(re.element)
+dof_coordinates(re::ReferenceFE) = dof_coordinates(element(re))
+interior_dofs(re::ReferenceFE) = interior_dofs(element(re))
 # num_cell_dofs(re::ReferenceFE) = num_cell_dofs(re.element)
-@inline num_cell_dofs(::ReferenceFE{A, B, C, D, E, NEPE}) where {A, B, C, D, E, NEPE} = NEPE
+@inline num_cell_dofs(::ReferenceFE{A, B, C, D, E, F, NEPE}) where {A, B, C, D, E, F, NEPE} = NEPE
 
 # quadrature interface
 cell_quadrature_point(re::ReferenceFE, q::Int) = quadrature_point(re.cell_interps, q)
 cell_quadrature_weight(re::ReferenceFE, q::Int) = quadrature_weight(re.cell_interps, q)
-num_cell_quadrature_points(re::ReferenceFE) = num_quadrature_points(re.cell_interps)
+num_cell_quadrature_points(re::ReferenceFE) = num_cell_quadrature_points(element(re), quadrature_rule(re))
 num_surface_quadrature_points(re::ReferenceFE) = num_quadrature_points(re.surf_interps)
+quadrature_rule(::ReferenceFE{E, Q, BD, BN, CI, SI, NEPE}) where {E, Q, BD, BN, CI, SI, NEPE} = Q
 surface_quadrature_point(re::ReferenceFE, q::Int, f::Int) = quadrature_point(re.surf_interps, q, f)
 surface_quadrature_weight(re::ReferenceFE, q::Int, f::Int) = quadrature_weight(re.surf_interps, q, f)
 
@@ -493,7 +533,8 @@ function MappedH1OrL2SurfaceInterpolants(e::ReferenceFE, X, q::Integer, f::Integ
     be = boundary_element(e.element, f)
     if dimension(be) == 1
         X_diff = X_face[:, 2] - X_face[:, 1]
-        ref_len = be.shifted ? 1.0 : 2.0
+        # ref_len = be.shifted ? 1.0 : 2.0
+        ref_len = _is_shifted(be) ? 1.0 : 2.0
         det_J  = norm(X_diff) / ref_len
         n      = boundary_normal(e, f)
     else
