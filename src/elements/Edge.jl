@@ -246,8 +246,8 @@ end
 function shape_function_value(::Edge{Lagrange, 2, false}, _, ξ::Number)
     return [
         0.5 * ξ * (ξ - 1.0),
-        1.0 - ξ^2,
         0.5 * ξ * (ξ + 1.0),
+        1.0 - ξ^2
     ]
 end
 
@@ -260,20 +260,20 @@ function shape_function_value(::Edge{Lagrange, 2, true}, _, ξ::Number)
 end
 
 function shape_function_gradient(::Edge{Lagrange, 2, false}, _, ξ::Number)
-    return SVector(
+    return [
         0.5 * (2.0 * ξ - 1.0),
-        -2.0 * ξ,
         0.5 * (2.0 * ξ + 1.0),
-    )
+        -2.0 * ξ
+    ]
 end
 
 # Second order shifted
 function shape_function_gradient(::Edge{Lagrange, 2, true}, _, ξ::Number)
-    return SVector(
+    return [
         4.0 * ξ - 3.0,
         4.0 - 8.0 * ξ,
         4.0 * ξ - 1.0,
-    )
+    ]
 end
 
 function shape_function_value(e::Edge{Lagrange, PD, Shifted}, Xs, ξ::Number) where {PD, Shifted}
