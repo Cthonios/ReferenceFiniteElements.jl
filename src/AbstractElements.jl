@@ -1,104 +1,5 @@
 """
 $(TYPEDEF)
-"""
-abstract type AbstractPolynomialType end
-
-# TODO move somewhere else eventually
-"""
-$(TYPEDEF)
-"""
-struct Hermite <: AbstractPolynomialType
-end
-"""
-$(TYPEDEF)
-"""
-struct Lagrange <: AbstractPolynomialType
-end
-# special type for Vertex
-"""
-$(TYPEDEF)
-"""
-struct NoInterpolation <: AbstractPolynomialType
-end
-"""
-$(TYPEDEF)
-"""
-struct RaviartThomas <: AbstractPolynomialType
-end
-"""
-$(TYPEDEF)
-"""
-struct Serendipity <: AbstractPolynomialType
-end
-
-"""
-$(TYPEDEF)
-"""
-abstract type AbstractQuadratureType{CD, SD} end
-
-"""
-$(TYPEDSIGNATURES)
-"""
-cell_quadrature_degree(::AbstractQuadratureType{CD, SD}) where {CD, SD} = CD
-"""
-$(TYPEDSIGNATURES)
-"""
-surface_quadrature_degree(::AbstractQuadratureType{CD, SD}) where {CD, SD} = SD
-
-"""
-$(TYPEDEF)
-"""
-struct GaussLobattoLegendre{CD, SD} <: AbstractQuadratureType{CD, SD}
-  function GaussLobattoLegendre(degree::Int)
-    return GaussLobattoLegendre{degree, degree}()
-  end
-  
-  function GaussLobattoLegendre(cell_degree::Int, surf_degree::Int)
-    return GaussLobattoLegendre{cell_degree, surf_degree}()
-  end
-
-  function GaussLobattoLegendre{CD, SD}() where {CD, SD}
-    @assert isa(CD, Integer)
-    @assert isa(SD, Integer)
-    @assert CD > 0 "Cell quadrature degree must be greater than zero"
-    @assert SD > 0 "Surface quadrature degree must be greater than zero"
-    new{CD, SD}()
-  end
-end
-
-"""
-$(TYPEDEF)
-"""
-struct GaussLegendre{CD, SD} <: AbstractQuadratureType{CD, SD}
-  function GaussLegendre(degree::Int)
-    return GaussLegendre{degree, degree}()
-  end
-
-  function GaussLegendre(cell_degree::Int, surf_degree::Int)
-    return GaussLegendre{cell_degree, surf_degree}()
-  end
-
-  function GaussLegendre{CD, SD}() where {CD, SD}
-    @assert isa(CD, Integer)
-    @assert isa(SD, Integer)
-    @assert CD > 0 "Cell quadrature degree must be greater than zero"
-    @assert SD > 0 "Surface quadrature degree must be greater than zero"
-    new{CD, SD}()
-  end
-end
-
-# methods to define for quadrature types
-"""
-$(TYPEDSIGNATURES)
-"""
-function cell_quadrature_points_and_weights end
-"""
-$(TYPEDSIGNATURES)
-"""
-function surface_quadrature_points_and_weights end
-
-"""
-$(TYPEDEF)
 Base type for the package that all element types
 are subtyped off of. The parameters have the following
 general meaning.
@@ -138,10 +39,6 @@ function boundary_element end
 $(TYPEDSIGNATURES)
 """
 function boundary_normals end # always returns 3 x num boundaries
-# """
-# $(TYPEDSIGNATURES)
-# """
-# function dimension end
 """
 $(TYPEDSIGNATURES)
 """
@@ -157,11 +54,11 @@ function num_boundaries end
 """
 $(TYPEDSIGNATURES)
 """
-function num_edges end
+function num_edges_per_cell end
 """
 $(TYPEDSIGNATURES)
 """
-function num_faces end
+function num_faces_per_cell end
 """
 $(TYPEDSIGNATURES)
 """
@@ -200,14 +97,14 @@ boundary_normals(::AbstractVertex) = Matrix{Float64}(undef, 3, 0)
 edge_vertices(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
 face_vertices(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
 num_boundaries(::AbstractVertex) = 0
-num_edges(::AbstractVertex) = 0
-num_faces(::AbstractVertex) = 0
+num_edges_per_cell(::AbstractVertex) = 0
+num_faces_per_cell(::AbstractVertex) = 0
 num_vertices_per_cell(::AbstractVertex) = 1
 vertex_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
 
 # this one is an oddity
 boundary_dofs(::AbstractVertex) = Matrix{Int}(undef, 0, 0)
-dof_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
+# dof_coordinates(::AbstractVertex) = [0. 0. 0.]' |> collect
 interior_dofs(::AbstractVertex) = Vector{Int}(undef, 0)
 num_cell_dofs(::AbstractVertex) = 1
 num_dofs_on_boundary(::AbstractVertex, ::Int) = 0
@@ -223,8 +120,8 @@ boundary_normals(::AbstractEdge) = [-1. 0. 0.; 1. 0. 0.]' |> collect
 edge_vertices(::AbstractEdge) = [1 2]' |> collect
 face_vertices(::AbstractEdge) = Matrix{Int}(undef, 0, 0)
 num_boundaries(::AbstractEdge) = 2
-num_edges(::AbstractEdge) = 1
-num_faces(::AbstractEdge) = 0
+num_edges_per_cell(::AbstractEdge) = 1
+num_faces_per_cell(::AbstractEdge) = 0
 num_vertices_per_cell(::AbstractEdge) = 2
 function vertex_coordinates(e::AbstractEdge) 
   # if e.shifted
@@ -249,8 +146,8 @@ $(TYPEDEF)
 """
 abstract type AbstractFace{PT, PD} <: AbstractElementType{2, PT, PD} end
 face_vertices(e::AbstractFace) = 1:num_vertices_per_cell(e) |> collect
-num_boundaries(e::AbstractFace) = num_edges(e)
-num_faces(::AbstractFace) = 1
+num_boundaries(e::AbstractFace) = num_edges_per_cell(e)
+num_faces_per_cell(::AbstractFace) = 1
 
 """
 $(TYPEDEF)
@@ -266,7 +163,7 @@ edge_vertices(::AbstractQuad) = [
   1 2 3 4;
   2 3 4 1
 ]
-num_edges(::AbstractQuad) = 4
+num_edges_per_cell(::AbstractQuad) = 4
 num_vertices_per_cell(::AbstractQuad) = 4
 vertex_coordinates(::AbstractQuad) = [
   -1.  1. 1. -1.;
@@ -288,7 +185,7 @@ edge_vertices(::AbstractTri) = [
   1 2 3;
   2 3 1
 ]
-num_edges(::AbstractTri) = 3
+num_edges_per_cell(::AbstractTri) = 3
 num_vertices_per_cell(::AbstractTri) = 3
 vertex_coordinates(::AbstractTri) = [
   0. 1. 0.;
@@ -302,7 +199,7 @@ vertex_coordinates(::AbstractTri) = [
 $(TYPEDEF)
 """
 abstract type AbstractVolume{PT, PD} <: AbstractElementType{3, PT, PD} end
-num_boundaries(e::AbstractVolume) = num_faces(e)
+num_boundaries(e::AbstractVolume) = num_faces_per_cell(e)
 
 """
 $(TYPEDEF)
@@ -325,8 +222,8 @@ face_vertices(::AbstractHex) = [
   5 6 7 4 2 8
 ]
 num_dofs_on_boundary(::AbstractHex{Lagrange, PD}, ::Int) where PD = PD == 0 ? 4 : (PD + 1) * (PD + 1)
-num_edges(::AbstractHex) = 12
-num_faces(::AbstractHex) = 6
+num_edges_per_cell(::AbstractHex) = 12
+num_faces_per_cell(::AbstractHex) = 6
 num_vertices_per_cell(::AbstractHex) = 8
 vertex_coordinates(::AbstractHex) = [
   -1.  1.  1. -1. -1.  1. 1. -1.
@@ -360,8 +257,8 @@ face_vertices(::AbstractTet) = [
   4 4 3 2
 ]
 num_dofs_on_boundary(::AbstractTet{Lagrange, PD}, ::Int) where PD = PD == 0 ? 3 : (PD + 1) * (PD + 2) ÷ 2
-num_edges(::AbstractTet) = 6
-num_faces(::AbstractTet) = 4
+num_edges_per_cell(::AbstractTet) = 6
+num_faces_per_cell(::AbstractTet) = 4
 num_vertices_per_cell(::AbstractTet) = 4
 vertex_coordinates(::AbstractTet) = [
   0. 1. 0. 0.

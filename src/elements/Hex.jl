@@ -4,248 +4,6 @@ $(TYPEDEF)
 struct Hex{PT, PD} <: AbstractHex{PT, PD}
 end
 
-function boundary_dofs(e::Hex{Lagrange, PD}) where PD
-    # 6 faces
-    nv = num_vertices_per_cell(e)  # 8
-    ne = num_edges(e)              # 12
-    faces = face_vertices(e)       # 4 × 6
-    edges = edge_vertices(e)       # 2 × 12
-
-    # Prepare container
-    # max DOFs per face: 4 vertices + 4 * (PD - 1) edge DOFs + (PD - 1)^2 face interior
-    max_rows = 4 + 4 * (PD - 1) + (PD - 1)^2
-    F = zeros(Int, max_rows, num_faces(e))
-
-    # Offset counters
-    edge_offset = nv + 1          # first edge DOF index
-    face_offset = nv + ne * (PD - 1) + 1  # first interior face DOF index
-
-    if PD > 1
-        for f = 1:num_faces(e)
-            # corner vertices
-            F[1:4, f] .= faces[:, f]
-
-            row = 5
-
-            # edges of this face: the edges are assumed to follow vertex order
-            face_edge_pairs = [
-                (faces[1, f], faces[2, f]),
-                (faces[2, f], faces[3, f]),
-                (faces[3, f], faces[4, f]),
-                (faces[4, f], faces[1, f])
-            ]
-
-            for (v1, v2) in face_edge_pairs
-                # find the edge index
-                idx = findfirst(ei -> 
-                    (edges[1,ei] == v1 && edges[2,ei] == v2) ||
-                    (edges[1,ei] == v2 && edges[2,ei] == v1), 
-                    1:ne
-                )
-                if PD > 1
-                    F[row:row + PD - 2, f] .= edge_offset:edge_offset + PD - 2
-                    edge_offset += PD - 1
-                    row += PD - 1
-                end
-            end
-
-            # face interior DOFs
-            if PD > 1
-                n_interior = (PD - 1)^2
-                F[row:row + n_interior - 1, f] .= face_offset:face_offset + n_interior - 1
-                face_offset += n_interior
-            end
-        end
-
-        # Trim unused rows
-        # return F[1:row + (PD>1 ? n_interior : 0) - 1, :]
-        return F
-    else
-        return faces
-    end
-end
-function dof_coordinates(e::Hex{Lagrange, PD}) where PD
-    if PD == 0
-        return zeros(3, 1)
-    end
-
-    Xv = vertex_coordinates(e)  # 3 × 8
-    coords = copy(Xv)           # start with vertices
-
-    if PD > 1
-        # --------------------------
-        # edge DOFs
-        # --------------------------
-        edge_pts_1d = range(-1.0, 1.0, PD + 1)[2:end - 1]  # interior points along [-1,1]
-
-        for (v1, v2) in eachcol(edge_vertices(e))
-            for ξ in edge_pts_1d
-                pt = (1.0 - ξ) / 2 * Xv[:, v1] + 
-                     (1.0 + ξ) / 2 * Xv[:, v2]
-                coords = hcat(coords, pt)
-            end
-        end
-
-        # --------------------------
-        # face interior DOFs
-        # --------------------------
-        face_pts_1d = edge_pts_1d  # same 1D points along face
-        for f in 1:num_faces(e)
-            v = face_vertices(e)[:, f]
-            v1, v2, v3, v4 = v
-            for i in face_pts_1d, j in face_pts_1d
-                # bilinear interpolation in the face
-                pt = (1.0 - i) * (1.0 - j) / 4 * Xv[:, v1] +
-                     (1.0 + i) * (1.0 - j) / 4 * Xv[:, v2] +
-                     (1.0 + i) * (1.0 + j) / 4 * Xv[:, v3] +
-                     (1.0 - i) * (1.0 + j) / 4 * Xv[:, v4]
-                coords = hcat(coords, pt)
-            end
-        end
-
-        # --------------------------
-        # cell interior DOFs
-        # --------------------------
-        pts_1d = edge_pts_1d
-        for i in pts_1d, j in pts_1d, k in pts_1d
-            # trilinear interpolation inside the hex
-            pt = zeros(eltype(coords), 3)
-            for (α, β, γ, vtx) in (
-                (-1, -1, -1, 1), (1, -1, -1, 2), 
-                (1, 1, -1, 3), (-1, 1, -1, 4),
-                (-1, -1, 1, 5), (1, -1, 1, 6), 
-                (1, 1, 1, 7), (-1, 1, 1, 8)
-            )
-                w = (1 + α * i) / 2 * (1 + β * j) / 2 * (1 + γ * k) / 2
-                pt += w * Xv[:, vtx]
-            end
-            coords = hcat(coords, pt)
-        end
-    end
-
-    return coords
-end
-function interior_dofs(e::Hex{Lagrange, PD}) where PD
-    if PD < 2
-        return Int[]
-    else
-        offset = 8 + 12 * (PD - 1) + 6 * (PD - 1)^2 + 1
-        return offset:offset + num_interior_dofs(e)
-    end
-end
-num_cell_dofs(::Hex{Lagrange, PD}) where PD = (PD + 1)^3
-function num_interior_dofs(::Hex{Lagrange, PD}) where PD
-    if PD == 0
-        return 1
-    elseif PD == 1
-        return 0
-    else
-        return (PD - 1) * (PD - 1) * (PD - 1)
-    end
-end
-
-function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e, 0), 0), q_rule)
-    n = length(ws)
-    ξ_return = Matrix{eltype(ξs)}(undef, 3, n * n * n)
-    w_return = Vector{eltype(ξs)}(undef, n * n * n)
-    for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs, ξs))
-        ξ_return[1, q] = ξ[1]
-        ξ_return[2, q] = ξ[2]
-        ξ_return[3, q] = ξ[3]
-    end
-    for (q, w) in enumerate(Base.Iterators.product(ws, ws, ws))
-        w_return[q] = w[1] * w[2] * w[3]
-    end
-    return ξ_return, w_return
-end
-
-num_cell_quadrature_points(::AbstractHex, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = CD * CD * CD
-
-function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
-
-    ξ_return = zeros(3, length(ws), 6)
-    w_return = zeros(length(ws), 6)
-
-    ξ_return[1:2, :, 1] .= ξs
-    ξ_return[3, :, 1]   .= -1.
-    ξ_return[1, :, 2]   .= 1.
-    ξ_return[2:3, :, 2] .= ξs
-    ξ_return[1:2, :, 3] .= ξs
-    ξ_return[3, :, 3]   .= 1.
-    ξ_return[1, :, 4]   .= -1.
-    ξ_return[2:3, :, 4] .= ξs
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= -1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
-    ξ_return[1, :, 6]   .= ξs[1, :]
-    ξ_return[2, :, 6]   .= 1.
-    ξ_return[3, :, 6]   .= ξs[2, :]
-
-    for n in 1:6
-        w_return[:, n] .= ws
-    end
-    return ξ_return, w_return
-end
-
-function cell_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(boundary_element(e, 0), 0), q_rule)
-    ξ_return = Matrix{eltype(ξs)}(undef, 3, length(ξs) * length(ξs) * length(ξs) * length(ξs))
-    w_return = Vector{eltype(ξs)}(undef, length(ξs) * length(ξs) * length(ξs) * length(ξs))
-    for (q, ξ) in enumerate(Base.Iterators.product(ξs, ξs, ξs))
-        ξ_return[1, q] = ξ[1]
-        ξ_return[2, q] = ξ[2]
-        ξ_return[3, q] = ξ[3]
-    end
-    for (q, w) in enumerate(Base.Iterators.product(ws, ws, ws))
-        w_return[q] = w[1] * w[2] * w[3]
-    end
-    return ξ_return, w_return
-end
-
-num_cell_quadrature_points(::AbstractHex, ::Type{GaussLobattoLegendre{CD, SD}}) where {CD, SD} = CD * CD * CD
-
-function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
-  
-    ξ_return = zeros(3, length(ws), 6)
-    w_return = zeros(length(ws), 6)
-
-    ξ_return[1:2, :, 1] .= ξs
-    ξ_return[3, :, 1]   .= -1.
-    #
-    ξ_return[1, :, 2]   .= 1.
-    ξ_return[2:3, :, 2] .= ξs
-    #
-    ξ_return[1:2, :, 3] .= ξs
-    ξ_return[3, :, 3]   .= 1.
-    #
-    ξ_return[1, :, 4]   .= -1.
-    ξ_return[2:3, :, 4] .= ξs
-    #
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= -1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
-    #
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= 1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
-    #
-    #
-    # ξ_return[1, :, 2] .= 1.
-    # ξ_return[2, :, 2] .= ξs[1, :]
-    # ξ_return[1, :, 3] .= ξs[1, :]
-    # ξ_return[2, :, 3] .= 1.
-    # ξ_return[1, :, 4] .= -1.
-    # ξ_return[2, :, 4] .= ξs[1, :]
-
-    for n in 1:6
-        w_return[:, n] .= ws
-    end
-    return ξ_return, w_return
-end
-
 function _edge_dof_indices(v1::Int, v2::Int, n::Int, PD::Int)
     # Number of vertices
     nv = 8
@@ -305,19 +63,104 @@ function _face_dof_indices(face::Int, i::Int, j::Int, PD::Int)
     end
 end
 
-function shape_function_value(::Hex{Lagrange, 0}, _, _)
+########################################################################
+# Lagrange implementation
+########################################################################
+function boundary_dofs(e::Hex{Lagrange, PD}) where PD
+    # 6 faces
+    nv = num_vertices_per_cell(e)  # 8
+    ne = num_edges_per_cell(e)              # 12
+    faces = face_vertices(e)       # 4 × 6
+    edges = edge_vertices(e)       # 2 × 12
+
+    # Prepare container
+    # max DOFs per face: 4 vertices + 4 * (PD - 1) edge DOFs + (PD - 1)^2 face interior
+    max_rows = 4 + 4 * (PD - 1) + (PD - 1)^2
+    F = zeros(Int, max_rows, num_faces_per_cell(e))
+
+    # Offset counters
+    edge_offset = nv + 1          # first edge DOF index
+    face_offset = nv + ne * (PD - 1) + 1  # first interior face DOF index
+
+    if PD > 1
+        for f = 1:num_faces_per_cell(e)
+            # corner vertices
+            F[1:4, f] .= faces[:, f]
+
+            row = 5
+
+            # edges of this face: the edges are assumed to follow vertex order
+            face_edge_pairs = [
+                (faces[1, f], faces[2, f]),
+                (faces[2, f], faces[3, f]),
+                (faces[3, f], faces[4, f]),
+                (faces[4, f], faces[1, f])
+            ]
+
+            for (v1, v2) in face_edge_pairs
+                # find the edge index
+                idx = findfirst(ei -> 
+                    (edges[1,ei] == v1 && edges[2,ei] == v2) ||
+                    (edges[1,ei] == v2 && edges[2,ei] == v1), 
+                    1:ne
+                )
+                if PD > 1
+                    F[row:row + PD - 2, f] .= edge_offset:edge_offset + PD - 2
+                    edge_offset += PD - 1
+                    row += PD - 1
+                end
+            end
+
+            # face interior DOFs
+            if PD > 1
+                n_interior = (PD - 1)^2
+                F[row:row + n_interior - 1, f] .= face_offset:face_offset + n_interior - 1
+                face_offset += n_interior
+            end
+        end
+
+        # Trim unused rows
+        # return F[1:row + (PD>1 ? n_interior : 0) - 1, :]
+        return F
+    else
+        return faces
+    end
+end
+
+function interior_dofs(e::Hex{Lagrange, PD}) where PD
+    if PD < 2
+        return Int[]
+    else
+        offset = 8 + 12 * (PD - 1) + 6 * (PD - 1)^2 + 1
+        return offset:offset + num_interior_dofs(e)
+    end
+end
+
+num_cell_dofs(::Hex{Lagrange, PD}) where PD = (PD + 1)^3
+
+function num_interior_dofs(::Hex{Lagrange, PD}) where PD
+    if PD == 0
+        return 1
+    elseif PD == 1
+        return 0
+    else
+        return (PD - 1) * (PD - 1) * (PD - 1)
+    end
+end
+
+function shape_function_value(::Hex{Lagrange, 0}, _)
     return ones(1)
 end
 
-function shape_function_gradient(::Hex{Lagrange, 0}, _, _)
+function shape_function_gradient(::Hex{Lagrange, 0}, _)
     return zeros(1, 3)
 end
 
-function shape_function_hessian(::Hex{Lagrange, 0}, _, _)
+function shape_function_hessian(::Hex{Lagrange, 0}, _)
     return zeros(1, 3, 3)
 end
 
-function shape_function_value(::Hex{Lagrange, 1}, _, ξ)
+function shape_function_value(::Hex{Lagrange, 1}, ξ)
     Ns = [
         0.125 * (1 - ξ[1]) * (1 - ξ[2]) * (1 - ξ[3]),
         0.125 * (1 + ξ[1]) * (1 - ξ[2]) * (1 - ξ[3]),
@@ -331,36 +174,9 @@ function shape_function_value(::Hex{Lagrange, 1}, _, ξ)
     return Ns
 end
 
-function shape_function_gradient(::Hex{Lagrange, 1}, _, ξ)
+function shape_function_gradient(::Hex{Lagrange, 1}, ξ)
     Ns = zeros(8, 3)
-    # Ns = reshape([
-    #   -0.125 * (1 - ξ[2]) * (1 - ξ[3]),
-    #   0.125 * (1 - ξ[2]) * (1 - ξ[3]),
-    #   0.125 * (1 + ξ[2]) * (1 - ξ[3]),
-    #   -0.125 * (1 + ξ[2]) * (1 - ξ[3]),
-    #   -0.125 * (1 - ξ[2]) * (1 + ξ[3]),
-    #   0.125 * (1 - ξ[2]) * (1 + ξ[3]),
-    #   0.125 * (1 + ξ[2]) * (1 + ξ[3]),
-    #   -0.125 * (1 + ξ[2]) * (1 + ξ[3]),
-    #   #
-    #   -0.125 * (1 - ξ[1]) * (1 - ξ[3]),
-    #   -0.125 * (1 + ξ[1]) * (1 - ξ[3]),
-    #   0.125 * (1 + ξ[1]) * (1 - ξ[3]),
-    #   0.125 * (1 - ξ[1]) * (1 - ξ[3]),
-    #   -0.125 * (1 - ξ[1]) * (1 + ξ[3]),
-    #   -0.125 * (1 + ξ[1]) * (1 + ξ[3]),
-    #   0.125 * (1 + ξ[1]) * (1 + ξ[3]),
-    #   0.125 * (1 - ξ[1]) * (1 + ξ[3]),
-    #   #
-    #   -0.125 * (1 - ξ[1]) * (1 - ξ[2]),
-    #   -0.125 * (1 + ξ[1]) * (1 - ξ[2]),
-    #   -0.125 * (1 + ξ[1]) * (1 + ξ[2]),
-    #   -0.125 * (1 - ξ[1]) * (1 + ξ[2]),
-    #   0.125 * (1 - ξ[1]) * (1 - ξ[2]),
-    #   0.125 * (1 + ξ[1]) * (1 - ξ[2]),
-    #   0.125 * (1 + ξ[1]) * (1 + ξ[2]),
-    #   0.125 * (1 - ξ[1]) * (1 + ξ[2])
-    # ], 8, 3)' |> collect
+    #
     Ns[1, 1] = -0.125 * (1 - ξ[2]) * (1 - ξ[3])
     Ns[2, 1] = 0.125 * (1 - ξ[2]) * (1 - ξ[3])
     Ns[3, 1] = 0.125 * (1 + ξ[2]) * (1 - ξ[3])
@@ -390,11 +206,11 @@ function shape_function_gradient(::Hex{Lagrange, 1}, _, ξ)
     return Ns
 end
 
-function shape_function_hessian(::Hex{Lagrange, 1}, _, _)
+function shape_function_hessian(::Hex{Lagrange, 1}, _)
     return zeros(3, 3, 8)
 end
 
-function shape_function_value(e::Hex{Lagrange, PD}, _, ξ) where PD
+function shape_function_value(e::Hex{Lagrange, PD}, ξ) where PD
     # ξ = [ξ, η, ζ] in reference coordinates
 
     le = boundary_element(boundary_element(e))
@@ -494,7 +310,7 @@ function shape_function_value(e::Hex{Lagrange, PD}, _, ξ) where PD
     return N
 end
 
-function shape_function_gradient(e::Hex{Lagrange, PD}, _, ξ) where PD
+function shape_function_gradient(e::Hex{Lagrange, PD}, ξ) where PD
     le = boundary_element(boundary_element(e))
 
     coords_1d = dof_coordinates(le)
@@ -645,3 +461,8 @@ end
 
 #     return H
 # end
+
+########################################################################
+# Raviart-Thomas implementation
+########################################################################
+# TODO

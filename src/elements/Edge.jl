@@ -147,103 +147,48 @@ num_cell_dofs(::Edge{Lagrange, PD}) where PD = PD + 1
 num_dofs_on_boundary(::Edge{Lagrange, PD}, ::Int) where PD = 1
 num_interior_dofs(::Edge{Lagrange, PD}) where PD = PD < 2 ? 0 : PD - 1
 
-function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLegendre)
-    ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
-
-    # if e.shifted
-    if _is_shifted(e)
-        ξs .= (ξs .+ 1.) ./ 2.
-        ws .= ws ./ 2.
-    end
-
-    return reshape(ξs, 1, length(ξs)), ws
-end
-
-num_cell_quadrature_points(::AbstractEdge, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = CD
-
-function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLegendre)
-    if _is_shifted(e)
-        x_min = 0.
-    else
-        x_min = -1.
-    end
-
-    ξs = zeros(1, 1, 2)
-    ξs[1, 1, 1] = x_min
-    ξs[1, 1, 2] = 1.
-    ws = ones(1, 2)
-    return ξs, ws
-end
-
-function cell_quadrature_points_and_weights(e::AbstractEdge, q_rule::GaussLobattoLegendre)
-    ξs, ws = gausslegendre(cell_quadrature_degree(q_rule))
-
-    if _is_shifted(e)
-        ξs .= (ξs .+ 1.) ./ 2.
-        ws .= ws ./ 2.
-    end
-
-    return reshape(ξs, 1, length(ξs)), ws
-end
-
-num_cell_quadrature_points(::AbstractEdge, ::Type{GaussLobattoLegendre{CD, SD}}) where {CD, SD} = CD
-
-function surface_quadrature_points_and_weights(e::AbstractEdge, ::GaussLobattoLegendre)
-    if _is_shifted(e)
-        x_min = 0.
-    else
-        x_min = -1.
-    end
-
-    ξs = zeros(1, 1, 2)
-    ξs[1, 1, 1] = x_min
-    ξs[1, 1, 2] = 1.
-    ws = ones(1, 2)
-    return ξs, ws
-end
-
 # 0th order Lagrange implementation
-function shape_function_value(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
+function shape_function_value(::Edge{Lagrange, 0, Shifted}, ::Number) where Shifted
     return ones(1)
 end
 
-function shape_function_gradient(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
+function shape_function_gradient(::Edge{Lagrange, 0, Shifted}, ::Number) where Shifted
     return zeros(1, 1)
 end
 
-function shape_function_hessian(::Edge{Lagrange, 0, Shifted}, _, ::Number) where Shifted
+function shape_function_hessian(::Edge{Lagrange, 0, Shifted}, ::Number) where Shifted
     return zeros(1, 1, 1)
 end
 
-function shape_function_value(::Edge{Lagrange, 1, false}, _, ξ::Number)
+function shape_function_value(::Edge{Lagrange, 1, false}, ξ::Number)
     return [
         0.5 * (1 - ξ),
         0.5 * (1 + ξ)
     ]
 end
 
-function shape_function_value(::Edge{Lagrange, 1, true}, _, ξ::Number)
+function shape_function_value(::Edge{Lagrange, 1, true}, ξ::Number)
     return [
         1 - ξ,
         ξ
     ]
 end
 
-function shape_function_gradient(::Edge{Lagrange, 1, false}, _, ξ::Number)
+function shape_function_gradient(::Edge{Lagrange, 1, false}, ξ::Number)
     return [
         -0.5,
         0.5
     ]
 end
 
-function shape_function_gradient(::Edge{Lagrange, 1, true}, _, ξ::Number)
+function shape_function_gradient(::Edge{Lagrange, 1, true}, ξ::Number)
     return [
         -1.0,
         1.0
     ]
 end
 
-function shape_function_value(::Edge{Lagrange, 2, false}, _, ξ::Number)
+function shape_function_value(::Edge{Lagrange, 2, false}, ξ::Number)
     return [
         0.5 * ξ * (ξ - 1.0),
         0.5 * ξ * (ξ + 1.0),
@@ -251,7 +196,7 @@ function shape_function_value(::Edge{Lagrange, 2, false}, _, ξ::Number)
     ]
 end
 
-function shape_function_value(::Edge{Lagrange, 2, true}, _, ξ::Number)
+function shape_function_value(::Edge{Lagrange, 2, true}, ξ::Number)
     return [
         (1.0 - ξ) * (1.0 - 2.0 * ξ),
         4.0 * ξ * (1.0 - ξ),
@@ -259,7 +204,7 @@ function shape_function_value(::Edge{Lagrange, 2, true}, _, ξ::Number)
     ]
 end
 
-function shape_function_gradient(::Edge{Lagrange, 2, false}, _, ξ::Number)
+function shape_function_gradient(::Edge{Lagrange, 2, false}, ξ::Number)
     return [
         0.5 * (2.0 * ξ - 1.0),
         0.5 * (2.0 * ξ + 1.0),
@@ -268,7 +213,7 @@ function shape_function_gradient(::Edge{Lagrange, 2, false}, _, ξ::Number)
 end
 
 # Second order shifted
-function shape_function_gradient(::Edge{Lagrange, 2, true}, _, ξ::Number)
+function shape_function_gradient(::Edge{Lagrange, 2, true}, ξ::Number)
     return [
         4.0 * ξ - 3.0,
         4.0 - 8.0 * ξ,
@@ -276,7 +221,8 @@ function shape_function_gradient(::Edge{Lagrange, 2, true}, _, ξ::Number)
     ]
 end
 
-function shape_function_value(e::Edge{Lagrange, PD, Shifted}, Xs, ξ::Number) where {PD, Shifted}
+function shape_function_value(e::Edge{Lagrange, PD, Shifted}, ξ::Number) where {PD, Shifted}
+    Xs = dof_coordinates(e)
     type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)
@@ -293,7 +239,8 @@ function shape_function_value(e::Edge{Lagrange, PD, Shifted}, Xs, ξ::Number) wh
     return N[:, 1]
 end
 
-function shape_function_gradient(e::Edge{Lagrange, PD, Shifted}, Xs, ξ) where {PD, Shifted}
+function shape_function_gradient(e::Edge{Lagrange, PD, Shifted}, ξ) where {PD, Shifted}
+    Xs = dof_coordinates(e)
     type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)
@@ -310,7 +257,8 @@ function shape_function_gradient(e::Edge{Lagrange, PD, Shifted}, Xs, ξ) where {
     return reshape(∇N_ξ, n_nodes, 1)
 end
 
-function shape_function_hessian(e::Edge{Lagrange, PD, Shifted}, Xs, ξ) where {PD, Shifted}
+function shape_function_hessian(e::Edge{Lagrange, PD, Shifted}, ξ) where {PD, Shifted}
+    Xs = dof_coordinates(e)
     type = _interp_type(e)
     n_nodes = polynomial_degree(e) + 1
     A = zeros(length(Xs), n_nodes)

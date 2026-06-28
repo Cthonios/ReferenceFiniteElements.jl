@@ -84,84 +84,6 @@ function boundary_dofs(e::Tet{Lagrange, PD}) where PD
     return faces
 end
 
-function dof_coordinates(e::Tet{Lagrange, PD}) where PD
-    coords = vertex_coordinates(e)
-
-    offset = 4
-
-    if PD < 2
-        # return coords
-        # do nothing to coords
-    elseif PD == 2
-        X = zeros(3, 10)
-
-        # Vertices
-        X[:, 1] .= (0, 0, 0)   # node 1
-        X[:, 2] .= (1, 0, 0)   # node 2
-        X[:, 3] .= (0, 1, 0)   # node 3
-        X[:, 4] .= (0, 0, 1)   # node 4
-    
-        # Mid-edge nodes (ExodusII ordering)
-        X[:, 5] .= (1//2, 0,     0    )  # edge 1-2
-        X[:, 6] .= (1//2, 1//2,  0    )  # edge 2-3
-        X[:, 7] .= (0,    1//2,  0    )  # edge 3-1
-        X[:, 8] .= (0,    0,     1//2 )  # edge 1-4
-        X[:, 9] .= (1//2, 0,     1//2 )  # edge 2-4
-        X[:, 10] .= (0,    1//2,  1//2 )  # edge 3-4
-    
-        # return X
-        coords = X
-    else
-
-        # edge DOFs
-        if PD ≥ 2
-            for (v1, v2) in eachcol(edge_vertices(e))
-                for i in 1:PD - 1
-                    t = i / PD
-                    new_coord = (1.0 - t) * coords[:, v1] + t * coords[:, v2]
-                    coords = hcat(coords, new_coord)
-                    offset += 1
-                end
-            end
-        end
-
-        # face DOFs
-        if PD ≥ 3
-            for (v1, v2, v3) in face_vertices(e)
-                for i in 1:PD - 1
-                    for j in 1:PD - 1 - i
-                        t1 = i / PD
-                        t2 = j / PD
-                        t3 = 1.0 - t1 - t2
-                        new_coord = t1 * coords[:,v1] + t2 * coords[:,v2] + t3 * coords[:,v3]
-                        coords = hcat(coords, new_coord)
-                        offset += 1
-                    end
-                end
-            end
-        end
-
-        # interior DOFs
-        if PD ≥ 4
-            for i in 1:PD - 3
-                for j in 1:PD - 2 - i
-                    for k in 1:PD - 1 - i - j
-                        t1 = i / PD
-                        t2 = j / PD
-                        t3 = k / PD
-                        t4 = 1.0 - t1 - t2 - t3
-                        new_coord = t1 * coords[:,1] + t2 * coords[:,2] + t3 * coords[:,3] + t4 * coords[:,4]
-                        coords = hcat(coords, new_coord)
-                        offset += 1
-                    end
-                end
-            end
-        end
-    end
-
-    return coords
-end
-
 function interior_dofs(::Tet{Lagrange, PD}) where PD
     if PD < 4
         return Int[]
@@ -178,120 +100,19 @@ end
 num_cell_dofs(::Tet{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) * (PD + 3) ÷ 6
 num_interior_dofs(::Tet{Lagrange, PD}) where PD = PD < 4 ? 0 : (PD - 1) * (PD - 2) * (PD - 3) ÷ 6
 
-function cell_quadrature_points_and_weights(::AbstractTet, q_rule::GaussLegendre)
-    deg = cell_quadrature_degree(q_rule)
-    if deg == 1
-        # 1-point centroid rule (degree 1)
-        ξs = Matrix{Float64}(undef, 3, 1)
-        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
-        ws = [1. / 6.]
-    elseif deg == 2
-        # 4-point symmetric rule (degree 2)
-        s = sqrt(5.0)
-        a = (5. + 3. * s) / 20.
-        b = (5. - s) / 20.
-        ξs = Matrix{Float64}(undef, 3, 4)
-        ξs[:, 1] = [b, b, b]
-        ξs[:, 2] = [a, b, b]
-        ξs[:, 3] = [b, a, b]
-        ξs[:, 4] = [b, b, a]
-        ws = [1. / 24., 1. / 24., 1. / 24., 1. / 24.]
-    elseif deg == 3
-        # 5-point rule (degree 3)
-        ξs = Matrix{Float64}(undef, 3, 5)
-        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
-        ξs[:, 2] = [1. / 6., 1. / 6., 1. / 6.]
-        ξs[:, 3] = [1. / 6., 1. / 6., 1. / 2.]
-        ξs[:, 4] = [1. / 6., 1. / 2., 1. / 6.]
-        ξs[:, 5] = [1. / 2., 1. / 6., 1. / 6.]
-        ws = [-2. / 15., 3. / 40., 3. / 40., 3. / 40., 3. / 40.]
-    else
-        @assert false "GaussLegendre degree 1 through 3 supported for Tet."
-    end
-    return ξs, ws
-end
-
-num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{1, SD}}) where SD = 1
-num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{2, SD}}) where SD = 4
-num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{3, SD}}) where SD = 5
-
-function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
-    return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
-end
-
-function cell_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobattoLegendre)
-    if cell_quadrature_degree(q_rule) == 1
-        ξs = Matrix{Float64}(undef, 3, 1)
-        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
-        ws = [1. / 6.]
-    elseif cell_quadrature_degree(q_rule) == 2
-        ξs = Matrix{Float64}(undef, 3, 5)
-        ξs[:, 1] = [1. / 4., 1. / 4., 1. / 4.]
-        ξs[:, 2] = [1. / 6., 1. / 6., 1. / 6.]
-        ξs[:, 3] = [1. / 6., 1. / 6., 1. / 2.]
-        ξs[:, 4] = [1. / 6., 1. / 2., 1. / 6.]
-        ξs[:, 5] = [1. / 2., 1. / 6., 1. / 6.]
-
-        #
-        ws = [
-            -2. / 15.
-            3. / 40.
-            3. / 40.
-            3. / 40.
-            3. / 40.
-        ]
-    else
-        @assert false "Quadrature 1 through 2 currently supported."
-    end
-    return ξs, ws
-end
-
-num_cell_quadrature_points(::AbstractTet, ::Type{GaussLobattoLegendre{1, SD}}) where SD = 1
-num_cell_quadrature_points(::AbstractTet, ::Type{GaussLobattoLegendre{2, SD}}) where SD = 5
-
-
-function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
-
-    ξ_return = zeros(3, length(ws), 4)
-    w_return = zeros(length(ws), 4)
-
-    ξ_return[1, :, 1] .= ξs[1, :]
-    ξ_return[2, :, 1] .= 0.
-    ξ_return[3, :, 1] .= ξs[2, :]
-    #
-    ξ_return[1, :, 2] .= ξs[1, :]
-    ξ_return[2, :, 2] .= ξs[2, :]
-    ξ_return[3, :, 2] .= 1. .- ξs[1, :] .- ξs[2, :]
-    #
-    ξ_return[1, :, 3] .= 0.
-    ξ_return[2, :, 3] .= ξs[1, :]
-    ξ_return[3, :, 3] .= ξs[2, :]
-    #
-    ξ_return[1, :, 4] .= ξs[1, :]
-    ξ_return[2, :, 4] .= ξs[2, :]
-    ξ_return[3, :, 4] .= 0.
-
-    for n in 1:4
-        w_return[:, n] .= ws
-    end
-
-    return ξ_return, w_return
-end 
- 
-function shape_function_value(::Tet{Lagrange, 0}, _, _)
+function shape_function_value(::Tet{Lagrange, 0}, _)
     return ones(1)
 end
 
-function shape_function_gradient(::Tet{Lagrange, 0}, _, _)
+function shape_function_gradient(::Tet{Lagrange, 0}, _)
     return zeros(1, 3)
 end
 
-function shape_function_hessian(::Tet{Lagrange, 0}, _, _)
+function shape_function_hessian(::Tet{Lagrange, 0}, _)
     return zeros(1, 3, 3)
 end
 
-function shape_function_value(::Tet{Lagrange, 1}, _, ξ)
+function shape_function_value(::Tet{Lagrange, 1}, ξ)
     return [
         1. - ξ[1] - ξ[2] - ξ[3],
         ξ[1],
@@ -300,7 +121,7 @@ function shape_function_value(::Tet{Lagrange, 1}, _, ξ)
     ]
 end
 
-function shape_function_gradient(::Tet{Lagrange, 1}, _, ξ)
+function shape_function_gradient(::Tet{Lagrange, 1}, ξ)
     grads = zeros(4, 3)
 
     grads[1, 1] = -1.
@@ -315,11 +136,11 @@ function shape_function_gradient(::Tet{Lagrange, 1}, _, ξ)
     return grads
 end
 
-function shape_function_hessian(::Tet{Lagrange, 1}, _, ξ)
+function shape_function_hessian(::Tet{Lagrange, 1}, ξ)
     return zeros(4, 3, 3)
 end
 
-function shape_function_value(::Tet{Lagrange, 2}, _, ξ)
+function shape_function_value(::Tet{Lagrange, 2}, ξ)
     t0 = 1 - ξ[1] - ξ[2] - ξ[3]
     t1 = ξ[1]
     t2 = ξ[2]
@@ -339,7 +160,7 @@ function shape_function_value(::Tet{Lagrange, 2}, _, ξ)
     return Ns
 end
 
-function shape_function_gradient(::Tet{Lagrange, 2}, _, ξ)
+function shape_function_gradient(::Tet{Lagrange, 2}, ξ)
     t0 = 1 - ξ[1] - ξ[2] - ξ[3]
     t1 = ξ[1]
     t2 = ξ[2]
@@ -382,7 +203,7 @@ function shape_function_gradient(::Tet{Lagrange, 2}, _, ξ)
     return grads
 end
 
-function shape_function_hessian(::Tet{Lagrange, 2}, _, _)
+function shape_function_hessian(::Tet{Lagrange, 2}, _)
     hess = zeros(10, 3, 3)
     hess[:, 1, 1] .= [4.,  4.,  0.,  0., -8.,  0.,  0.,  0.,  0.,  0.]
     hess[:, 1, 2] .= [4.,  0.,  0.,  0., -4.,  4., -4.,  0.,  0.,  0.]
@@ -396,7 +217,7 @@ function shape_function_hessian(::Tet{Lagrange, 2}, _, _)
     return hess
 end
 
-function shape_function_value(e::Tet{Lagrange, PD}, _, ξ) where PD
+function shape_function_value(e::Tet{Lagrange, PD}, ξ) where PD
     # barycentric coordinates
     λ1 = 1 - ξ[1] - ξ[2] - ξ[3]
     λ2 = ξ[1]
@@ -476,7 +297,7 @@ function shape_function_value(e::Tet{Lagrange, PD}, _, ξ) where PD
     return N
 end
 
-function shape_function_gradient(e::Tet{Lagrange, PD}, _, ξ) where PD
+function shape_function_gradient(e::Tet{Lagrange, PD}, ξ) where PD
     λ1 = 1 - ξ[1] - ξ[2] - ξ[3]
     λ2 = ξ[1]
     λ3 = ξ[2]
