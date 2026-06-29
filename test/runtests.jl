@@ -53,7 +53,7 @@ function test_q_points_inside_element(re::ReferenceFE)
 
   # TODO re-enable
   # @test all(is_inside_element.((re.element,), surface_quadrature_points(re)))
-  # for f in 1:num_faces(re.element)
+  # for f in 1:num_faces_per_cell(re.element)
   #   for n in 1:num_quadrature_points(surface_element(re.element))
   #     if typeof(re.element) <: ReferenceFiniteElements.AbstractTri
   #       @test is_inside_element(ReferenceFiniteElements.surface_element(re.element), 2. * surface_quadrature_point(re, n, f) .- 1.)
@@ -174,8 +174,8 @@ function test_topology_interface_vertex()
   @test edge_vertices(re) == Matrix{Int}(undef, 0, 0)
   @test face_vertices(re) == Matrix{Int}(undef, 0, 0)
   @test num_boundaries(re) == 0
-  @test num_edges(re) == 0
-  @test num_faces(re) == 0
+  @test num_edges_per_cell(re) == 0
+  @test num_faces_per_cell(re) == 0
   @test num_vertices_per_cell(re) == 1
   # @test num_vertices_per_edge(re) == 0
   # @test num_vertices_per_face(re) == 0
@@ -192,8 +192,8 @@ function test_topology_interface_edge(interp_type, p, shifted)
   @test edge_vertices(re) == [1 2]' |> collect
   @test face_vertices(re) == Matrix{Int}(undef, 0, 0)
   @test num_boundaries(re) == 2
-  @test num_edges(re) == 1
-  @test num_faces(re) == 0
+  @test num_edges_per_cell(re) == 1
+  @test num_faces_per_cell(re) == 0
   @test num_vertices_per_cell(re) == 2
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 0
@@ -224,8 +224,8 @@ function test_topology_interface_quad(interp_type, p)
   ]
   @test face_vertices(re) == 1:4 |> collect
   @test num_boundaries(re) == 4
-  @test num_edges(re) == 4
-  @test num_faces(re) == 1
+  @test num_edges_per_cell(re) == 4
+  @test num_faces_per_cell(re) == 1
   @test num_vertices_per_cell(re) == 4
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 4
@@ -254,8 +254,8 @@ function test_topology_interface_tri(interp_type, p)
   ]
   @test face_vertices(re) == 1:3 |> collect
   @test num_boundaries(re) == 3
-  @test num_edges(re) == 3
-  @test num_faces(re) == 1
+  @test num_edges_per_cell(re) == 3
+  @test num_faces_per_cell(re) == 1
   @test num_vertices_per_cell(re) == 3
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 3
@@ -289,8 +289,8 @@ function test_topology_interface_hex(interp_type, p)
     5 6 7 4 2 8
   ]
   @test num_boundaries(re) == 6
-  @test num_edges(re) == 12
-  @test num_faces(re) == 6
+  @test num_edges_per_cell(re) == 12
+  @test num_faces_per_cell(re) == 6
   @test num_vertices_per_cell(re) == 8
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 4
@@ -323,8 +323,8 @@ function test_topology_interface_tet(interp_type, p)
     4 4 3 2
   ]
   @test num_boundaries(re) == 4
-  @test num_edges(re) == 6
-  @test num_faces(re) == 4
+  @test num_edges_per_cell(re) == 6
+  @test num_faces_per_cell(re) == 4
   @test num_vertices_per_cell(re) == 4
   # @test num_vertices_per_edge(re) == 2
   # @test num_vertices_per_face(re) == 3
@@ -338,7 +338,7 @@ end
 function test_dof_interface_vertex()
   re = Vertex()
   @test boundary_dofs(re) == Matrix{Int}(undef, 0, 0)
-  @test dof_coordinates(re) ≈ [0. 0. 0.]' |> collect
+  # @test dof_coordinates(re) ≈ [0. 0. 0.]' |> collect
   @test num_cell_dofs(re) == 1
   @test num_dofs_on_boundary(re, 0) == 0
   for n in 1:num_boundaries(re)
@@ -397,52 +397,52 @@ function test_dof_interface_quad(interp_type::Type{Lagrange}, p)
       offset += p - 1
     end
   end
-  coords = dof_coordinates(re)
-  if p == 0
-    @test coords ≈ [
-      -1.  1. 1. -1.
-      -1. -1. 1.  1.
-    ]
-  elseif p == 1
-    @test coords ≈ [
-      -1.  1. 1. -1.
-      -1. -1. 1.  1.
-    ]
-  else
-    edge_coords = dof_coordinates(boundary_element(re, 0))
-    # test faces
-    offset = 5
-    # face 1
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], -1.]
-    end
-    offset += p - 1
-    # face 2
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [1., edge_coords[1, n + 2]]
-    end
-    offset += p - 1
-    # face 3
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], 1.]
-    end
-    offset += p - 1
-    # face 4
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [-1., edge_coords[1, n + 2]]
-    end
-    offset += p - 1
+  # coords = dof_coordinates(re)
+  # if p == 0
+  #   @test coords ≈ [
+  #     -1.  1. 1. -1.
+  #     -1. -1. 1.  1.
+  #   ]
+  # elseif p == 1
+  #   @test coords ≈ [
+  #     -1.  1. 1. -1.
+  #     -1. -1. 1.  1.
+  #   ]
+  # else
+  #   edge_coords = dof_coordinates(boundary_element(re, 0))
+  #   # test faces
+  #   offset = 5
+  #   # face 1
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], -1.]
+  #   end
+  #   offset += p - 1
+  #   # face 2
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [1., edge_coords[1, n + 2]]
+  #   end
+  #   offset += p - 1
+  #   # face 3
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], 1.]
+  #   end
+  #   offset += p - 1
+  #   # face 4
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [-1., edge_coords[1, n + 2]]
+  #   end
+  #   offset += p - 1
 
-    # test interiors
-    offset = 4 + 4 * (p - 1) + 1
-    carry = 1
-    # for n in 1:p - 1
-    #   for m in 1:p - 1
-    #     @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
-    #     carry += 1
-    #   end
-    # end
-  end
+  #   # test interiors
+  #   offset = 4 + 4 * (p - 1) + 1
+  #   carry = 1
+  #   # for n in 1:p - 1
+  #   #   for m in 1:p - 1
+  #   #     @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
+  #   #     carry += 1
+  #   #   end
+  #   # end
+  # end
   if p < 2
     @test interior_dofs(re) == Int[]
   else
@@ -455,45 +455,45 @@ end
 # TODO finish this up by testing boundary_dofs and interior_dofs
 function test_dof_interface_tri(interp_type::Type{Lagrange}, p)
   re = Tri{interp_type, p}()
-  coords = dof_coordinates(re)
-  if p == 0
-    @test coords ≈ zeros(2, 1)
-  elseif p == 1
-    @test coords ≈ [
-      0. 1. 0.;
-      0. 0. 1.
-    ]
-  else
-    edge_coords = dof_coordinates(boundary_element(re, 0))
-    # test faces
-    offset = 4
-    # face 1
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], -1.]
-    end
-    offset += p - 1
-    # face 2
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]]
-    end
-    offset += p - 1
-    # face 3
-    for n in 1:p - 1
-      @test coords[:, offset + n - 1] ≈ [-1., edge_coords[1, n + 2]]
-    end
-    offset += p - 1
+  # coords = dof_coordinates(re)
+  # if p == 0
+  #   @test coords ≈ zeros(2, 1)
+  # elseif p == 1
+  #   @test coords ≈ [
+  #     0. 1. 0.;
+  #     0. 0. 1.
+  #   ]
+  # else
+  #   edge_coords = dof_coordinates(boundary_element(re, 0))
+  #   # test faces
+  #   offset = 4
+  #   # face 1
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], -1.]
+  #   end
+  #   offset += p - 1
+  #   # face 2
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]]
+  #   end
+  #   offset += p - 1
+  #   # face 3
+  #   for n in 1:p - 1
+  #     @test coords[:, offset + n - 1] ≈ [-1., edge_coords[1, n + 2]]
+  #   end
+  #   offset += p - 1
 
-    # TODO fix this up
-    # test interiors
-    offset = 3 + 3 * (p - 1) + 1
-    carry = 1
-    for n in 1:p - 1
-      for m in 1:p - 1 - n
-        @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
-        carry += 1
-      end
-    end
-  end
+  #   # TODO fix this up
+  #   # test interiors
+  #   offset = 3 + 3 * (p - 1) + 1
+  #   carry = 1
+  #   for n in 1:p - 1
+  #     for m in 1:p - 1 - n
+  #       @test coords[:, offset + carry - 1] ≈ [edge_coords[1, m + 2], edge_coords[1, n + 2]]
+  #       carry += 1
+  #     end
+  #   end
+  # end
   @test num_cell_dofs(re) == (p + 1) * (p + 2) ÷ 2
   if p < 3
     @test num_interior_dofs(re) == 0

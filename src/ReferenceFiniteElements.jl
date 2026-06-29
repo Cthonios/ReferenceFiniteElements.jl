@@ -9,7 +9,9 @@ using SpecialPolynomials
 using StaticArrays
 
 # includes
-include("AbstractTypes.jl")
+include("PolynomialTypes.jl")
+include("AbstractElements.jl")
+include("QuadratureRules.jl")
 include("ReferenceFE.jl")
 
 # 0-d elements
@@ -90,8 +92,8 @@ export edge_vertices
 export element
 export face_vertices
 export num_boundaries
-export num_edges
-export num_faces
+export num_edges_per_cell
+export num_faces_per_cell
 export num_vertices_per_cell
 export vertex_coordinates
 

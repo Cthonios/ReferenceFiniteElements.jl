@@ -1,148 +1,3 @@
-function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLegendre)
-    deg = cell_quadrature_degree(q_rule)
-    if deg == 1
-        # 1-point centroid rule (degree 1)
-        ξs = Matrix{Float64}(undef, 2, 1)
-        ξs[:, 1] = [1. / 3., 1. / 3.]
-        ws = [0.5]
-    elseif deg == 2
-        # 3-point rule (degree 2)
-        ξs = Matrix{Float64}(undef, 2, 3)
-        ξs[:, 1] = [1. / 6., 1. / 6.]
-        ξs[:, 2] = [4. / 6., 1. / 6.]
-        ξs[:, 3] = [1. / 6., 4. / 6.]
-        ws = [1. / 6., 1. / 6., 1. / 6.]
-    elseif deg == 3
-        # 4-point rule (degree 3): centroid + 3 edge midpoints
-        ξs = Matrix{Float64}(undef, 2, 4)
-        ξs[:, 1] = [1. / 3., 1. / 3.]
-        ξs[:, 2] = [1. / 5., 3. / 5.]
-        ξs[:, 3] = [3. / 5., 1. / 5.]
-        ξs[:, 4] = [1. / 5., 1. / 5.]
-        ws = [-27. / 96., 25. / 96., 25. / 96., 25. / 96.]
-    else
-        @assert false "GaussLegendre degree 1 through 3 supported for Tri."
-    end
-    return ξs, ws
-end
-
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{1, SD}}) where SD = 1
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{2, SD}}) where SD = 3
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLegendre{3, SD}}) where SD = 4
-
-function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLegendre)
-    return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))
-end
-
-function cell_quadrature_points_and_weights(::AbstractTri, q_rule::GaussLobattoLegendre)
-    if cell_quadrature_degree(q_rule) == 1
-      ξs = Matrix{Float64}(undef, 2, 1)
-      ξs[:, 1] = [1. / 3., 1. / 3.]
-      ws = [0.5]
-    elseif cell_quadrature_degree(q_rule) == 2
-      ξs = Matrix{Float64}(undef, 2, 3)
-      ξs[:, 1] = [2. / 3., 1. / 6.]
-      ξs[:, 2] = [1. / 6., 2. / 3.]
-      ξs[:, 3] = [1. / 6., 1. / 6.]
-      ws = [1. / 6., 1. / 6., 1. / 6.]
-    elseif cell_quadrature_degree(q_rule) <= 4
-      ξs = Matrix{Float64}(undef, 2, 6)
-      ξs[:, 1] = [1.081030181680700E-01, 4.459484909159650E-01]
-      ξs[:, 2] = [4.459484909159650E-01, 1.081030181680700E-01]
-      ξs[:, 3] = [4.459484909159650E-01, 4.459484909159650E-01]
-      ξs[:, 4] = [8.168475729804590E-01, 9.157621350977100E-02]
-      ξs[:, 5] = [9.157621350977100E-02, 8.168475729804590E-01]
-      ξs[:, 6] = [9.157621350977100E-02, 9.157621350977100E-02]
-  
-      ws = [
-        1.116907948390055E-01,
-        1.116907948390055E-01,
-        1.116907948390055E-01,
-        5.497587182766100E-02,
-        5.497587182766100E-02,
-        5.497587182766100E-02
-      ]
-    elseif cell_quadrature_degree(q_rule) <= 5
-      ξs = Matrix{Float64}(undef, 2, 7)
-      ξs[:, 1] = [3.33333333333333E-01, 3.33333333333333E-01]
-      ξs[:, 2] = [5.97158717897700E-02, 4.70142064105115E-01]
-      ξs[:, 3] = [4.70142064105115E-01, 5.97158717897700E-02]
-      ξs[:, 4] = [4.70142064105115E-01, 4.70142064105115E-01]
-      ξs[:, 5] = [7.97426985353087E-01, 1.01286507323456E-01]
-      ξs[:, 6] = [1.01286507323456E-01, 7.97426985353087E-01]
-      ξs[:, 7] = [1.01286507323456E-01, 1.01286507323456E-01]
-  
-      ws = [
-        1.12500000000000E-01,
-        6.61970763942530E-02,
-        6.61970763942530E-02,
-        6.61970763942530E-02,
-        6.29695902724135E-02,
-        6.29695902724135E-02,
-        6.29695902724135E-02
-      ]
-    elseif cell_quadrature_degree(q_rule) <= 6
-      ξs = Matrix{Float64}(undef, 2, 12)
-      ξs[:, 1]  = [5.01426509658179E-01, 2.49286745170910E-01]
-      ξs[:, 2]  = [2.49286745170910E-01, 5.01426509658179E-01]
-      ξs[:, 3]  = [2.49286745170910E-01, 2.49286745170910E-01]
-      ξs[:, 4]  = [8.73821971016996E-01, 6.30890144915020E-02]
-      ξs[:, 5]  = [6.30890144915020E-02, 8.73821971016996E-01]
-      ξs[:, 6]  = [6.30890144915020E-02, 6.30890144915020E-02]
-      ξs[:, 7]  = [5.31450498448170E-02, 3.10352451033784E-01]
-      ξs[:, 8]  = [6.36502499121399E-01, 5.31450498448170E-02]
-      ξs[:, 9]  = [3.10352451033784E-01, 6.36502499121399E-01]
-      ξs[:, 10] = [5.31450498448170E-02, 6.36502499121399E-01]
-      ξs[:, 11] = [6.36502499121399E-01, 3.10352451033784E-01]
-      ξs[:, 12] = [3.10352451033784E-01, 5.31450498448170E-02]
-  
-      ws = [
-        5.83931378631895E-02,
-        5.83931378631895E-02,
-        5.83931378631895E-02,
-        2.54224531851035E-02,
-        2.54224531851035E-02,
-        2.54224531851035E-02,
-        4.14255378091870E-02,
-        4.14255378091870E-02,
-        4.14255378091870E-02,
-        4.14255378091870E-02,
-        4.14255378091870E-02,
-        4.14255378091870E-02
-      ]
-    else
-        @assert false "Quadrature degree 1 through 6 currently supported."
-    end
-
-    return ξs, ws
-end
-
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{1, SD}}) where SD = 1
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{2, SD}}) where SD = 3
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{3, SD}}) where SD = 6
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{4, SD}}) where SD = 6
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{5, SD}}) where SD = 7
-num_cell_quadrature_points(::AbstractTri, ::Type{GaussLobattoLegendre{6, SD}}) where SD = 12
-
-function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLobattoLegendre)
-    ξs, ws = cell_quadrature_points_and_weights(boundary_element(e, 0), q_rule)
-
-    ξ_return = zeros(2, length(ws), 3)
-    w_return = zeros(length(ws), 3)
-
-    ξ_return[1, :, 1] .= ξs[1, :]
-    ξ_return[2, :, 1] .= -1.
-    ξ_return[1, :, 2] .= ξs[1, :]
-    ξ_return[2, :, 2] .= 1. .- ξs[1, :]
-    ξ_return[1, :, 3] .= -1.
-    ξ_return[2, :, 3] .= ξs[1, :]
-
-    for n in 1:3
-        w_return[:, n] .= ws
-    end
-    return ξ_return, w_return
-end
-
 """
 $(TYPEDEF)
 """
@@ -167,44 +22,7 @@ function boundary_dofs(e::Tri{Lagrange, PD}) where PD
         return edges
     end
 end
-function dof_coordinates(e::Tri{Lagrange, PD}) where PD
-    if PD == 0
-        return zeros(2, 1)
-    end
 
-    coords = [
-        0. 1. 0.;
-        0. 0. 1.
-    ]
-
-    if PD > 1
-        # do edge midpoints
-        edge_coords = dof_coordinates(boundary_element(e, 0))
-
-        # face 1
-        for n in 1:PD - 1
-            coords = hcat(coords, [edge_coords[1, n + 2], -1.])
-        end
-        # face 2
-        for n in 1:PD - 1
-            coords = hcat(coords, [edge_coords[1, n + 2], 1. - edge_coords[1, n + 2]])
-        end
-        # face 3
-        for n in 1:PD - 1
-            coords = hcat(coords, [-1., edge_coords[1, n + 2]])
-        end
-
-        # now for interiors
-        # TODO not correct yet
-        for n in 1:PD - 1
-            for m in 1:PD - 1 - n
-                # @assert false "TODO"
-                coords = hcat(coords, [edge_coords[1, m + 2], edge_coords[1, n + 2]])
-            end
-        end
-    end
-    return coords
-end
 function interior_dofs(::Tri{Lagrange, PD}) where PD
     if PD < 3
         return Int[]
@@ -212,23 +30,24 @@ function interior_dofs(::Tri{Lagrange, PD}) where PD
         @assert false "TODO"
     end
 end
+
 num_cell_dofs(::Tri{Lagrange, PD}) where PD = (PD + 1) * (PD + 2) ÷ 2
 num_dofs_on_boundary(::Tri{Lagrange, PD}, ::Int) where PD = PD == 0 ? 2 : PD + 1
 num_interior_dofs(::Tri{Lagrange, PD}) where PD = PD < 3 ? 0 : (PD - 1) * (PD - 2) ÷ 2
 
-function shape_function_value(::Tri{Lagrange, 0}, _, _)
+function shape_function_value(::Tri{Lagrange, 0}, _)
     return ones(1)
 end
 
-function shape_function_gradient(::Tri{Lagrange, 0}, _, _)
+function shape_function_gradient(::Tri{Lagrange, 0}, _)
     return zeros(1, 2)
 end
 
-function shape_function_hessian(::Tri{Lagrange, 0}, _, _)
+function shape_function_hessian(::Tri{Lagrange, 0}, _)
     return zeros(1, 2, 2)
 end
 
-function shape_function_value(::Tri{Lagrange, PD}, _, ξ) where PD
+function shape_function_value(::Tri{Lagrange, PD}, ξ) where PD
     λ1 = 1 - ξ[1] - ξ[2]
     λ2 = ξ[1]
     λ3 = ξ[2]
@@ -282,7 +101,7 @@ function shape_function_value(::Tri{Lagrange, PD}, _, ξ) where PD
     return N
 end
 
-function shape_function_gradient(e::Tri{Lagrange, PD}, _, ξ) where PD
+function shape_function_gradient(e::Tri{Lagrange, PD}, ξ) where PD
     λ1 = 1 - ξ[1] - ξ[2]
     λ2 = ξ[1]
     λ3 = ξ[2]
@@ -363,7 +182,7 @@ function shape_function_gradient(e::Tri{Lagrange, PD}, _, ξ) where PD
     return dN
 end
 
-function shape_function_hessian(e::Tri{Lagrange, PD}, _, ξ) where PD
+function shape_function_hessian(e::Tri{Lagrange, PD}, ξ) where PD
     T = eltype(ξ)
 
     λ1 = one(T) - ξ[1] - ξ[2]
@@ -445,29 +264,31 @@ interior_dofs(::Tri{RaviartThomas, 0}) = Int[]
 num_cell_dofs(::Tri{RaviartThomas, 0}) = 3
 num_interior_dofs(::Tri{RaviartThomas, 0}) = 0
 
-function geometry_shape_function_value(::Tri{RaviartThomas, 0}, X, ξ)
-    return shape_function_value(Tri{Lagrange, 1}(), X, ξ)
+function geometry_shape_function_value(::Tri{RaviartThomas, 0}, ξ)
+    return shape_function_value(Tri{Lagrange, 1}(), ξ)
 end
 
-function geometry_shape_function_gradient(::Tri{RaviartThomas, 0}, X, ξ)
-    return shape_function_gradient(Tri{Lagrange, 1}(), X, ξ)
+function geometry_shape_function_gradient(::Tri{RaviartThomas, 0}, ξ)
+    return shape_function_gradient(Tri{Lagrange, 1}(), ξ)
 end
 
-function shape_function_value(::Tri{RaviartThomas, 0}, _, ξ)
+# https://defelement.org/elements/examples/triangle-raviart-thomas-lagrange-0.html
+# but re-ordered for exodus numbering
+function shape_function_value(::Tri{RaviartThomas, 0}, ξ)
     N = Matrix{Float64}(undef, 3, 2)
-
-    N[1, 1] = 1
-    N[1, 2] = -ξ[2]
+    #
+    N[1, 1] = -ξ[1]
+    N[1, 2] = 1 - ξ[2]
     #
     N[2, 1] = -ξ[1]
-    N[2, 2] = 1 - ξ[2]
+    N[2, 2] = -ξ[2]
     #
-    N[3, 1] = ξ[1]
+    N[3, 1] = ξ[1] - 1
     N[3, 2] = ξ[2]
 
     return N
 end
 
-function shape_function_divergence(::Tri{RaviartThomas, 0}, _, ξ)
+function shape_function_divergence(::Tri{RaviartThomas, 0}, ξ)
     return [-2., -2., 2.]
 end
