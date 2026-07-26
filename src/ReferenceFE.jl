@@ -1,9 +1,11 @@
 """
 $(TYPEDEF)
 """
-abstract type AbstractInterpolants end
-abstract type AbstractDynamicInterpolants <: AbstractInterpolants end # TODO implment
-abstract type AbstractStaticInterpolants <: AbstractInterpolants end
+abstract type AbstractInterpolants{T <: Number} end
+Base.eltype(::AbstractInterpolants{T}) where T = T
+
+abstract type AbstractDynamicInterpolants{T} <: AbstractInterpolants{T} end # TODO implment
+abstract type AbstractStaticInterpolants{T} <: AbstractInterpolants{T} end
 dimension(interps::AbstractStaticInterpolants) = size(interps.ξ, 1)
 num_quadrature_points(interps::AbstractVector{T}) where T <: AbstractStaticInterpolants = length(interps)
 num_quadrature_points(interps::AbstractMatrix{T}) where T <: AbstractStaticInterpolants = size(interps, 1)
@@ -14,14 +16,17 @@ quadrature_weight(interps::AbstractMatrix{T}, q::Int, f::Int) where T <: Abstrac
 shape_function_value(interps::AbstractVector{T}, q::Int) where T <: AbstractStaticInterpolants = interps[q].N
 shape_function_value(interps::AbstractMatrix{T}, q::Int, f::Int) where T <: AbstractStaticInterpolants = interps[q, f].N
 
-abstract type AbstractStaticH1OrL2Interpolants <: AbstractStaticInterpolants end
+abstract type AbstractStaticH1OrL2Interpolants{T} <: AbstractStaticInterpolants{T} end
 shape_function_gradient(interps::AbstractVector{T}, q::Int) where T <: AbstractStaticH1OrL2Interpolants = interps[q].∇N_ξ
 shape_function_gradient(interps::AbstractMatrix{T}, q::Int, f::Int) where T <: AbstractStaticH1OrL2Interpolants = interps[q, f].∇N_ξ
+
+abstract type AbstractStaticHdivInterpolants{T} <: AbstractStaticInterpolants{T} end
+
 
 struct StaticH1OrL2Interpolants{
     RT <: Number,
     ND, NN, NDNN
-} <: AbstractStaticH1OrL2Interpolants
+} <: AbstractStaticH1OrL2Interpolants{RT}
     w::RT
     ξ::SVector{ND, RT}
     N::SVector{NN, RT}
@@ -41,7 +46,7 @@ end
 struct StaticH1OrL2InterpolantsWithHessians{
     RT <: Number,
     ND, NN, NDNN, NDNDNN
-} <: AbstractStaticH1OrL2Interpolants
+} <: AbstractStaticH1OrL2Interpolants{RT}
     w::RT
     ξ::SVector{ND, RT}
     N::SVector{NN, RT}
@@ -63,12 +68,10 @@ end
 shape_function_hessian(interps::AbstractVector{T}, q::Int) where T <: StaticH1OrL2InterpolantsWithHessians = interps[q].∇∇N_ξ
 shape_function_hessian(interps::AbstractMatrix{T}, q::Int, f::Int) where T <: StaticH1OrL2InterpolantsWithHessians = interps[q, f].∇∇N_ξ
 
-abstract type AbstractStaticHdivInterpolants <: AbstractStaticInterpolants end
-
 struct StaticHdivInterpolants{
     RT <: Number,
     ND, NN, NDNN
-} <: AbstractStaticHdivInterpolants
+} <: AbstractStaticHdivInterpolants{RT}
     w::RT
     ξ::SVector{ND, RT}
     N::SMatrix{NN, ND, RT, NDNN}
@@ -95,12 +98,13 @@ shape_function_divergence(interps::AbstractVector{T}, q::Int, f::Int) where T <:
 function _setup_cell_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    ::Type{<:StaticH1OrL2Interpolants}
-)
+    ::Type{<:StaticH1OrL2Interpolants},
+    ::Type{T} = Float64
+) where T <: Number
     ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
-    interps = Vector{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
+    interps = Vector{StaticH1OrL2Interpolants{T, ND, NN, ND * NN}}(undef, length(ws))
 
     for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
         if typeof(el_type) <: Edge
@@ -114,12 +118,13 @@ end
 function _setup_cell_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    ::Type{<:StaticH1OrL2InterpolantsWithHessians}
-)
+    ::Type{<:StaticH1OrL2InterpolantsWithHessians},
+    ::Type{T} = Float64
+) where T <: Number
     ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
-    interps = Vector{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, length(ws))
+    interps = Vector{StaticH1OrL2InterpolantsWithHessians{T, ND, NN, ND * NN, ND * ND * NN}}(undef, length(ws))
 
     for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
         if typeof(el_type) <: Edge
@@ -133,13 +138,14 @@ end
 function _setup_cell_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    ::Type{<:StaticHdivInterpolants}
-)
+    ::Type{<:StaticHdivInterpolants},
+    ::Type{T} = Float64
+) where T <: Number
     # Xs = dof_coordinates(el_type)
     ξs, ws = cell_quadrature_points_and_weights(el_type, q_rule)
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
-    interps = Vector{StaticHdivInterpolants{Float64, ND, NN, ND * NN}}(undef, length(ws))
+    interps = Vector{StaticHdivInterpolants{T, ND, NN, ND * NN}}(undef, length(ws))
 
     for (q, (w, ξ)) in enumerate(zip(ws, eachcol(ξs)))
         if typeof(el_type) <: Edge
@@ -153,26 +159,27 @@ end
 function _setup_surface_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    type::Type{<:StaticH1OrL2Interpolants}
-)
+    type::Type{<:StaticH1OrL2Interpolants},
+    ::Type{T} = Float64
+) where T <: Number
     ξs, ws = surface_quadrature_points_and_weights(el_type, q_rule)
 
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
     NB = num_boundaries(el_type)
-    interps = Matrix{StaticH1OrL2Interpolants{Float64, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
+    interps = Matrix{StaticH1OrL2Interpolants{T, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
 
     # special annoying case that may be Lagrange specific
     if dimension(el_type) == 1
         interps[1, 1] = StaticH1OrL2Interpolants(
-            1., SVector{ND, Float64}(ξs[1, 1, 1]),
-            zero(SVector{NN, Float64}),
-            zero(SMatrix{NN, ND, Float64, ND * NN})
+            1., SVector{ND, T}(ξs[1, 1, 1]),
+            zero(SVector{NN, T}),
+            zero(SMatrix{NN, ND, T, ND * NN})
         )
         interps[1, 2] = StaticH1OrL2Interpolants(
-            1., SVector{ND, Float64}(ξs[1, 1, 2]),
-            zero(SVector{NN, Float64}),
-            zero(SMatrix{NN, ND, Float64, ND * NN})
+            1., SVector{ND, T}(ξs[1, 1, 2]),
+            zero(SVector{NN, T}),
+            zero(SMatrix{NN, ND, T, ND * NN})
         )
     else
         for f in axes(ξs, 3)
@@ -192,28 +199,29 @@ end
 function _setup_surface_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    type::Type{<:StaticH1OrL2InterpolantsWithHessians}
-)
+    type::Type{<:StaticH1OrL2InterpolantsWithHessians},
+    ::Type{T} = Float64
+) where T <: Number
     ξs, ws = surface_quadrature_points_and_weights(el_type, q_rule)
 
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
     NB = num_boundaries(el_type)
-    interps = Matrix{StaticH1OrL2InterpolantsWithHessians{Float64, ND, NN, ND * NN, ND * ND * NN}}(undef, size(ws, 1), NB)
+    interps = Matrix{StaticH1OrL2InterpolantsWithHessians{T, ND, NN, ND * NN, ND * ND * NN}}(undef, size(ws, 1), NB)
 
     # special annoying case that may be Lagrange specific
     if dimension(el_type) == 1
         interps[1, 1] = StaticH1OrL2InterpolantsWithHessians(
-            1., SVector{ND, Float64}(ξs[1, 1, 1]),
-            zero(SVector{NN, Float64}),
-            zero(SMatrix{NN, ND, Float64, ND * NN}),
-            zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
+            1., SVector{ND, T}(ξs[1, 1, 1]),
+            zero(SVector{NN, T}),
+            zero(SMatrix{NN, ND, T, ND * NN}),
+            zero(SArray{Tuple{NN, ND, ND}, T, 3, ND * ND * NN})
         )
         interps[1, 2] = StaticH1OrL2InterpolantsWithHessians(
-            1., SVector{ND, Float64}(ξs[1, 1, 2]),
-            zero(SVector{NN, Float64}),
-            zero(SMatrix{NN, ND, Float64, ND * NN}),
-            zero(SArray{Tuple{NN, ND, ND}, Float64, 3, ND * ND * NN})
+            1., SVector{ND, T}(ξs[1, 1, 2]),
+            zero(SVector{NN, T}),
+            zero(SMatrix{NN, ND, T, ND * NN}),
+            zero(SArray{Tuple{NN, ND, ND}, T, 3, ND * ND * NN})
         )
     else
         for f in axes(ξs, 3)
@@ -233,15 +241,16 @@ end
 function _setup_surface_interpolants(
     el_type::AbstractElementType,
     q_rule::AbstractQuadratureType,
-    type::Type{<:StaticHdivInterpolants}
-)
+    type::Type{<:StaticHdivInterpolants},
+    ::Type{T} = Float64
+) where T <: Number
     Xs = dof_coordinates(el_type)[:, boundary_dofs(el_type)]
     ξs, ws = surface_quadrature_points_and_weights(el_type, q_rule)
 
     NN = num_cell_dofs(el_type)
     ND = dimension(el_type)
     NB = num_boundaries(el_type)
-    interps = Matrix{StaticHdivInterpolants{Float64, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
+    interps = Matrix{StaticHdivInterpolants{T, ND, NN, ND * NN}}(undef, size(ws, 1), NB)
 
     for f in axes(ξs, 3)
         for q in axes(ξs, 2)

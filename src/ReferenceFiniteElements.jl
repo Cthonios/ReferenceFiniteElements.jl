@@ -28,6 +28,9 @@ include("elements/Tri.jl")
 include("elements/Hex.jl")
 include("elements/Tet.jl")
 
+# in development stuff
+include("ReferenceFEv2.jl")
+
 # abstract interface
 export polynomial_degree
 export polynomial_type
