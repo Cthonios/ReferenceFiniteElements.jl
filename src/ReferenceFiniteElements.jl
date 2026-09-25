@@ -27,6 +27,7 @@ include("elements/Tri.jl")
 # 3-d elements
 include("elements/Hex.jl")
 include("elements/Tet.jl")
+include("elements/Enriched.jl")
 
 # abstract interface
 export polynomial_degree
@@ -57,6 +58,7 @@ export StaticH1OrL2Interpolants
 export StaticH1OrL2InterpolantsWithHessians
 
 # polynomial types
+export EnrichedLagrange
 export Hermite
 export Lagrange
 export RaviartThomas

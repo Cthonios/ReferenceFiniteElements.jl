@@ -697,6 +697,29 @@ end
 #   test_symbolic_fe_fes()
 # end
 
+include("TestEnriched.jl")
+
+@testset "Face dofs follow face_vertices" begin
+  for el in (Tet{Lagrange, 1}(), Tet{Lagrange, 2}(), Tet{EnrichedLagrange, 2}())
+    test_face_dofs_follow_face_vertices(el)
+  end
+end
+
+@testset "Triangle hessians" begin
+  test_tri_hessian_against_finite_differences()
+end
+
+@testset "Enriched elements" begin
+  test_enriched_tri()
+  test_enriched_tet()
+  test_topology_interface_tet(EnrichedLagrange, 2)
+  for type in (StaticH1OrL2Interpolants, StaticH1OrL2InterpolantsWithHessians)
+    test_ref_fe(Tri, EnrichedLagrange, 2, GaussLegendre(3); interpolants_type = type)
+    test_ref_fe(Tet, EnrichedLagrange, 2, GaussLegendre(5); interpolants_type = type)
+    test_ref_fe(Tet, EnrichedLagrange, 2, GaussLobattoLegendre(2); interpolants_type = type)
+  end
+end
+
 @testset "Aqua Tests" begin
   Aqua.test_all(ReferenceFiniteElements)
 end
