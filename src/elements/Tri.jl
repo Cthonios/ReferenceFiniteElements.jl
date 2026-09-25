@@ -203,9 +203,19 @@ function shape_function_hessian(e::Tri{Lagrange, PD}, ξ) where PD
         a[2] * b[1], a[2] * b[2]
     )
 
+    # Exponents (i, j, k) of λ1^i λ2^j λ3^k in the order of
+    # shape_function_value: vertices, then the edges 1-2, 2-3, 3-1, then the
+    # interior.  An enumeration in any other order permutes the rows.
+    exponents = Tuple{Int, Int, Int}[(PD, 0, 0), (0, PD, 0), (0, 0, PD)]
+    for i in 1:PD - 1; push!(exponents, (PD - i, i, 0)); end
+    for i in 1:PD - 1; push!(exponents, (0, PD - i, i)); end
+    for i in 1:PD - 1; push!(exponents, (i, 0, PD - i)); end
+    for i in 1:PD - 2, j in 1:PD - 1 - i
+        push!(exponents, (i, j, PD - i - j))
+    end
+
     offset = 0
-    for i in 0:PD, j in 0:(PD - i)
-        k = PD - i - j
+    for (i, j, k) in exponents
         offset += 1
         H[offset, :, :] .= zero(T)
 

@@ -20,6 +20,10 @@ Quad
 Tri
 ```
 
+## Enriched elements
+`Tri{EnrichedLagrange, 2}` and `Tet{EnrichedLagrange, 2}` carry the degree-2
+Lagrange space enriched with bubbles in a nodal basis; see `EnrichedLagrange`.
+
 ## 3-Dimensional Elements
 ```@docs
 Hex
@@ -28,6 +32,7 @@ Tet
 
 # Polynomial types
 ```@docs
+EnrichedLagrange
 Hermite
 Lagrange
 ReferenceFiniteElements.NoInterpolation

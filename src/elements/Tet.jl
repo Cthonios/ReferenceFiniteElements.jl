@@ -24,15 +24,21 @@ function boundary_dofs(e::Tet{Lagrange, PD}) where PD
         # faces = zeros(Int, 3, nfaces)
         return face_verts
     elseif PD == 2
-        # faces = zeros(Int, 6, nfaces)
-        return [
-            2   1   1   1;
-            3   4   2   3;
-            4   3   4   2;
-            6   8   5   7;
-           10  10   9   6;
-            9   7   8   5;
-        ]
+        # Face f, in the order of face_vertices (the order of the boundary
+        # normals and of the surface quadrature points), carries its three
+        # vertices and the midpoints of its three edges, each midpoint being
+        # dof 4 + (index of the edge in edge_vertices).
+        faces = zeros(Int, 6, nfaces)
+        for f in 1:nfaces
+            a, b, c = face_verts[:, f]
+            faces[1:3, f] .= (a, b, c)
+            for (k, (v1, v2)) in enumerate(((a, b), (b, c), (c, a)))
+                faces[3 + k, f] = 4 + findfirst(
+                    x -> (x[1] == v1 && x[2] == v2) || (x[1] == v2 && x[2] == v1),
+                    eachcol(edge_verts))
+            end
+        end
+        return faces
     else
         faces = zeros(Int, (PD - 1) * (PD - 2) ÷ 2, nfaces)
     end

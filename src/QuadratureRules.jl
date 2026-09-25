@@ -189,8 +189,34 @@ function cell_quadrature_points_and_weights(::AbstractTet, q_rule::GaussLegendre
         ξs[:, 4] = [1. / 6., 1. / 2., 1. / 6.]
         ξs[:, 5] = [1. / 2., 1. / 6., 1. / 6.]
         ws = [-2. / 15., 3. / 40., 3. / 40., 3. / 40., 3. / 40.]
+    elseif deg == 4 || deg == 5
+        # 14-point symmetric rule of degree 5 with positive weights
+        # (Keast, Comput. Methods Appl. Mech. Engrg. 55 (1986) 339-348),
+        # exact for every monomial through degree 5 and not at degree 6.
+        # Two orbits of four points (one coordinate distinct) and one orbit
+        # of six (two pairs of equal barycentric coordinates).
+        a1, w1 = 0.0927352503108912, 0.01224884051939366
+        a2, w2 = 0.3108859192633006, 0.01878132095300264
+        b,  w3 = 0.4544962958743503, 0.007091003462846911
+        ξs = Matrix{Float64}(undef, 3, 14)
+        ws = Vector{Float64}(undef, 14)
+        q = 0
+        for (a, w) in ((a1, w1), (a2, w2))
+            c = 1. - 3. * a
+            for λ in ((c, a, a, a), (a, c, a, a), (a, a, c, a), (a, a, a, c))
+                q += 1
+                ξs[:, q] = [λ[2], λ[3], λ[4]]
+                ws[q] = w
+            end
+        end
+        c = 0.5 - b
+        for λ in ((b, b, c, c), (b, c, b, c), (b, c, c, b), (c, b, b, c), (c, b, c, b), (c, c, b, b))
+            q += 1
+            ξs[:, q] = [λ[2], λ[3], λ[4]]
+            ws[q] = w3
+        end
     else
-        @assert false "GaussLegendre degree 1 through 3 supported for Tet."
+        @assert false "GaussLegendre degree 1 through 5 supported for Tet."
     end
     return ξs, ws
 end
@@ -198,6 +224,8 @@ end
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{1, SD}}) where SD = 1
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{2, SD}}) where SD = 4
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{3, SD}}) where SD = 5
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{4, SD}}) where SD = 14
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{5, SD}}) where SD = 14
 
 function surface_quadrature_points_and_weights(e::AbstractTet, q_rule::GaussLegendre)
     return surface_quadrature_points_and_weights(e, GaussLobattoLegendre(cell_quadrature_degree(q_rule), surface_quadrature_degree(q_rule)))

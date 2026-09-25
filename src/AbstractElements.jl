@@ -176,6 +176,9 @@ $(TYPEDEF)
 """
 abstract type AbstractTri{PT, PD} <: AbstractFace{PT, PD} end
 boundary_element(::AbstractTri{PT, PD}, ::Int) where {PT, PD} = Edge{PT, PD}(; shifted = true)
+# The bubbles of the enriched space vanish on the edges, so the edge trace is
+# the Lagrange space of the same degree.
+boundary_element(::AbstractTri{EnrichedLagrange, PD}, ::Int) where PD = Edge{Lagrange, PD}(; shifted = true)
 boundary_normals(::AbstractTri) = [
   0. 1. / sqrt(2.) -1.;
  -1. 1. / sqrt(2.)  0.;
@@ -257,6 +260,8 @@ face_vertices(::AbstractTet) = [
   4 4 3 2
 ]
 num_dofs_on_boundary(::AbstractTet{Lagrange, PD}, ::Int) where PD = PD == 0 ? 3 : (PD + 1) * (PD + 2) ÷ 2
+# a face of the enriched tetrahedron carries the P2 face dofs and its own face node
+num_dofs_on_boundary(::AbstractTet{EnrichedLagrange, 2}, ::Int) = 7
 num_edges_per_cell(::AbstractTet) = 6
 num_faces_per_cell(::AbstractTet) = 4
 num_vertices_per_cell(::AbstractTet) = 4

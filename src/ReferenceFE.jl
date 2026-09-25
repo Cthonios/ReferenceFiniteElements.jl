@@ -257,6 +257,7 @@ function _setup_surface_interpolants(
 end
 
 _default_interpolants_type(::AbstractElementType{D, Lagrange, PD}) where {D, PD} = StaticH1OrL2Interpolants
+_default_interpolants_type(::AbstractElementType{D, EnrichedLagrange, PD}) where {D, PD} = StaticH1OrL2Interpolants
 _default_interpolants_type(::AbstractElementType{D, RaviartThomas, PD}) where {D, PD} = StaticHdivInterpolants
 
 struct ReferenceFE{E, Q, BDofs, BNorms, CellInterps, SurfInterps, NEPE}
