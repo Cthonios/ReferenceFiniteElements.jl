@@ -31,12 +31,11 @@ toplogy.
 ```@docs
 boundary_element
 boundary_normals
-dimension
 edge_vertices
 face_vertices
 num_boundaries
-num_edges
-num_faces
+num_edges_per_cell
+num_faces_per_cell
 num_vertices_per_cell
 vertex_coordinates
 ```

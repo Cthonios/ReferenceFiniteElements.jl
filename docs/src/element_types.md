@@ -35,6 +35,8 @@ Tet
 EnrichedLagrange
 Hermite
 Lagrange
+ReferenceFiniteElements.NedelecFirstKind
+ReferenceFiniteElements.NedelecSecondKind
 ReferenceFiniteElements.NoInterpolation
 RaviartThomas
 Serendipity
