@@ -18,8 +18,10 @@
 #         edge_vertices (1-2, 2-3, 3-1), 7 centroid.
 #   Tet,  degree 2, 15 nodes: 1-4 vertices, 5-10 edge midpoints in the order
 #         of edge_vertices (1-2, 2-3, 3-1, 1-4, 2-4, 3-4), 11-14 face
-#         centroids in the order of face_vertices (1-2-4, 2-3-4, 1-4-3,
-#         1-3-2), 15 centroid.
+#         centroids of the faces 1-3-2, 2-3-4, 1-4-3, 1-2-4 (the Exodus
+#         TETRA15 convention: node 14 is on side 1, 12 on side 2, 13 on
+#         side 3 and 11 on side 4, as encoded in the side-node table of the
+#         Exodus library), 15 centroid.
 # The bubble of face f is 27 λa λb λc over the vertices of that face, with
 # unit value at its centroid; the interior bubble of the tetrahedron is
 # 256 λ1 λ2 λ3 λ4 and that of the triangle 27 λ1 λ2 λ3, each with unit
@@ -82,8 +84,10 @@ _nodes(::Tri{EnrichedLagrange, 2}) = (
 # ---------------------------------------------------------------------------
 # Tetrahedron: P2 plus four face bubbles and the interior bubble, fifteen nodes
 # ---------------------------------------------------------------------------
-# face bubbles in the order of face_vertices, then the interior bubble
-const _TET15_BUBBLES = ((1, 2, 4), (2, 3, 4), (1, 4, 3), (1, 3, 2), (1, 2, 3, 4))
+# face bubbles in the Exodus TETRA15 node order, then the interior bubble
+const _TET15_BUBBLES = ((1, 3, 2), (2, 3, 4), (1, 4, 3), (1, 2, 4), (1, 2, 3, 4))
+# the face node (11-14) that lies on each of the four sides of face_vertices
+const _TET15_SIDE_NODE = (14, 12, 13, 11)
 
 function _hierarchical(e::Tet{EnrichedLagrange, 2}, ξ)
     base = Tet{Lagrange, 2}()
@@ -109,7 +113,7 @@ function _nodes(::Tet{EnrichedLagrange, 2})
     for (a, b) in eachcol(edge_vertices(Tet{Lagrange, 2}()))
         push!(pts, (v[a] .+ v[b]) .// 2)
     end
-    for (a, b, c) in eachcol(face_vertices(Tet{Lagrange, 2}()))
+    for (a, b, c) in _TET15_BUBBLES[1:4]
         push!(pts, (v[a] .+ v[b] .+ v[c]) .// 3)
     end
     push!(pts, [1//4, 1//4, 1//4])
@@ -173,5 +177,5 @@ num_interior_dofs(::Tet{EnrichedLagrange, 2}) = 1
 interior_dofs(::Tet{EnrichedLagrange, 2}) = [15]
 function boundary_dofs(::Tet{EnrichedLagrange, 2})
     p2 = boundary_dofs(Tet{Lagrange, 2}())          # 6 x 4
-    return vcat(p2, reshape(collect(11:14), 1, 4))   # face node of each face
+    return vcat(p2, reshape(collect(_TET15_SIDE_NODE), 1, 4))
 end

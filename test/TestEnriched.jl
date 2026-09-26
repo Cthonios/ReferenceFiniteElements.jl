@@ -99,9 +99,11 @@ function test_enriched_tet()
         @test interior_dofs(el) == [15]
         bd = boundary_dofs(el)
         @test size(bd) == (7, 4)
-        for f in 1:4
+        # Exodus TETRA15 convention: face node 14 on side 1, 12 on side 2,
+        # 13 on side 3, 11 on side 4
+        for (f, node) in zip(1:4, (14, 12, 13, 11))
             @test num_dofs_on_boundary(el, f) == 7
-            @test bd[7, f] == 10 + f
+            @test bd[7, f] == node
         end
         @test boundary_element(el, 1) == Tri{EnrichedLagrange, 2}()
         @test boundary_element(boundary_element(el, 1), 1) == Edge{Lagrange, 2}(; shifted = true)
@@ -120,12 +122,13 @@ function test_enriched_tet()
         end
     end
 
-    @testset "the face nodes lie at the face centroids, in face_vertices order" begin
+    @testset "the face node of each side lies at that face's centroid" begin
         verts = ([0., 0, 0], [1., 0, 0], [0., 1, 0], [0., 0, 1])
         fv = face_vertices(el)
         nodes = ReferenceFiniteElements._nodes(el)
+        bd = boundary_dofs(el)
         for f in 1:4
-            @test Float64.(nodes[10 + f]) ≈ (verts[fv[1, f]] .+ verts[fv[2, f]] .+ verts[fv[3, f]]) ./ 3
+            @test Float64.(nodes[bd[7, f]]) ≈ (verts[fv[1, f]] .+ verts[fv[2, f]] .+ verts[fv[3, f]]) ./ 3
         end
         @test Float64.(nodes[15]) ≈ [0.25, 0.25, 0.25]
     end
