@@ -448,10 +448,14 @@ function MappedH1OrL2SurfaceInterpolants(e::ReferenceFE, X, q::Integer, f::Integ
         t1    = X_face[:, 2] - X_face[:, 1]
         t2    = X_face[:, 3] - X_face[:, 1]
         n_raw = cross(t1, t2)
-        # reference area: shifted Tri (right triangle on [0,1]²) has area 1/2;
-        # unshifted Quad on [-1,1]² has area 4.
-        ref_area = isa(be, AbstractTri) ? 0.5 : 4.0
-        det_J = norm(n_raw) / ref_area
+        # det_J is the ratio of the physical face area to the reference face
+        # area.  For a triangle t1 and t2 are two edges, so |t1 × t2| is twice
+        # the physical area, and the reference triangle on [0,1]² has area 1/2:
+        # the ratio is |t1 × t2|.  For a quadrilateral t2 is the diagonal from
+        # node 1 to node 3, so |t1 × t2| is the area of the parallelogram
+        # spanned by the first two edges (the physical area for a
+        # parallelogram face), and the reference square on [-1,1]² has area 4.
+        det_J = isa(be, AbstractTri) ? norm(n_raw) : norm(n_raw) / 4.0
         n     = n_raw / norm(n_raw)
     end
 

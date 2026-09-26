@@ -209,10 +209,11 @@ $(TYPEDEF)
 """
 abstract type AbstractHex{PT, PD} <: AbstractVolume{PT, PD} end
 boundary_element(::AbstractHex{PT, PD}, ::Int) where {PT, PD} = Quad{PT, PD}()
+# outward normals of the faces of face_vertices (the Exodus side order)
 boundary_normals(::AbstractHex) = [
    0. 1. 0. -1.  0. 0.
-   0. 0. 0.  0. -1. 1.
   -1. 0. 1.  0.  0. 0.
+   0. 0. 0.  0. -1. 1.
 ]
 edge_vertices(::AbstractHex) = [
   1 2 3 4 5 6 7 8 1 2 3 4

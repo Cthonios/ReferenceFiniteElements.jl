@@ -271,10 +271,11 @@ function test_topology_interface_hex(interp_type, p)
   for n in 1:6
     @test boundary_element(re, n) == Quad{interp_type, p}()
   end
+  # outward normals of the faces of face_vertices (Exodus side order)
   @test boundary_normals(re) ≈ [
     0. 1. 0. -1.  0. 0.
-    0. 0. 0.  0. -1. 1.
    -1. 0. 1.  0.  0. 0.
+    0. 0. 0.  0. -1. 1.
   ]
   @test cell_vertices(re) == 1:8 |> collect
   @test dimension(re) == 3
@@ -698,6 +699,7 @@ end
 # end
 
 include("TestEnriched.jl")
+include("TestSurfaceJacobian.jl")
 
 @testset "Face dofs follow face_vertices" begin
   for el in (Tet{Lagrange, 1}(), Tet{Lagrange, 2}(), Tet{EnrichedLagrange, 2}())
