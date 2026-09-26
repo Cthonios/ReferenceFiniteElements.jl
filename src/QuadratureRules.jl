@@ -98,20 +98,22 @@ function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLege
     ξ_return = zeros(3, length(ws), 6)
     w_return = zeros(length(ws), 6)
 
-    ξ_return[1:2, :, 1] .= ξs
-    ξ_return[3, :, 1]   .= -1.
+    # Faces in the order of face_vertices (the Exodus side order):
+    # 1: η = -1, 2: ξ = +1, 3: η = +1, 4: ξ = -1, 5: ζ = -1, 6: ζ = +1.
+    ξ_return[1, :, 1]   .= ξs[1, :]
+    ξ_return[2, :, 1]   .= -1.
+    ξ_return[3, :, 1]   .= ξs[2, :]
     ξ_return[1, :, 2]   .= 1.
     ξ_return[2:3, :, 2] .= ξs
-    ξ_return[1:2, :, 3] .= ξs
-    ξ_return[3, :, 3]   .= 1.
+    ξ_return[1, :, 3]   .= ξs[1, :]
+    ξ_return[2, :, 3]   .= 1.
+    ξ_return[3, :, 3]   .= ξs[2, :]
     ξ_return[1, :, 4]   .= -1.
     ξ_return[2:3, :, 4] .= ξs
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= -1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
-    ξ_return[1, :, 6]   .= ξs[1, :]
-    ξ_return[2, :, 6]   .= 1.
-    ξ_return[3, :, 6]   .= ξs[2, :]
+    ξ_return[1:2, :, 5] .= ξs
+    ξ_return[3, :, 5]   .= -1.
+    ξ_return[1:2, :, 6] .= ξs
+    ξ_return[3, :, 6]   .= 1.
 
     for n in 1:6
         w_return[:, n] .= ws
@@ -347,25 +349,22 @@ function surface_quadrature_points_and_weights(e::AbstractHex, q_rule::GaussLoba
     ξ_return = zeros(3, length(ws), 6)
     w_return = zeros(length(ws), 6)
 
-    ξ_return[1:2, :, 1] .= ξs
-    ξ_return[3, :, 1]   .= -1.
-    #
+    # Faces in the order of face_vertices (the Exodus side order):
+    # 1: η = -1, 2: ξ = +1, 3: η = +1, 4: ξ = -1, 5: ζ = -1, 6: ζ = +1.
+    ξ_return[1, :, 1]   .= ξs[1, :]
+    ξ_return[2, :, 1]   .= -1.
+    ξ_return[3, :, 1]   .= ξs[2, :]
     ξ_return[1, :, 2]   .= 1.
     ξ_return[2:3, :, 2] .= ξs
-    #
-    ξ_return[1:2, :, 3] .= ξs
-    ξ_return[3, :, 3]   .= 1.
-    #
+    ξ_return[1, :, 3]   .= ξs[1, :]
+    ξ_return[2, :, 3]   .= 1.
+    ξ_return[3, :, 3]   .= ξs[2, :]
     ξ_return[1, :, 4]   .= -1.
     ξ_return[2:3, :, 4] .= ξs
-    #
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= -1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
-    #
-    ξ_return[1, :, 5]   .= ξs[1, :]
-    ξ_return[2, :, 5]   .= 1.
-    ξ_return[3, :, 5]   .= ξs[2, :]
+    ξ_return[1:2, :, 5] .= ξs
+    ξ_return[3, :, 5]   .= -1.
+    ξ_return[1:2, :, 6] .= ξs
+    ξ_return[3, :, 6]   .= 1.
     #
     #
     # ξ_return[1, :, 2] .= 1.
@@ -582,12 +581,15 @@ function surface_quadrature_points_and_weights(e::AbstractTri, q_rule::GaussLoba
     ξ_return = zeros(2, length(ws), 3)
     w_return = zeros(length(ws), 3)
 
+    # The edge element is shifted (its coordinate runs over [0, 1]).  Edges
+    # in the order of edge_vertices, each traversed from its first vertex:
+    # 1: (0,0)->(1,0), 2: (1,0)->(0,1), 3: (0,1)->(0,0).
     ξ_return[1, :, 1] .= ξs[1, :]
-    ξ_return[2, :, 1] .= -1.
-    ξ_return[1, :, 2] .= ξs[1, :]
-    ξ_return[2, :, 2] .= 1. .- ξs[1, :]
-    ξ_return[1, :, 3] .= -1.
-    ξ_return[2, :, 3] .= ξs[1, :]
+    ξ_return[2, :, 1] .= 0.
+    ξ_return[1, :, 2] .= 1. .- ξs[1, :]
+    ξ_return[2, :, 2] .= ξs[1, :]
+    ξ_return[1, :, 3] .= 0.
+    ξ_return[2, :, 3] .= 1. .- ξs[1, :]
 
     for n in 1:3
         w_return[:, n] .= ws
