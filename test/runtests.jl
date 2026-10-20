@@ -718,6 +718,7 @@ end
   for type in (StaticH1OrL2Interpolants, StaticH1OrL2InterpolantsWithHessians)
     test_ref_fe(Tri, EnrichedLagrange, 2, GaussLegendre(3); interpolants_type = type)
     test_ref_fe(Tet, EnrichedLagrange, 2, GaussLegendre(5); interpolants_type = type)
+    test_ref_fe(Tet, EnrichedLagrange, 2, GaussLegendre(6); interpolants_type = type)
     test_ref_fe(Tet, EnrichedLagrange, 2, GaussLobattoLegendre(2); interpolants_type = type)
   end
 end
