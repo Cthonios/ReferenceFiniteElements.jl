@@ -153,6 +153,61 @@ function test_enriched_tet()
         end
         @test ReferenceFE(el, GaussLegendre(4)) isa ReferenceFE
     end
+
+    # The conical Gauss-Jacobi rules of degrees 6 to 9: n = ⌈(deg + 1)/2⌉
+    # points per direction, n³ points, exact through degree 2n - 1 and not at
+    # 2n, positive weights, points interior to the element.  (A ReferenceFE
+    # of cell degree above 6 cannot be built, since the surface rule of a
+    # tetrahedron takes the cell degree and the triangle rules stop at 6, so
+    # the rules are read directly.)
+    @testset "conical rule of degree $deg" for deg in 6:9
+        n = cld(deg + 1, 2)
+        ξs, ws = ReferenceFiniteElements.cell_quadrature_points_and_weights(el, GaussLegendre(deg))
+        nq = length(ws)
+        @test nq == n^3
+        @test ReferenceFiniteElements.num_cell_quadrature_points(el, GaussLegendre{deg, deg}) == nq
+        worst = 0.0
+        for d in 0:(2n - 1), a in 0:d, b in 0:(d - a)
+            c = d - a - b
+            exact = factorial(a) * factorial(b) * factorial(c) / factorial(d + 3)
+            num = sum(ws[q] * ξs[1, q]^a * ξs[2, q]^b * ξs[3, q]^c for q in 1:nq)
+            worst = max(worst, abs(num - exact) / exact)
+        end
+        @test worst < 1e-13
+        exact2n = factorial(2n) / factorial(2n + 3)
+        num2n = sum(ws[q] * ξs[1, q]^(2n) for q in 1:nq)
+        @test abs(num2n - exact2n) / exact2n > 1e-6
+        @test all(>(0), ws)
+        @test all(>(0), ξs)
+        @test all(<(1), sum(ξs, dims = 1))
+    end
+
+    # The consistent mass of the element, ∫ N_a N_b, has an integrand of
+    # degree 8.  The degree-5 rule leaves it with rank 14; the degree-9 rule
+    # integrates it exactly, and the degree-7 rule, which does not, differs
+    # from it.
+    @testset "consistent mass: rank and exactness" begin
+        function mass(deg)
+            ξs, ws = ReferenceFiniteElements.cell_quadrature_points_and_weights(el, GaussLegendre(deg))
+            M = zeros(15, 15)
+            for q in eachindex(ws)
+                N = ReferenceFiniteElements.shape_function_value(el, ξs[:, q])
+                M .+= ws[q] .* (N * N')
+            end
+            return M
+        end
+        M5, M7, M9, M15 = mass(5), mass(7), mass(9), mass(15)
+        λ5 = eigvals(Symmetric(M5))
+        λ9 = eigvals(Symmetric(M9))
+        @test count(<(1e-12 * λ5[end]), λ5) == 1
+        @test count(<(1e-12 * λ9[end]), λ9) == 0
+        @test 93.5 < λ9[end] / λ9[1] < 93.7      # 93.6 in the nodal basis
+        # a rule of higher degree reproduces the degree-9 mass to rounding
+        @test maximum(abs.(M9 - M15)) / maximum(abs.(M15)) < 1e-14
+        @test maximum(abs.(M7 - M15)) / maximum(abs.(M15)) > 1e-6
+        # the row sums are ∫ N_a, of degree 4, exact under the degree-5 rule
+        @test maximum(abs.(sum(M5, dims = 2) - sum(M15, dims = 2))) < 1e-15
+    end
 end
 
 function test_enriched_tri()

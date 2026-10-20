@@ -218,11 +218,43 @@ function cell_quadrature_points_and_weights(::AbstractTet, q_rule::GaussLegendre
             ws[q] = w3
         end
     else
-        @assert false "GaussLegendre degree 1 through 5 supported for Tet."
+        ξs, ws = _tet_conical_rule(deg)
     end
     return ξs, ws
 end
 
+# Collapsed (conical) Gauss-Jacobi product rule of total degree `deg` on the
+# reference tetrahedron, for the degrees above those of the symmetric rules.
+# The map ξ = (u, v (1 - u), w (1 - u)(1 - v)) carries the unit cube onto the
+# tetrahedron with Jacobian (1 - u)² (1 - v), which the Gauss-Jacobi rules
+# with weights (1 - u)² and (1 - v) absorb.  With n = ⌈(deg + 1)/2⌉ points
+# per direction the rule is exact for every polynomial of total degree
+# 2n - 1 ≥ deg, has n³ points and positive weights, and has no point on the
+# boundary of the element.
+function _tet_conical_rule(deg::Int)
+    n = cld(deg + 1, 2)
+    # Gauss-Jacobi on [0, 1] with weight (1 - t)^a, from the rule on [-1, 1]
+    # with weight (1 - x)^a: t = (1 + x)/2 and dx (1 - x)^a = 2^(a+1) dt (1 - t)^a.
+    function gauss_jacobi01(a)
+        x, w = gaussjacobi(n, Float64(a), 0.0)
+        return (1. .+ x) ./ 2., w ./ 2. ^ (a + 1)
+    end
+    tu, wu = gauss_jacobi01(2)
+    tv, wv = gauss_jacobi01(1)
+    tw, ww = gauss_jacobi01(0)
+    ξs = Matrix{Float64}(undef, 3, n^3)
+    ws = Vector{Float64}(undef, n^3)
+    q = 0
+    for i in 1:n, j in 1:n, k in 1:n
+        q += 1
+        u, v, w = tu[i], tv[j], tw[k]
+        ξs[:, q] = [u, v * (1. - u), w * (1. - u) * (1. - v)]
+        ws[q] = wu[i] * wv[j] * ww[k]
+    end
+    return ξs, ws
+end
+
+num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{CD, SD}}) where {CD, SD} = cld(CD + 1, 2)^3
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{1, SD}}) where SD = 1
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{2, SD}}) where SD = 4
 num_cell_quadrature_points(::AbstractTet, ::Type{GaussLegendre{3, SD}}) where SD = 5
