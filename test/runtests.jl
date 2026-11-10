@@ -1,4 +1,4 @@
-# using Adapt
+using Adapt
 # using AMDGPU
 using Aqua
 # using CUDA
