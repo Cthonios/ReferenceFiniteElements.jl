@@ -1,34 +1,5 @@
 module ReferenceFiniteElements
 
-using Adapt
-using DocStringExtensions
-using FastGaussQuadrature
-using LinearAlgebra
-using Polynomials
-using SpecialPolynomials
-using StaticArrays
-
-# includes
-include("PolynomialTypes.jl")
-include("AbstractElements.jl")
-include("QuadratureRules.jl")
-include("ReferenceFE.jl")
-
-# 0-d elements
-include("elements/Vertex.jl")
-
-# 1-d elements
-include("elements/Edge.jl")
-
-# 2-d elements
-include("elements/Quad.jl")
-include("elements/Tri.jl")
-
-# 3-d elements
-include("elements/Hex.jl")
-include("elements/Tet.jl")
-include("elements/Enriched.jl")
-
 # abstract interface
 export polynomial_degree
 export polynomial_type
@@ -98,5 +69,33 @@ export num_edges_per_cell
 export num_faces_per_cell
 export num_vertices_per_cell
 export vertex_coordinates
+
+using DocStringExtensions
+using FastGaussQuadrature
+using LinearAlgebra
+using Polynomials
+using SpecialPolynomials
+using StaticArrays
+
+# includes
+include("PolynomialTypes.jl")
+include("AbstractElements.jl")
+include("QuadratureRules.jl")
+include("ReferenceFE.jl")
+
+# 0-d elements
+include("elements/Vertex.jl")
+
+# 1-d elements
+include("elements/Edge.jl")
+
+# 2-d elements
+include("elements/Quad.jl")
+include("elements/Tri.jl")
+
+# 3-d elements
+include("elements/Hex.jl")
+include("elements/Tet.jl")
+include("elements/Enriched.jl")
 
 end # module ReferenceFiniteElements

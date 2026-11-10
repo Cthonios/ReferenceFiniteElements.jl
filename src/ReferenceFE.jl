@@ -302,14 +302,6 @@ struct ReferenceFE{E, Q, BDofs, BNorms, CellInterps, SurfInterps, NEPE}
     end
 end
 
-function Adapt.adapt_structure(to, re::ReferenceFE)
-    bdofs = adapt(to, re.boundary_dofs)
-    bnorms = adapt(to, re.boundary_normals)
-    cell_interps = adapt(to, re.cell_interps)
-    surf_interps = adapt(to, re.surf_interps)
-    return ReferenceFE{typeof(re.element), quadrature_rule(re)}(re.element, bdofs, bnorms, cell_interps, surf_interps)
-end
-
 function Base.show(io::IO, re::ReferenceFE)
     println(io, "ReferenceFE")
     println(io, "  Element type      = $(element(re))")
