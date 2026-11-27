@@ -685,14 +685,10 @@ end
 #   test_ref_fes()
 # end
 
-# # extension tests
-# # include("TestAdaptExt.jl")
-# include("TestExodusExt.jl")
-# # include("TestSymbolicsExt.jl")
+# extension tests
+# include("TestAdaptExt.jl")
+# include("TestSymbolicsExt.jl")
 
-# @testset "ExodusExt" begin
-#   test_exodus_ext()
-# end
 
 # @testset "SymbolicExt" begin
 #   test_symbolic_fe_fes()

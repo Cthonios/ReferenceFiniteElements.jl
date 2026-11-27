@@ -70,6 +70,7 @@ export num_faces_per_cell
 export num_vertices_per_cell
 export vertex_coordinates
 
+import PrecompileTools: @compile_workload, @setup_workload
 using DocStringExtensions
 using FastGaussQuadrature
 using LinearAlgebra
@@ -97,5 +98,51 @@ include("elements/Tri.jl")
 include("elements/Hex.jl")
 include("elements/Tet.jl")
 include("elements/Enriched.jl")
+
+# just precompiling some of the more standard elements for now
+# to reduce precompile time...
+@setup_workload begin
+    @compile_workload begin
+        # quadrature rules
+        for q in 1:10
+            q_rule = GaussLegendre(q)
+            q_rule = GaussLobattoLegendre(q)
+        end
+
+        # edge elements
+        ref_fe = ReferenceFE(Edge{Lagrange, 1}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Edge{Lagrange, 2}(), GaussLegendre(2))
+
+        ref_fe = ReferenceFE(Edge{Lagrange, 1}(), GaussLobattoLegendre(2))
+        ref_fe = ReferenceFE(Edge{Lagrange, 2}(), GaussLobattoLegendre(2))
+
+        # hex elements
+        ref_fe = ReferenceFE(Hex{Lagrange, 1}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Hex{Lagrange, 1}(), GaussLobattoLegendre(2))
+
+        # quad elements
+        ref_fe = ReferenceFE(Quad{Lagrange, 1}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Quad{Lagrange, 2}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Quad{Lagrange, 1}(), GaussLobattoLegendre(2))
+        ref_fe = ReferenceFE(Quad{Lagrange, 2}(), GaussLobattoLegendre(2))
+
+        # tet elements
+        ref_fe = ReferenceFE(Tet{Lagrange, 1}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Tet{Lagrange, 2}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Tet{Lagrange, 1}(), GaussLobattoLegendre(2))
+        ref_fe = ReferenceFE(Tet{Lagrange, 2}(), GaussLobattoLegendre(2))
+
+        ref_fe = ReferenceFE(Tet{EnrichedLagrange, 2}(), GaussLegendre(5))
+        ref_fe = ReferenceFE(Tet{EnrichedLagrange, 2}(), GaussLobattoLegendre(2))
+
+        # tri elements
+        ref_fe = ReferenceFE(Tri{Lagrange, 1}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Tri{Lagrange, 2}(), GaussLegendre(2))
+        ref_fe = ReferenceFE(Tri{Lagrange, 1}(), GaussLobattoLegendre(2))
+        ref_fe = ReferenceFE(Tri{Lagrange, 2}(), GaussLobattoLegendre(2))
+
+        ref_fe = ReferenceFE(Tri{EnrichedLagrange, 2}(), GaussLegendre(3))
+    end
+end
 
 end # module ReferenceFiniteElements
